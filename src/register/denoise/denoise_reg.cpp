@@ -1,0 +1,84 @@
+// toolboxes/wavelet/src/denoise/denoise_reg.cpp
+//
+// Register half of the thresholding / denoising primitives: the CallContext
+// builtins wthresh / wnoisest / wdenoise that delegate to the engine-free
+// compute in denoise.cpp. library.cpp forward-declares + registers these.
+//
+// Phase 2b compute/register split — see project_layering_refactor memory.
+
+#include <numkit/wavelet/denoise/denoise.hpp>
+
+#include <numkit/sys/plugin.hpp>   // CallContext, ctx.engine->resource()
+#include <numkit/value/argcheck.hpp>
+#include <numkit/value/error.hpp>
+
+#include <string>
+
+namespace numkit::wavelet {
+namespace detail {
+
+static std::string argString(const Value &v) {
+    if (!v.isChar() && !v.isString())
+        throw Error("wavelet: expected string argument",
+                    0, 0, "", "", "nk:wavelet:type");
+    return v.toString();
+}
+
+void wthresh_reg(Span<const Value> args, size_t /*nargout*/, Span<Value> outs,
+                 CallContext &ctx)
+{
+    argcheck::checkNargin(args.size(), 3, 3, "wthresh");
+    outs[0] = wthresh(args[0], argString(args[1]), args[2],
+                    ctx.engine->resource());
+}
+
+void wnoisest_reg(Span<const Value> args, size_t /*nargout*/, Span<Value> outs,
+                  CallContext &ctx)
+{
+    if (args.size() < 3)
+        throw Error("wnoisest: requires (C, L, S)",
+                    0, 0, "wnoisest", "", "nk:wnoisest:nargin");
+    outs[0] = wnoisest(args[0], args[1], args[2], ctx.engine->resource());
+}
+
+void wdenoise_reg(Span<const Value> args, size_t /*nargout*/, Span<Value> outs,
+                  CallContext &ctx)
+{
+    if (args.empty())
+        throw Error("wdenoise: requires the signal",
+                    0, 0, "wdenoise", "", "nk:wdenoise:nargin");
+    int level = -1;
+    if (args.size() >= 2 && !args[1].isEmpty())
+        level = argcheck::expectedPositiveInteger(
+        argcheck::expectedReal(args[1], 2, "level", "wdenoise"), 2, "level", "wdenoise");
+    std::string wname;
+    if (args.size() >= 3 && !args[2].isEmpty())
+        wname = argString(args[2]);
+    outs[0] = wdenoise(args[0], level, wname, ctx.engine->resource());
+}
+
+void wentropy_reg(Span<const Value> args, size_t /*nargout*/, Span<Value> outs,
+                  CallContext &ctx)
+{
+    if (args.size() < 2)
+        throw Error("wentropy: requires (X, T [, P])",
+                    0, 0, "wentropy", "", "nk:wentropy:nargin");
+    const double param = (args.size() >= 3) ? args[2].toScalar() : 0.0;
+    outs[0] = wentropy(args[0], argString(args[1]), param, ctx.engine->resource());
+}
+
+void ddencmp_reg(Span<const Value> args, size_t /*nargout*/, Span<Value> outs,
+                 CallContext &ctx)
+{
+    if (args.size() < 3)
+        throw Error("ddencmp: requires (opt, type, x)",
+                    0, 0, "ddencmp", "", "nk:ddencmp:nargin");
+    auto r = ddencmp(argString(args[0]), argString(args[1]), args[2],
+                     ctx.engine->resource());
+    if (outs.size() >= 1) outs[0] = std::move(r.thr);
+    if (outs.size() >= 2) outs[1] = std::move(r.sorh);
+    if (outs.size() >= 3) outs[2] = std::move(r.keepapp);
+}
+
+} // namespace detail
+} // namespace numkit::wavelet

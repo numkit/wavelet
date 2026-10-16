@@ -1,0 +1,282 @@
+// toolboxes/wavelet/src/denoise/denoise.cpp
+//
+// Wavelet thresholding primitives (wthresh / wnoisest) and the
+// composite VisuShrink-style denoiser (wdenoise). All built on the
+// existing wavedec / waverec / detcoef plumbing — no extra DSP
+// machinery here, just thresholding and a robust σ estimate.
+
+#include <numkit/wavelet/denoise/denoise.hpp>
+#include <numkit/wavelet/dwt/multilevel.hpp>
+#include <numkit/wavelet/dwt/dwt.hpp>     // ddencmp: 1-level dwt noise estimate
+#include <numkit/wavelet/internal/type_gates.hpp>
+
+// Compute-only TU: Value substrate + Error, no engine. The wthresh /
+// wnoisest / wdenoise builtins (CallContext wrappers) live in
+// denoise/denoise_reg.cpp.
+#include <numkit/value/value.hpp>
+#include <numkit/value/error.hpp>
+
+#include <algorithm>
+#include <cctype>
+#include <cmath>
+#include <string>
+#include <vector>
+
+namespace numkit::wavelet {
+
+namespace {
+
+double median_abs(std::vector<double> v) {
+    if (v.empty()) return 0.0;
+    for (auto &x : v) x = std::abs(x);
+    std::sort(v.begin(), v.end());
+    const size_t n = v.size();
+    return (n % 2 == 1)
+               ? v[n / 2]
+               : 0.5 * (v[n / 2 - 1] + v[n / 2]);
+}
+
+std::vector<double> vecFromValue(const Value &v) {
+    std::vector<double> out(v.numel());
+    for (size_t i = 0; i < v.numel(); ++i) out[i] = v.elemAsDouble(i);
+    return out;
+}
+
+} // anonymous
+
+Value wthresh(const Value &X, const std::string &sorh, const Value &T,
+              std::pmr::memory_resource *mr)
+{
+    // Probed R2025b: X is double/single (complex computed — the soft
+    // threshold shrinks |z| keeping the phase); T is real, scalar or the
+    // same size as X (elementwise); the result takes single from either
+    // X or T. sorh matches one character 's'/'h', case-insensitive.
+    internal::requireWaveClass(X, "wthresh", "X", 1,
+                               internal::WvClasses::FloatOnly,
+                               /*allowComplex=*/true);
+    const bool hard = (sorh == "h" || sorh == "H");
+    const bool soft = (sorh == "s" || sorh == "S");
+    if (!hard && !soft)
+        throw Error("wthresh: SORH must be 's' (soft) or 'h' (hard) — got '"
+                        + sorh + "'",
+                    0, 0, "wthresh", "", "nk:wthresh:sorh");
+    if (T.type() == ValueType::COMPLEX)
+        throw Error("wthresh: input 3 (T) must be real.",
+                    0, 0, "wthresh", "", "nk:wthresh:mustBeReal");
+    const bool elemT = T.numel() != 1;
+    if (elemT && (T.dims().rows() != X.dims().rows()
+                  || T.dims().cols() != X.dims().cols()))
+        throw Error("wthresh: input 3 (T) must be a scalar or the same "
+                        "size as X (got a " + internal::shapeOf(T) + " "
+                        + mtypeName(T.type()) + " array for a "
+                        + internal::shapeOf(X) + " X).",
+                    0, 0, "wthresh", "", "nk:wthresh:size");
+
+    const size_t N = X.numel();
+    const ValueType outT =
+        (X.type() == ValueType::SINGLE || T.type() == ValueType::SINGLE)
+            ? ValueType::SINGLE
+            : ValueType::DOUBLE;
+    const bool cplx = X.type() == ValueType::COMPLEX;
+    Value Y = cplx ? Value::complexMatrix(X.dims().rows(), X.dims().cols(), mr)
+                   : Value::matrix(X.dims().rows(), X.dims().cols(), outT, mr);
+    if (N == 0) return Y;
+
+    auto tOf = [&](size_t i) {
+        return elemT ? T.elemAsDouble(i) : T.elemAsDouble(0);
+    };
+
+    if (cplx) {
+        Complex *yd = Y.complexDataMut();
+        for (size_t i = 0; i < N; ++i) {
+            const Complex z = X.complexElem(i);
+            const double az = std::abs(z);
+            const double T_i = tOf(i);
+            if (hard) {
+                yd[i] = (az > T_i) ? z : Complex(0.0, 0.0);
+            } else {
+                const double mag = az - T_i;
+                yd[i] = (mag > 0.0 && az > 0.0)
+                            ? z * (mag / az)
+                            : Complex(0.0, 0.0);
+            }
+        }
+        return Y;
+    }
+
+    double *yd = outT == ValueType::SINGLE
+        ? nullptr
+        : Y.doubleDataMut();
+    float *yf = outT == ValueType::SINGLE ? Y.singleDataMut() : nullptr;
+    for (size_t i = 0; i < N; ++i) {
+        const double x = X.elemAsDouble(i);
+        const double ax = std::abs(x);
+        const double T_i = tOf(i);
+        double r;
+        if (hard) {
+            r = (ax > T_i) ? x : 0.0;
+        } else {
+            // soft: sign(x) * max(|x| - T, 0)
+            const double mag = ax - T_i;
+            r = (mag > 0.0) ? std::copysign(mag, x) : 0.0;
+        }
+        if (yf) yf[i] = static_cast<float>(r);
+        else    yd[i] = r;
+    }
+    return Y;
+}
+
+Value wnoisest(const Value &C, const Value &L, const Value &S, std::pmr::memory_resource *mr)
+{
+    const size_t k = S.numel();
+    Value out = Value::matrix(1, k, ValueType::DOUBLE, mr);
+    if (k == 0) return out;
+    double *od = out.doubleDataMut();
+
+    for (size_t i = 0; i < k; ++i) {
+        const int level = static_cast<int>(S.elemAsDouble(i));
+        Value cD = detcoef(C, L, level, mr);
+        auto v = vecFromValue(cD);
+        const double med = median_abs(std::move(v));
+        od[i] = med / 0.6745;
+    }
+    return out;
+}
+
+Value wdenoise(const Value &x, int level, const std::string &wname, std::pmr::memory_resource *mr)
+{
+    const size_t N = x.numel();
+    if (N < 2) {
+        // Nothing to denoise — return a copy as a row.
+        Value y = Value::matrix(x.dims().rows(), x.dims().cols(),
+                                ValueType::DOUBLE, mr);
+        double *yd = y.doubleDataMut();
+        for (size_t i = 0; i < N; ++i) yd[i] = x.elemAsDouble(i);
+        return y;
+    }
+    if (level <= 0) {
+        // MATLAB default: a few levels but not so deep that the
+        // approximation band collapses below the filter length. We
+        // approximate with min(floor(log2(N)), 5).
+        const int maxLog = static_cast<int>(std::floor(std::log2(double(N))));
+        level = std::min(maxLog, 5);
+        if (level < 1) level = 1;
+    }
+    const std::string w = wname.empty() ? std::string("sym4") : wname;
+
+    // 1. Multi-level decomposition.
+    auto [C, L] = wavedec(x, level, w, mr);
+
+    // 2. Robust noise σ from the finest detail band (MATLAB default).
+    {
+        Value cD1 = detcoef(C, L, 1, mr);
+        auto v = vecFromValue(cD1);
+        const double sigma = median_abs(std::move(v)) / 0.6745;
+
+        // 3. Universal (VisuShrink) threshold.
+        const double T = sigma * std::sqrt(2.0 * std::log(double(N)));
+
+        // 4. Soft-threshold every detail band in-place inside C.
+        // Layout of C: [cA_level | cD_level | cD_{level-1} | ... | cD_1].
+        const Value &Lref = L;   // plain reference: capturing a structured
+                                 // binding directly in a lambda is C++20.
+        auto sliceLen = [&](size_t idx) -> size_t {
+            return static_cast<size_t>(Lref.elemAsDouble(idx));
+        };
+        size_t off = sliceLen(0); // skip cA
+        double *Cd = C.doubleDataMut();
+        for (int k = 0; k < level; ++k) {
+            const size_t dLen = sliceLen(1 + k);
+            for (size_t i = 0; i < dLen; ++i) {
+                const double xv = Cd[off + i];
+                const double ax = std::abs(xv);
+                const double mag = ax - T;
+                Cd[off + i] = (mag > 0.0) ? std::copysign(mag, xv) : 0.0;
+            }
+            off += dLen;
+        }
+    }
+
+    // 5. Reconstruct.
+    return waverec(C, L, w, mr);
+}
+
+Value wentropy(const Value &X, const std::string &type, double param,
+               std::pmr::memory_resource *mr)
+{
+    std::string t = type;
+    std::transform(t.begin(), t.end(), t.begin(),
+                   [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+
+    auto x = vecFromValue(X);
+    const std::size_t n = x.size();
+    double e = 0.0;
+
+    if (t == "shannon") {
+        for (double v : x) { const double s2 = v * v; if (s2 > 0.0) e -= s2 * std::log(s2); }
+    } else if (t == "log energy" || t == "logenergy") {
+        for (double v : x) { const double s2 = v * v; if (s2 > 0.0) e += std::log(s2); }
+    } else if (t == "threshold") {
+        for (double v : x) if (std::fabs(v) > param) e += 1.0;
+    } else if (t == "sure") {
+        e = static_cast<double>(n);
+        const double t2 = param * param;
+        for (double v : x) {
+            if (std::fabs(v) <= param) e -= 2.0;
+            e += std::min(v * v, t2);
+        }
+    } else if (t == "norm") {
+        if (param < 1.0)
+            throw Error("wentropy: 'norm' exponent P must be >= 1",
+                        0, 0, "wentropy", "", "nk:wentropy:norm");
+        for (double v : x) e += std::pow(std::fabs(v), param);
+    } else {
+        throw Error("wentropy: unknown type '" + type +
+                        "' (shannon / log energy / threshold / sure / norm)",
+                    0, 0, "wentropy", "", "nk:wentropy:type");
+    }
+    return Value::scalar(e, mr);
+}
+
+DdencmpResult ddencmp(const std::string &opt, const std::string &type,
+                      const Value &x, std::pmr::memory_resource *mr)
+{
+    auto lower = [](std::string s) {
+        std::transform(s.begin(), s.end(), s.begin(),
+                       [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+        return s;
+    };
+    const std::string o = lower(opt);
+    const std::string t = lower(type);
+
+    if (t == "wp")
+        throw Error("ddencmp: wavelet-packet ('wp') defaults are not yet "
+                    "supported (use 'wv')",
+                    0, 0, "ddencmp", "", "nk:ddencmp:wp");
+    if (t != "wv")
+        throw Error("ddencmp: type must be 'wv' (wavelet) or 'wp'",
+                    0, 0, "ddencmp", "", "nk:ddencmp:type");
+
+    // Noise level from the finest-detail coefficients of a 1-level db1 DWT.
+    auto [cA, cD] = dwt(x, "db1", mr);
+    (void)cA;
+    const double med = median_abs(vecFromValue(cD));   // median(|cD1|)
+    const double sigma = med / 0.6745;
+    const double n = static_cast<double>(x.numel());
+
+    DdencmpResult r;
+    if (o == "den") {
+        r.thr = Value::scalar(std::sqrt(2.0 * std::log(n)) * sigma, mr);
+        r.sorh = Value::fromString("s", mr);
+    } else if (o == "cmp") {
+        r.thr = Value::scalar(med, mr);
+        r.sorh = Value::fromString("h", mr);
+    } else {
+        throw Error("ddencmp: option must be 'den' (denoise) or 'cmp' (compress)",
+                    0, 0, "ddencmp", "", "nk:ddencmp:opt");
+    }
+    r.keepapp = Value::scalar(1.0, mr);
+    return r;
+}
+
+} // namespace numkit::wavelet

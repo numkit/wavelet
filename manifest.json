@@ -1,0 +1,26 @@
+{
+  "name": "wavelet",
+  "version": "0.1.0",
+  "description": "Wavelet Toolbox for NumKit",
+  "author": "NumKit",
+  "license": "0BSD",
+  "library": "numkit_wavelet",
+  "exports": [
+    "wfilters", "qmf", "wrev", "dbwavf", "coifwavf", "symwavf", "orthfilt",
+    "dwt", "idwt", "wavedec", "waverec", "appcoef", "detcoef", "wenergy", "upcoef",
+    "dyaddown", "dyadup", "wmaxlev", "wkeep", "wextend", "haart", "ihaart", "wrcoef",
+    "dwt2", "idwt2", "wavedec2", "waverec2", "appcoef2", "detcoef2",
+    "wthresh", "wentropy", "ddencmp", "wnoisest", "wdenoise",
+    "swt", "iswt", "modwt", "imodwt",
+    "mexihat", "morlet", "meyeraux", "shanwavf", "cmorwavf", "fbspwavf", "gauswavf", "cgauwavf"
+  ],
+  "functions": [
+    "wfilters", "qmf", "wrev", "dbwavf", "coifwavf", "symwavf", "orthfilt",
+    "dwt", "idwt", "wavedec", "waverec", "appcoef", "detcoef", "wenergy", "upcoef",
+    "dyaddown", "dyadup", "wmaxlev", "wkeep", "wextend", "haart", "ihaart", "wrcoef",
+    "dwt2", "idwt2", "wavedec2", "waverec2", "appcoef2", "detcoef2",
+    "wthresh", "wentropy", "ddencmp", "wnoisest", "wdenoise",
+    "swt", "iswt", "modwt", "imodwt",
+    "mexihat", "morlet", "meyeraux", "shanwavf", "cmorwavf", "fbspwavf", "gauswavf", "cgauwavf"
+  ]
+}
