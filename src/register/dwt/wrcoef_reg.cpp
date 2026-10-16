@@ -24,11 +24,11 @@ void wrcoef_reg(Span<const Value> args, size_t /*nargout*/,
 {
     if (args.size() < 4)
         throw Error("wrcoef: requires (type, c, l, wname[, n])",
-                    0, 0, "wrcoef", "", "nk:wrcoef:nargin");
+                    0, 0, "wrcoef", "", "numkit:wrcoef:nargin");
 
     if (!args[0].isChar() && !args[0].isString())
         throw Error("wrcoef: type must be a character vector ('a' or 'd')",
-                    0, 0, "wrcoef", "", "nk:wrcoef:type");
+                    0, 0, "wrcoef", "", "numkit:wrcoef:type");
     std::string type = args[0].toString();
     for (auto &ch : type)
         ch = static_cast<char>(std::tolower(static_cast<unsigned char>(ch)));
@@ -39,7 +39,7 @@ void wrcoef_reg(Span<const Value> args, size_t /*nargout*/,
         throw Error("wrcoef: nk only supports the wname form "
                     "wrcoef(type, c, l, wname[, n]). The (Lo_R, Hi_R) "
                     "two-filter form is not implemented.",
-                    0, 0, "wrcoef", "", "nk:wrcoef:wname");
+                    0, 0, "wrcoef", "", "numkit:wrcoef:wname");
     const std::string wname = args[3].toString();
 
     int n = -1;     // sentinel meaning "default"
@@ -50,7 +50,7 @@ void wrcoef_reg(Span<const Value> args, size_t /*nargout*/,
             const double nd = args[4].toScalar();
             if (nd < 0.0 || nd != std::floor(nd))
                 throw Error("wrcoef: level n must be a non-negative integer",
-                            0, 0, "wrcoef", "", "nk:wrcoef:level");
+                            0, 0, "wrcoef", "", "numkit:wrcoef:level");
             n = static_cast<int>(nd);
         }
     }

@@ -490,7 +490,7 @@ FilterBank wavelet_filters(const std::string &name) {
         throw Error("wfilters: unsupported wavelet name '" + name +
                     "' (try haar, db1..db10, sym2..sym10, coif1..coif5, "
                     "bior1.1..bior6.8, rbio1.1..rbio6.8)",
-                    0, 0, "wfilters", "", "nk:wfilters:name");
+                    0, 0, "wfilters", "", "numkit:wfilters:name");
     }
     const int N = s->len;
 
@@ -550,7 +550,7 @@ WFiltersResult wfilters(const std::string &name, const std::string &kind,
     } else {
         throw Error("wfilters: unknown kind '" + kind +
                     "' (expected 'd', 'r', 'l' or 'h')",
-                    0, 0, "wfilters", "", "nk:wfilters:kind");
+                    0, 0, "wfilters", "", "numkit:wfilters:kind");
     }
     return r;
 }

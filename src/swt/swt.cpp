@@ -87,7 +87,7 @@ std::pair<Value, Value> swtAD(const Value &x, int n, const std::string &wname,
 {
     if (n < 1)
         throw Error("swt: level must be ≥ 1",
-                    0, 0, "swt", "", "nk:swt:level");
+                    0, 0, "swt", "", "numkit:swt:level");
     const size_t N = x.numel();
     if (N == 0) {
         return {Value::matrix(static_cast<size_t>(n), 0, ValueType::DOUBLE, mr),
@@ -97,7 +97,7 @@ std::pair<Value, Value> swtAD(const Value &x, int n, const std::string &wname,
     const size_t needed = static_cast<size_t>(1) << n;
     if (N % needed != 0)
         throw Error("swt: signal length must be divisible by 2^n",
-                    0, 0, "swt", "", "nk:swt:size");
+                    0, 0, "swt", "", "numkit:swt:size");
 
     // Exact port of the reference swt.m: at each level the (per-extended)
     // previous approximation is CONVOLVED with the analysis filters
@@ -164,7 +164,7 @@ Value swt(const Value &x, int n, const std::string &wname, std::pmr::memory_reso
 {
     if (n < 1)
         throw Error("swt: level must be ≥ 1",
-                    0, 0, "swt", "", "nk:swt:level");
+                    0, 0, "swt", "", "numkit:swt:level");
     const size_t N = x.numel();
     if (N == 0)
         return Value::matrix(static_cast<size_t>(n + 1), 0,
@@ -218,7 +218,7 @@ Value iswtPhase(Value aRow, const Value &dSrc, size_t n,
                                 + std::to_string(need)
                                 + " columns for " + std::to_string(n)
                                 + " levels (got " + std::to_string(N) + ").",
-                            0, 0, "iswt", "", "nk:iswt:expectedVector");
+                            0, 0, "iswt", "", "numkit:iswt:expectedVector");
             }
         }
     }
@@ -242,7 +242,7 @@ Value iswtPhase(Value aRow, const Value &dSrc, size_t n,
                             + " samples exceeds its length (wavelet filter "
                             + "too long for " + std::to_string(N)
                             + " columns at " + std::to_string(H) + " rows).",
-                        0, 0, "iswt", "", "nk:iswt:badsubscript");
+                        0, 0, "iswt", "", "numkit:iswt:badsubscript");
         const size_t en = un + 2 * ext;
         std::vector<double> e(en, 0.0);
         for (size_t i = 0; i < m; ++i) e[ext + 2 * i] = x[i];
@@ -341,7 +341,7 @@ Value iswt(const Value &swa, const Value &swd, const std::string &wname,
                         + std::to_string(swa.dims().cols())
                         + ") and SWD (" + std::to_string(swd.dims().cols())
                         + ") must be the same.",
-                    0, 0, "iswt", "", "nk:iswt:InvSWTCSize");
+                    0, 0, "iswt", "", "numkit:iswt:InvSWTCSize");
     const size_t n = swd.dims().rows();
     const size_t N = swd.dims().cols();
 
@@ -378,7 +378,7 @@ Value modwt(const Value &x, int n, const std::string &wname, std::pmr::memory_re
 {
     if (n < 1)
         throw Error("modwt: level must be ≥ 1",
-                    0, 0, "modwt", "", "nk:modwt:level");
+                    0, 0, "modwt", "", "numkit:modwt:level");
     const size_t N = x.numel();
     if (N == 0)
         return Value::matrix(static_cast<size_t>(n + 1), 0,
@@ -431,7 +431,7 @@ Value imodwt(const Value &swc, const std::string &wname, std::pmr::memory_resour
     if (H < 2 || N < 2)
         throw Error("imodwt: W must be at least 2-by-2 (got a "
                         + internal::shapeOf(swc) + " array).",
-                    0, 0, "imodwt", "", "nk:imodwt:size");
+                    0, 0, "imodwt", "", "numkit:imodwt:size");
     const int n = static_cast<int>(H) - 1;
 
     auto fb = wavelet_filters(wname);

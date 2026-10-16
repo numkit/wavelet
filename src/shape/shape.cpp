@@ -127,7 +127,7 @@ fbspwavf(double lb, double ub, size_t N, int m, double fb, double fc, std::pmr::
 {
     if (m < 1)
         throw Error("fbspwavf: order m must be >= 1",
-                    0, 0, "fbspwavf", "", "nk:fbspwavf:order");
+                    0, 0, "fbspwavf", "", "numkit:fbspwavf:order");
     Value xv = linspace_row(lb, ub, N, mr);
     Value pv = Value::matrix(1, N, ValueType::COMPLEX, mr);
     if (N == 0) return {std::move(pv), std::move(xv)};

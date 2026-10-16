@@ -75,7 +75,7 @@ Wavedec2Result wavedec2(const Value &X, int n, const std::string &wname,
 {
     if (n < 1)
         throw Error("wavedec2: level must be >= 1",
-                    0, 0, "wavedec2", "", "nk:wavedec2:level");
+                    0, 0, "wavedec2", "", "numkit:wavedec2:level");
 
     const Sz xsz{ X.dims().rows(), X.dims().cols() };
 
@@ -128,11 +128,11 @@ static Value appcoef2_impl(const Value &C, const Value &S,
     const int N = static_cast<int>(S.dims().rows()) - 2;
     if (N < 1)
         throw Error("appcoef2: S must have at least 3 rows (1 level)",
-                    0, 0, "appcoef2", "", "nk:appcoef2:size");
+                    0, 0, "appcoef2", "", "numkit:appcoef2:size");
     if (level < 0) level = N;                 // default = coarsest
     if (level < 0 || level > N)
         throw Error("appcoef2: level out of range [0, N]",
-                    0, 0, "appcoef2", "", "nk:appcoef2:level");
+                    0, 0, "appcoef2", "", "numkit:appcoef2:level");
 
     auto Cv = vecFromValue(C);
 
@@ -188,10 +188,10 @@ Value detcoef2(const std::string &type, const Value &C, const Value &S,
     const int N = static_cast<int>(S.dims().rows()) - 2;
     if (N < 1)
         throw Error("detcoef2: S must have at least 3 rows (1 level)",
-                    0, 0, "detcoef2", "", "nk:detcoef2:size");
+                    0, 0, "detcoef2", "", "numkit:detcoef2:size");
     if (level < 1 || level > N)
         throw Error("detcoef2: level out of range [1, N]",
-                    0, 0, "detcoef2", "", "nk:detcoef2:level");
+                    0, 0, "detcoef2", "", "numkit:detcoef2:level");
 
     int which;   // 0 = H, 1 = V, 2 = D
     if      (type == "h" || type == "H") which = 0;
@@ -199,7 +199,7 @@ Value detcoef2(const std::string &type, const Value &C, const Value &S,
     else if (type == "d" || type == "D") which = 2;
     else
         throw Error("detcoef2: type must be 'h', 'v' or 'd' (got '" + type + "')",
-                    0, 0, "detcoef2", "", "nk:detcoef2:type");
+                    0, 0, "detcoef2", "", "numkit:detcoef2:type");
 
     // Offset: skip cA_N, then the three detail blocks for levels N..level+1.
     size_t off = sRow(S, 0).numel();
@@ -219,7 +219,7 @@ Value detcoef2(const std::string &type, const Value &C, const Value &S,
             throw Error("detcoef2: C is too short for the sizes in S "
                         "(needed " + std::to_string(off + dsz.numel())
                         + " elements, got " + std::to_string(C.numel()) + ").",
-                        0, 0, "detcoef2", "", "nk:detcoef2:size");
+                        0, 0, "detcoef2", "", "numkit:detcoef2:size");
         if (cplx) out.complexDataMut()[i] = C.complexElem(src);
         else internal::storeElem(out, i, C.elemAsDouble(src));
     }

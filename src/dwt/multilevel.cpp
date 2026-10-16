@@ -51,7 +51,7 @@ wavedec(const Value &x, int n, const std::string &wname,
 {
     if (n < 1)
         throw Error("wavedec: level must be ≥ 1",
-                    0, 0, "wavedec", "", "nk:wavedec:level");
+                    0, 0, "wavedec", "", "numkit:wavedec:level");
 
     // Run n successive single-level DWTs on the running approximation.
     // Stash each cD in `details[level-1]` (0-indexed: details[0] = cD_1
@@ -98,7 +98,7 @@ Value waverec(const Value &C, const Value &L, const std::string &wname,
     const size_t Lcount = L.numel();
     if (Lcount < 3)
         throw Error("waverec: L must have at least 3 entries (1 level)",
-                    0, 0, "waverec", "", "nk:waverec:size");
+                    0, 0, "waverec", "", "numkit:waverec:size");
     const int n = static_cast<int>(Lcount) - 2; // number of decomposition levels
     auto sliceLen = [&](size_t idx) -> size_t {
         return static_cast<size_t>(L.elemAsDouble(idx));
@@ -110,7 +110,7 @@ Value waverec(const Value &C, const Value &L, const std::string &wname,
     const size_t aLen = sliceLen(0);
     if (off + aLen > Cv.size())
         throw Error("waverec: C/L mismatch (approx)",
-                    0, 0, "waverec", "", "nk:waverec:bounds");
+                    0, 0, "waverec", "", "numkit:waverec:bounds");
     std::vector<double> running(Cv.begin() + off, Cv.begin() + off + aLen);
     off += aLen;
 
@@ -119,7 +119,7 @@ Value waverec(const Value &C, const Value &L, const std::string &wname,
         const size_t dLen = sliceLen(1 + k);
         if (off + dLen > Cv.size())
             throw Error("waverec: C/L mismatch (detail)",
-                        0, 0, "waverec", "", "nk:waverec:bounds");
+                        0, 0, "waverec", "", "numkit:waverec:bounds");
         std::vector<double> detail(Cv.begin() + off, Cv.begin() + off + dLen);
         off += dLen;
 
@@ -147,12 +147,12 @@ static Value appcoef_with_filters(const Value &C, const Value &L,
     const size_t Lcount = L.numel();
     if (Lcount < 3)
         throw Error("appcoef: L too short",
-                    0, 0, "appcoef", "", "nk:appcoef:size");
+                    0, 0, "appcoef", "", "numkit:appcoef:size");
     const int nMax = static_cast<int>(Lcount) - 2;
     if (level < 0) level = nMax;          // default = coarsest
     if (level < 0 || level > nMax)
         throw Error("appcoef: level out of range",
-                    0, 0, "appcoef", "", "nk:appcoef:level");
+                    0, 0, "appcoef", "", "numkit:appcoef:level");
 
     auto Cv = vecFromValue(C);
     auto sliceLen = [&](size_t idx) -> size_t {
@@ -202,11 +202,11 @@ Value detcoef(const Value &C, const Value &L, int level,
     const size_t Lcount = L.numel();
     if (Lcount < 3)
         throw Error("detcoef: L too short",
-                    0, 0, "detcoef", "", "nk:detcoef:size");
+                    0, 0, "detcoef", "", "numkit:detcoef:size");
     const int nMax = static_cast<int>(Lcount) - 2;
     if (level < 1 || level > nMax)
         throw Error("detcoef: level out of range",
-                    0, 0, "detcoef", "", "nk:detcoef:level");
+                    0, 0, "detcoef", "", "numkit:detcoef:level");
 
     // C layout: [cA_n, cD_n, cD_{n-1}, ..., cD_1].
     // Detail at MATLAB level `level` (1=finest, nMax=coarsest) lives
@@ -224,7 +224,7 @@ Value detcoef(const Value &C, const Value &L, int level,
     auto Cv = vecFromValue(C);
     if (off + dLen > Cv.size())
         throw Error("detcoef: C/L bounds",
-                    0, 0, "detcoef", "", "nk:detcoef:bounds");
+                    0, 0, "detcoef", "", "numkit:detcoef:bounds");
     std::vector<double> out(Cv.begin() + off, Cv.begin() + off + dLen);
     return rowFromVec(out, mr);
 }
@@ -236,7 +236,7 @@ WenergyResult wenergy(const Value &C, const Value &L,
     auto Lv = vecFromValue(L);
     if (Lv.size() < 3)
         throw Error("wenergy: L must have at least 3 entries (a + 1 detail + length)",
-                    0, 0, "wenergy", "", "nk:wenergy:L");
+                    0, 0, "wenergy", "", "numkit:wenergy:L");
     const size_t nLev = Lv.size() - 2;   // number of detail levels
 
     auto energy = [&](size_t off, size_t len) {
@@ -287,10 +287,10 @@ Value upcoef(const std::string &type, const Value &X, const std::string &wname,
 {
     if (type != "a" && type != "d")
         throw Error("upcoef: type must be 'a' (approximation) or 'd' (detail)",
-                    0, 0, "upcoef", "", "nk:upcoef:type");
+                    0, 0, "upcoef", "", "numkit:upcoef:type");
     if (n < 0)
         throw Error("upcoef: N must be >= 0",
-                    0, 0, "upcoef", "", "nk:upcoef:N");
+                    0, 0, "upcoef", "", "numkit:upcoef:N");
 
     auto fb = wavelet_filters(wname);
     auto y = vecFromValue(X);

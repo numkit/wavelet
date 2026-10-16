@@ -59,10 +59,10 @@ Value wthresh(const Value &X, const std::string &sorh, const Value &T,
     if (!hard && !soft)
         throw Error("wthresh: SORH must be 's' (soft) or 'h' (hard) — got '"
                         + sorh + "'",
-                    0, 0, "wthresh", "", "nk:wthresh:sorh");
+                    0, 0, "wthresh", "", "numkit:wthresh:sorh");
     if (T.type() == ValueType::COMPLEX)
         throw Error("wthresh: input 3 (T) must be real.",
-                    0, 0, "wthresh", "", "nk:wthresh:mustBeReal");
+                    0, 0, "wthresh", "", "numkit:wthresh:mustBeReal");
     const bool elemT = T.numel() != 1;
     if (elemT && (T.dims().rows() != X.dims().rows()
                   || T.dims().cols() != X.dims().cols()))
@@ -70,7 +70,7 @@ Value wthresh(const Value &X, const std::string &sorh, const Value &T,
                         "size as X (got a " + internal::shapeOf(T) + " "
                         + mtypeName(T.type()) + " array for a "
                         + internal::shapeOf(X) + " X).",
-                    0, 0, "wthresh", "", "nk:wthresh:size");
+                    0, 0, "wthresh", "", "numkit:wthresh:size");
 
     const size_t N = X.numel();
     const ValueType outT =
@@ -228,12 +228,12 @@ Value wentropy(const Value &X, const std::string &type, double param,
     } else if (t == "norm") {
         if (param < 1.0)
             throw Error("wentropy: 'norm' exponent P must be >= 1",
-                        0, 0, "wentropy", "", "nk:wentropy:norm");
+                        0, 0, "wentropy", "", "numkit:wentropy:norm");
         for (double v : x) e += std::pow(std::fabs(v), param);
     } else {
         throw Error("wentropy: unknown type '" + type +
                         "' (shannon / log energy / threshold / sure / norm)",
-                    0, 0, "wentropy", "", "nk:wentropy:type");
+                    0, 0, "wentropy", "", "numkit:wentropy:type");
     }
     return Value::scalar(e, mr);
 }
@@ -252,10 +252,10 @@ DdencmpResult ddencmp(const std::string &opt, const std::string &type,
     if (t == "wp")
         throw Error("ddencmp: wavelet-packet ('wp') defaults are not yet "
                     "supported (use 'wv')",
-                    0, 0, "ddencmp", "", "nk:ddencmp:wp");
+                    0, 0, "ddencmp", "", "numkit:ddencmp:wp");
     if (t != "wv")
         throw Error("ddencmp: type must be 'wv' (wavelet) or 'wp'",
-                    0, 0, "ddencmp", "", "nk:ddencmp:type");
+                    0, 0, "ddencmp", "", "numkit:ddencmp:type");
 
     // Noise level from the finest-detail coefficients of a 1-level db1 DWT.
     auto [cA, cD] = dwt(x, "db1", mr);
@@ -273,7 +273,7 @@ DdencmpResult ddencmp(const std::string &opt, const std::string &type,
         r.sorh = Value::fromString("h", mr);
     } else {
         throw Error("ddencmp: option must be 'den' (denoise) or 'cmp' (compress)",
-                    0, 0, "ddencmp", "", "nk:ddencmp:opt");
+                    0, 0, "ddencmp", "", "numkit:ddencmp:opt");
     }
     r.keepapp = Value::scalar(1.0, mr);
     return r;

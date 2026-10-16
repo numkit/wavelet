@@ -23,7 +23,7 @@ namespace detail {
 static std::string argString(const Value &v) {
     if (!v.isChar() && !v.isString())
         throw Error("wavelet: expected string argument",
-                    0, 0, "", "", "nk:wavelet:type");
+                    0, 0, "", "", "numkit:wavelet:type");
     return v.toString();
 }
 
@@ -32,7 +32,7 @@ void dwt2_reg(Span<const Value> args, size_t /*nargout*/, Span<Value> outs,
 {
     if (args.size() < 2)
         throw Error("dwt2: requires (X, wname)",
-                    0, 0, "dwt2", "", "nk:dwt2:nargin");
+                    0, 0, "dwt2", "", "numkit:dwt2:nargin");
     auto *mr = ctx.engine->resource();
     auto r = dwt2(args[0], argString(args[1]), mr);
     if (outs.size() >= 1) outs[0] = std::move(r.cA);
@@ -55,11 +55,11 @@ void idwt2_reg(Span<const Value> args, size_t /*nargout*/, Span<Value> outs,
             // ignored — natural size
         } else if (sx.type() == ValueType::COMPLEX) {
             throw Error("idwt2: input 6 (SIZ) must be real.",
-                        0, 0, "idwt2", "", "nk:idwt2:mustBeReal");
+                        0, 0, "idwt2", "", "numkit:idwt2:mustBeReal");
         } else if (sx.numel() == 1) {
             throw Error("idwt2: input 6 (SIZ) must be a two-element "
                         "[rows cols] size vector.",
-                        0, 0, "idwt2", "", "nk:idwt2:size");
+                        0, 0, "idwt2", "", "numkit:idwt2:size");
         } else if (sx.numel() >= 2) {
             outRows = static_cast<long long>(sx.elemAsDouble(0));
             outCols = static_cast<long long>(sx.elemAsDouble(1));

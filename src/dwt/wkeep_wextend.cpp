@@ -78,11 +78,11 @@ Value wkeep(const Value &x, const Value &len, const Value &opt,
     if (x.dims().ndim() > 2)
         throw Error("wkeep: X must be a vector or a 2-D matrix (got a "
                         + internal::shapeOf(x) + " array).",
-                    0, 0, "wkeep", "", "nk:wkeep:inputType");
+                    0, 0, "wkeep", "", "numkit:wkeep:inputType");
     if (len.isChar() || len.isString())
         throw Error("wkeep: input 2 (L) must be numeric (got a "
                         + std::string(mtypeName(len.type())) + " array).",
-                    0, 0, "wkeep", "", "nk:wkeep:inputType");
+                    0, 0, "wkeep", "", "numkit:wkeep:inputType");
 
     size_t rows, cols;
     readShape(x, rows, cols);
@@ -126,7 +126,7 @@ Value wkeep(const Value &x, const Value &len, const Value &opt,
             // its generic invalid-argument diagnostic.
             throw Error("wkeep: invalid optional argument FIRST (expected "
                         "'c', 'l', 'r' or a [firstRow firstCol] pair).",
-                        0, 0, "wkeep", "", "nk:wkeep:opt");
+                        0, 0, "wkeep", "", "numkit:wkeep:opt");
         } else {
             // Central — same formula as 1-D: floor((N - n) / 2) + 1.
             fr1 = static_cast<long long>((rows - static_cast<size_t>(R)) / 2) + 1;
@@ -136,7 +136,7 @@ Value wkeep(const Value &x, const Value &len, const Value &opt,
             fr1 + R - 1 > static_cast<long long>(rows) ||
             fc1 + C - 1 > static_cast<long long>(cols))
             throw Error("wkeep: requested window is out of range.",
-                        0, 0, "wkeep", "", "nk:wkeep:range");
+                        0, 0, "wkeep", "", "numkit:wkeep:range");
 
         const bool cplx = x.type() == ValueType::COMPLEX;
         Value y = cplx ? Value::complexMatrix(static_cast<size_t>(R),
@@ -163,7 +163,7 @@ Value wkeep(const Value &x, const Value &len, const Value &opt,
         throw Error("wkeep: input 2 (L) must be a scalar length or a "
                         "[R C] pair (got a " + internal::shapeOf(len)
                         + " array).",
-                    0, 0, "wkeep", "", "nk:wkeep:inputType");
+                    0, 0, "wkeep", "", "numkit:wkeep:inputType");
     const double nD = len.elemAsDouble(0);
     if (!validKeepLen(nD, static_cast<long long>(N)))
         return internal::copyInClass(x, mr);
@@ -182,13 +182,13 @@ Value wkeep(const Value &x, const Value &len, const Value &opt,
             else
                 throw Error("wkeep: unknown option '" + s +
                             "' (expected 'c', 'l', 'r' or a numeric start)",
-                            0, 0, "wkeep", "", "nk:wkeep:opt");
+                            0, 0, "wkeep", "", "numkit:wkeep:opt");
         } else {
             const double f = opt.elemAsDouble(0);
             if (f != std::floor(f))
                 throw Error("wkeep: optional argument FIRST must be an "
                             "integer start index.",
-                            0, 0, "wkeep", "", "nk:wkeep:opt");
+                            0, 0, "wkeep", "", "numkit:wkeep:opt");
             start1 = static_cast<long long>(f);
         }
     } else {
@@ -196,7 +196,7 @@ Value wkeep(const Value &x, const Value &len, const Value &opt,
     }
     if (start1 < 1 || start1 + n - 1 > static_cast<long long>(N))
         throw Error("wkeep: requested window is out of range.",
-                    0, 0, "wkeep", "", "nk:wkeep:range");
+                    0, 0, "wkeep", "", "numkit:wkeep:range");
 
     const bool col = isCol(rows, cols);
     size_t outRows, outCols;
@@ -372,19 +372,19 @@ void parseExtLf(const Value &lf, const char *fn,
     if (lf.type() == ValueType::COMPLEX)
         throw Error(std::string(fn) + ": input 4 (L) must be a nonnegative "
                     "integer (got a complex value).",
-                    0, 0, fn, "", std::string("nk:") + fn + ":expectedInteger");
+                    0, 0, fn, "", std::string("numkit:") + fn + ":expectedInteger");
     if (lf.isCell() || lf.isStruct() || lf.isChar() || lf.isString())
         throw Error(std::string(fn) + ": input 4 (L) must be numeric.",
-                    0, 0, fn, "", std::string("nk:") + fn + ":expectedInteger");
+                    0, 0, fn, "", std::string("numkit:") + fn + ":expectedInteger");
     if (lf.numel() == 2 && twoDim) {
         const double a = lf.elemAsDouble(0);
         const double b = lf.elemAsDouble(1);
         if (a < 0 || b < 0)
             throw Error(std::string(fn) + ": input 4 (L) must be nonnegative.",
-                        0, 0, fn, "", std::string("nk:") + fn + ":expectedNonnegative");
+                        0, 0, fn, "", std::string("numkit:") + fn + ":expectedNonnegative");
         if (a != std::floor(a) || b != std::floor(b))
             throw Error(std::string(fn) + ": input 4 (L) must be an integer.",
-                        0, 0, fn, "", std::string("nk:") + fn + ":expectedInteger");
+                        0, 0, fn, "", std::string("numkit:") + fn + ":expectedInteger");
         lfRows = static_cast<long long>(a);
         lfCols = static_cast<long long>(b);
         return;
@@ -392,14 +392,14 @@ void parseExtLf(const Value &lf, const char *fn,
     if (lf.numel() != 1)
         throw Error(std::string(fn) + ": input 4 (L) must be a scalar "
                     "nonnegative integer.",
-                    0, 0, fn, "", std::string("nk:") + fn + ":expectedInteger");
+                    0, 0, fn, "", std::string("numkit:") + fn + ":expectedInteger");
     const double v = lf.elemAsDouble(0);
     if (v < 0)
         throw Error(std::string(fn) + ": input 4 (L) must be nonnegative.",
-                    0, 0, fn, "", std::string("nk:") + fn + ":expectedNonnegative");
+                    0, 0, fn, "", std::string("numkit:") + fn + ":expectedNonnegative");
     if (v != std::floor(v))
         throw Error(std::string(fn) + ": input 4 (L) must be an integer.",
-                    0, 0, fn, "", std::string("nk:") + fn + ":expectedInteger");
+                    0, 0, fn, "", std::string("numkit:") + fn + ":expectedInteger");
     lfRows = lfCols = static_cast<long long>(v);
 }
 
@@ -424,16 +424,16 @@ Value wextend(const Value &type, const std::string &modeRaw, const Value &x,
         else if (s == "ac") { dim = 2; extRows = false; extCols = true; }
         else
             throw Error("wextend: TYPE must be 1, '1d', 2, '2d', 'ar' or 'ac'",
-                        0, 0, "wextend", "", "nk:wextend:dim");
+                        0, 0, "wextend", "", "numkit:wextend:dim");
     } else if (type.numel() == 1 && !type.isCell() && !type.isStruct()) {
         const int t = static_cast<int>(type.elemAsDouble(0));
         if (t != 1 && t != 2)
             throw Error("wextend: TYPE must be 1, '1d', 2, '2d', 'ar' or 'ac'",
-                        0, 0, "wextend", "", "nk:wextend:dim");
+                        0, 0, "wextend", "", "numkit:wextend:dim");
         dim = t;
     } else {
         throw Error("wextend: TYPE must be 1, '1d', 2, '2d', 'ar' or 'ac'",
-                    0, 0, "wextend", "", "nk:wextend:dim");
+                    0, 0, "wextend", "", "numkit:wextend:dim");
     }
 
     // Class gate: double / single / integer classes, complex allowed;
@@ -444,7 +444,7 @@ Value wextend(const Value &type, const std::string &modeRaw, const Value &x,
     if (x.dims().ndim() > 2)
         throw Error("wextend: X must be a vector or a 2-D matrix (got a "
                         + internal::shapeOf(x) + " array).",
-                    0, 0, "wextend", "", "nk:wextend:inputType");
+                    0, 0, "wextend", "", "numkit:wextend:inputType");
 
     const std::string mode = lower(modeRaw);
     static const char *kModes[] = {"sym", "symh", "symw",
@@ -457,7 +457,7 @@ Value wextend(const Value &type, const std::string &modeRaw, const Value &x,
         throw Error("wextend: unsupported mode '" + mode +
                     "' (supported: sym/symh/symw, asym/asymh/asymw, "
                     "sp0/sp1/spd, per, zpd, ppd)",
-                    0, 0, "wextend", "", "nk:wextend:mode");
+                    0, 0, "wextend", "", "numkit:wextend:mode");
 
     long long lfRows = 0, lfCols = 0;
     parseExtLf(lf, "wextend", lfRows, lfCols, dim == 2);

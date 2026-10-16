@@ -87,7 +87,7 @@ dwt_with_filters(const Value &x,
     const size_t Lf = Lo_D.size();
     if (Lf < 2 || Hi_D.size() != Lf)
         throw Error("dwt: filter length < 2 or Lo_D/Hi_D length mismatch",
-                    0, 0, "dwt", "", "nk:dwt:filt");
+                    0, 0, "dwt", "", "numkit:dwt:filt");
 
     const size_t N = x.numel();
     if (N == 0)
@@ -161,7 +161,7 @@ Value idwt_with_filters(const Value &cA, const Value &cD,
     const size_t Lf = Lo_R.size();
     if (Lf < 2 || Hi_R.size() != Lf)
         throw Error("idwt: filter length < 2 or Lo_R/Hi_R length mismatch",
-                    0, 0, "idwt", "", "nk:idwt:filt");
+                    0, 0, "idwt", "", "numkit:idwt:filt");
 
     const size_t la = cA.numel();
     const size_t ld = cD.numel();

@@ -42,7 +42,7 @@ void wkeep_reg(Span<const Value> args, size_t /*nargout*/,
 {
     if (args.size() < 2)
         throw Error("wkeep: requires (x, n[, OPT]) or (X, [R C][, [fr fc]])",
-                    0, 0, "wkeep", "", "nk:wkeep:nargin");
+                    0, 0, "wkeep", "", "numkit:wkeep:nargin");
     outs[0] = wkeep(args[0], args[1],
                     args.size() >= 3 ? args[2] : Value::Empty,
                     ctx.engine->resource());
@@ -60,12 +60,12 @@ void wextend_reg(Span<const Value> args, size_t /*nargout*/,
 {
     if (args.size() < 4)
         throw Error("wextend: requires (type, mode, x, lf[, side])",
-                    0, 0, "wextend", "", "nk:wextend:nargin");
+                    0, 0, "wextend", "", "numkit:wextend:nargin");
 
     argcheck::checkNargin(args.size(), 4, 5, "wextend");
     if (!args[1].isChar() && !args[1].isString())
         throw Error("wextend: mode must be a character vector",
-                    0, 0, "wextend", "", "nk:wextend:mode");
+                    0, 0, "wextend", "", "numkit:wextend:mode");
     std::string side = "b";
     if (args.size() >= 5 && (args[4].isChar() || args[4].isString()))
         side = args[4].toString();

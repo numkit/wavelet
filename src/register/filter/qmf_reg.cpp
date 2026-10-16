@@ -32,7 +32,7 @@ void wrev_reg(Span<const Value> args, size_t /*nargout*/,
 {
     if (args.empty())
         throw Error("wrev: requires one input vector",
-                    0, 0, "wrev", "", "nk:wrev:nargin");
+                    0, 0, "wrev", "", "numkit:wrev:nargin");
     outs[0] = wrev(args[0], ctx.engine->resource());
 }
 
@@ -48,7 +48,7 @@ void qmf_reg(Span<const Value> args, size_t /*nargout*/,
 {
     if (args.empty())
         throw Error("qmf: requires one input vector",
-                    0, 0, "qmf", "", "nk:qmf:nargin");
+                    0, 0, "qmf", "", "numkit:qmf:nargin");
     int p = 0;
     if (args.size() >= 2)
         p = argcheck::expectedInteger(

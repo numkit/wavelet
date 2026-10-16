@@ -104,14 +104,14 @@ inline void requireWaveClass(const Value &v, std::string_view fn,
                         + "complex data is rejected here (got a "
                         + shapeOf(v) + " complex array).",
                     0, 0, std::string(fn), "",
-                    "nk:" + std::string(fn) + ":expectedReal");
+                    "numkit:" + std::string(fn) + ":expectedReal");
     if (!classAllowed(v, mask))
         throw Error(std::string(fn) + ": input " + std::to_string(argNum)
                         + " (" + std::string(argName) + ") must be "
                         + describeClasses(mask) + " (got a " + shapeOf(v)
                         + " " + mtypeName(t) + " array).",
                     0, 0, std::string(fn), "",
-                    "nk:" + std::string(fn) + ":inputType");
+                    "numkit:" + std::string(fn) + ":inputType");
 }
 
 /// @brief Nonempty gate (meyeraux, iswt): the reference rejects empty
@@ -124,7 +124,7 @@ inline void requireNonempty(const Value &v, std::string_view fn,
     throw Error(std::string(fn) + ": input " + std::to_string(argNum)
                     + " (" + std::string(argName) + ") must be nonempty.",
                 0, 0, std::string(fn), "",
-                "nk:" + std::string(fn) + ":expectedNonempty");
+                "numkit:" + std::string(fn) + ":expectedNonempty");
 }
 
 /// @brief Store one element into a typed matrix (saturation mirrors the

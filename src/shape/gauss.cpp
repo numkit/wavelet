@@ -96,7 +96,7 @@ gauswavf(double lb, double ub, size_t N, int p, std::pmr::memory_resource *mr)
     if (N == 0) return {std::move(pv), std::move(xv)};
     if (p < 1)
         throw Error("gauswavf: derivative order p must be ≥ 1",
-                    0, 0, "gauswavf", "", "nk:gauswavf:p");
+                    0, 0, "gauswavf", "", "numkit:gauswavf:p");
 
     const double *xd = xv.doubleData();
     double *pd = pv.doubleDataMut();
@@ -120,7 +120,7 @@ cgauwavf(double lb, double ub, size_t N, int p, std::pmr::memory_resource *mr)
     if (N == 0) return {std::move(pv), std::move(xv)};
     if (p < 1)
         throw Error("cgauwavf: derivative order p must be ≥ 1",
-                    0, 0, "cgauwavf", "", "nk:cgauwavf:p");
+                    0, 0, "cgauwavf", "", "numkit:cgauwavf:p");
 
     const double *xd = xv.doubleData();
     Complex *pd = pv.complexDataMut();

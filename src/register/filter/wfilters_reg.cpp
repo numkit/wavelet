@@ -21,7 +21,7 @@ namespace detail {
 static std::string argString(const Value &v) {
     if (!v.isChar() && !v.isString())
         throw Error("wavelet: expected a string argument",
-                    0, 0, "", "", "nk:wavelet:type");
+                    0, 0, "", "", "numkit:wavelet:type");
     return v.toString();
 }
 
@@ -30,7 +30,7 @@ void wfilters_reg(Span<const Value> args, size_t nargout, Span<Value> outs,
 {
     if (args.empty())
         throw Error("wfilters: requires the wavelet name",
-                    0, 0, "wfilters", "", "nk:wfilters:nargin");
+                    0, 0, "wfilters", "", "numkit:wfilters:nargin");
     const std::string name = argString(args[0]);
     std::string kind;
     if (args.size() >= 2) kind = argString(args[1]);

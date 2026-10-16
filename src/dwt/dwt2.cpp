@@ -218,7 +218,7 @@ Value idwt2(const Value &cA, const Value &cH,
             throw Error("idwt2: cA, cH, cV and cD must have the same size "
                         "(got " + internal::shapeOf(cA) + " and "
                         + internal::shapeOf(*coefs[k]) + ").",
-                        0, 0, "idwt2", "", "nk:idwt2:size");
+                        0, 0, "idwt2", "", "numkit:idwt2:size");
     }
 
     const bool allEmpty = cA.numel() == 0 && cH.numel() == 0
@@ -298,7 +298,7 @@ Value idwt2(const Value &cA, const Value &cH,
             throw Error("idwt2: input 6 (SIZ) exceeds the natural "
                         "reconstruction size " + std::to_string(natR)
                         + "x" + std::to_string(natC) + ".",
-                        0, 0, "idwt2", "", "nk:idwt2:size");
+                        0, 0, "idwt2", "", "numkit:idwt2:size");
         const std::size_t r0 = (natR - keepR) / 2;
         const std::size_t c0 = (natC - keepC) / 2;
         auto crop = [&](const Value &src) {

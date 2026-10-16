@@ -20,7 +20,7 @@ namespace detail {
 static std::string argString(const Value &v) {
     if (!v.isChar() && !v.isString())
         throw Error("wavelet: expected string argument",
-                    0, 0, "", "", "nk:wavelet:type");
+                    0, 0, "", "", "numkit:wavelet:type");
     return v.toString();
 }
 
@@ -37,7 +37,7 @@ void wnoisest_reg(Span<const Value> args, size_t /*nargout*/, Span<Value> outs,
 {
     if (args.size() < 3)
         throw Error("wnoisest: requires (C, L, S)",
-                    0, 0, "wnoisest", "", "nk:wnoisest:nargin");
+                    0, 0, "wnoisest", "", "numkit:wnoisest:nargin");
     outs[0] = wnoisest(args[0], args[1], args[2], ctx.engine->resource());
 }
 
@@ -46,7 +46,7 @@ void wdenoise_reg(Span<const Value> args, size_t /*nargout*/, Span<Value> outs,
 {
     if (args.empty())
         throw Error("wdenoise: requires the signal",
-                    0, 0, "wdenoise", "", "nk:wdenoise:nargin");
+                    0, 0, "wdenoise", "", "numkit:wdenoise:nargin");
     int level = -1;
     if (args.size() >= 2 && !args[1].isEmpty())
         level = argcheck::expectedPositiveInteger(
@@ -62,7 +62,7 @@ void wentropy_reg(Span<const Value> args, size_t /*nargout*/, Span<Value> outs,
 {
     if (args.size() < 2)
         throw Error("wentropy: requires (X, T [, P])",
-                    0, 0, "wentropy", "", "nk:wentropy:nargin");
+                    0, 0, "wentropy", "", "numkit:wentropy:nargin");
     const double param = (args.size() >= 3) ? args[2].toScalar() : 0.0;
     outs[0] = wentropy(args[0], argString(args[1]), param, ctx.engine->resource());
 }
@@ -72,7 +72,7 @@ void ddencmp_reg(Span<const Value> args, size_t /*nargout*/, Span<Value> outs,
 {
     if (args.size() < 3)
         throw Error("ddencmp: requires (opt, type, x)",
-                    0, 0, "ddencmp", "", "nk:ddencmp:nargin");
+                    0, 0, "ddencmp", "", "numkit:ddencmp:nargin");
     auto r = ddencmp(argString(args[0]), argString(args[1]), args[2],
                      ctx.engine->resource());
     if (outs.size() >= 1) outs[0] = std::move(r.thr);

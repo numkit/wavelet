@@ -94,10 +94,10 @@ DetailLevel grab_level(const Value &d, bool isCell, size_t idx,
     const Value &m = isCell ? d.cellAt(idx) : d;
     if (m.numel() == 0)
         throw Error("ihaart: detail level is empty",
-                    0, 0, "ihaart", "", "nk:ihaart:detail");
+                    0, 0, "ihaart", "", "numkit:ihaart:detail");
     if (m.isComplex())
         throw Error("ihaart: expected input number 2, D, to be real",
-                    0, 0, "ihaart", "", "nk:ihaart:complexD");
+                    0, 0, "ihaart", "", "numkit:ihaart:complexD");
 
     // Detail shape is read directly (no row-↔-column coercion). For a
     // vector-input haart this is rows×1; for a matrix-input haart at
@@ -108,7 +108,7 @@ DetailLevel grab_level(const Value &d, bool isCell, size_t idx,
     if (rows != expectedRows || cols != expectedCols)
         throw Error("ihaart: detail dimensions are inconsistent with the "
                     "approximation",
-                    0, 0, "ihaart", "", "nk:ihaart:dimMismatch");
+                    0, 0, "ihaart", "", "numkit:ihaart:dimMismatch");
 
     const size_t mn = rows * cols;
 
@@ -132,7 +132,7 @@ Value ihaart(const Value &aV, const Value &dV, int level, bool integer,
 {
     if (aV.numel() == 0)
         throw Error("ihaart: expected input number 1, A, to be nonempty",
-                    0, 0, "ihaart", "", "nk:ihaart:emptyA");
+                    0, 0, "ihaart", "", "numkit:ihaart:emptyA");
 
     // Probed R2025b class contract: a and d are double/single; a may be
     // complex (complex result), d must be real; logical / integer / char
@@ -157,29 +157,29 @@ Value ihaart(const Value &aV, const Value &dV, int level, bool integer,
         const size_t nc = dV.dims().rows() * dV.dims().cols();
         if (nc == 0)
             throw Error("ihaart: detail cell array is empty",
-                        0, 0, "ihaart", "", "nk:ihaart:emptyD");
+                        0, 0, "ihaart", "", "numkit:ihaart:emptyD");
         Nlevels = nc;
     } else {
         if (dV.numel() == 0)
             throw Error("ihaart: detail array is empty",
-                        0, 0, "ihaart", "", "nk:ihaart:emptyD");
+                        0, 0, "ihaart", "", "numkit:ihaart:emptyD");
         if (dV.isComplex())
             throw Error("ihaart: expected input number 2, D, to be real",
-                        0, 0, "ihaart", "", "nk:ihaart:complexD");
+                        0, 0, "ihaart", "", "numkit:ihaart:complexD");
         Nlevels = 1;
     }
 
     if (level < 0)
         throw Error("ihaart: expected input number 3, LEVEL, to be a scalar "
                     "with value >= 0",
-                    0, 0, "ihaart", "", "nk:ihaart:level");
+                    0, 0, "ihaart", "", "numkit:ihaart:level");
     if (level >= static_cast<int>(Nlevels))
         throw Error("ihaart: expected input number 3, LEVEL, to be a scalar "
                     "with value < " + std::to_string(Nlevels),
-                    0, 0, "ihaart", "", "nk:ihaart:level");
+                    0, 0, "ihaart", "", "numkit:ihaart:level");
     if (integer && aV.isComplex())
         throw Error("ihaart: integer mode is not supported for complex data",
-                    0, 0, "ihaart", "", "nk:ihaart:flag");
+                    0, 0, "ihaart", "", "numkit:ihaart:flag");
 
     // `a` is always shaped to match the detail dimensions (haart emits
     // columns for vector inputs), so the matrix shape is read directly.

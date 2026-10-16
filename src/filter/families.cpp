@@ -72,7 +72,7 @@ Value dbwavf(const std::string &name, std::pmr::memory_resource *mr)
 {
     if (name.rfind("db", 0) != 0 && name != "haar")
         throw Error("dbwavf: name must be 'haar' or 'dbN' (got '" + name + "')",
-                    0, 0, "dbwavf", "", "nk:dbwavf:name");
+                    0, 0, "dbwavf", "", "numkit:dbwavf:name");
     return family_scaling(mr, name);
 }
 
@@ -80,7 +80,7 @@ Value coifwavf(const std::string &name, std::pmr::memory_resource *mr)
 {
     if (name.rfind("coif", 0) != 0)
         throw Error("coifwavf: name must be 'coifK' (got '" + name + "')",
-                    0, 0, "coifwavf", "", "nk:coifwavf:name");
+                    0, 0, "coifwavf", "", "numkit:coifwavf:name");
     return family_scaling(mr, name);
 }
 
@@ -88,7 +88,7 @@ Value symwavf(const std::string &name, std::pmr::memory_resource *mr)
 {
     if (name.rfind("sym", 0) != 0)
         throw Error("symwavf: name must be 'symN' (got '" + name + "')",
-                    0, 0, "symwavf", "", "nk:symwavf:name");
+                    0, 0, "symwavf", "", "numkit:symwavf:name");
     return family_scaling(mr, name);
 }
 
@@ -97,7 +97,7 @@ OrthfiltResult orthfilt(const Value &W, std::pmr::memory_resource *mr)
     const size_t N = W.numel();
     if (N == 0)
         throw Error("orthfilt: scaling filter must be non-empty",
-                    0, 0, "orthfilt", "", "nk:orthfilt:empty");
+                    0, 0, "orthfilt", "", "numkit:orthfilt:empty");
 
     std::vector<double> Lo_R(N), Lo_D(N), Hi_R(N), Hi_D(N);
     for (size_t k = 0; k < N; ++k)

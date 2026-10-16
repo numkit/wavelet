@@ -180,7 +180,7 @@ Value wmaxlev(const Value &N, const std::string &wname,
     const size_t k = N.numel();
     if (k == 0)
         throw Error("wmaxlev: N must not be empty",
-                    0, 0, "wmaxlev", "", "nk:wmaxlev:empty");
+                    0, 0, "wmaxlev", "", "numkit:wmaxlev:empty");
     double Nmin = N.elemAsDouble(0);
     for (size_t i = 1; i < k; ++i) {
         const double v = N.elemAsDouble(i);
@@ -191,7 +191,7 @@ Value wmaxlev(const Value &N, const std::string &wname,
     const size_t Lf = fb.Lo_D.size();
     if (Lf < 2)
         throw Error("wmaxlev: filter length must be ≥ 2",
-                    0, 0, "wmaxlev", "", "nk:wmaxlev:filter");
+                    0, 0, "wmaxlev", "", "numkit:wmaxlev:filter");
 
     double L = 0.0;
     if (Nmin >= static_cast<double>(Lf - 1) + 1.0) {

@@ -35,12 +35,12 @@ static int parseGaussOrder(const Value &arg, const char *prefix, const char *fn)
         if (s.size() <= plen || s.compare(0, plen, prefix) != 0)
             throw Error(std::string(fn) + ": bad wname '" + s +
                         "' (expected " + prefix + "N)",
-                         0, 0, fn, "", "nk:wname");
+                         0, 0, fn, "", "numkit:wname");
         try { return std::stoi(s.substr(plen)); }
         catch (...) {
             throw Error(std::string(fn) + ": bad wname '" + s +
                         "' (cannot parse order N)",
-                         0, 0, fn, "", "nk:wname");
+                         0, 0, fn, "", "numkit:wname");
         }
     }
     return argcheck::expectedInteger(
@@ -52,7 +52,7 @@ void gauswavf_reg(Span<const Value> args, size_t nargout,
 {
     if (args.size() < 3)
         throw Error("gauswavf: requires (LB, UB, N[, p|'gausN'])",
-                    0, 0, "gauswavf", "", "nk:gauswavf:nargin");
+                    0, 0, "gauswavf", "", "numkit:gauswavf:nargin");
     const double lb = args[0].toScalar();
     const double ub = args[1].toScalar();
     const size_t N  = static_cast<size_t>(argcheck::expectedPositiveInteger(
@@ -69,7 +69,7 @@ void cgauwavf_reg(Span<const Value> args, size_t nargout,
 {
     if (args.size() < 3)
         throw Error("cgauwavf: requires (LB, UB, N[, p|'cgauN'])",
-                    0, 0, "cgauwavf", "", "nk:cgauwavf:nargin");
+                    0, 0, "cgauwavf", "", "numkit:cgauwavf:nargin");
     const double lb = args[0].toScalar();
     const double ub = args[1].toScalar();
     const size_t N  = static_cast<size_t>(argcheck::expectedPositiveInteger(

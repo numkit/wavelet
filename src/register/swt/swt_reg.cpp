@@ -23,7 +23,7 @@ namespace detail {
 static std::string argString(const Value &v) {
     if (!v.isChar() && !v.isString())
         throw Error("wavelet: expected string argument",
-                    0, 0, "", "", "nk:wavelet:type");
+                    0, 0, "", "", "numkit:wavelet:type");
     return v.toString();
 }
 
@@ -32,7 +32,7 @@ void swt_reg(Span<const Value> args, size_t nargout, Span<Value> outs,
 {
     if (args.size() < 3)
         throw Error("swt: requires (x, n, wname)",
-                    0, 0, "swt", "", "nk:swt:nargin");
+                    0, 0, "swt", "", "numkit:swt:nargin");
     const int lev = argcheck::expectedPositiveInteger(
         argcheck::expectedReal(args[1], 2, "level", "swt"), 2, "level", "swt");
     auto *mr = ctx.engine->resource();
@@ -58,7 +58,7 @@ void iswt_reg(Span<const Value> args, size_t /*nargout*/, Span<Value> outs,
     auto *mr = ctx.engine->resource();
     if (args.size() < 2)
         throw Error("iswt: requires (swc, wname) or (swa, swd, wname)",
-                    0, 0, "iswt", "", "nk:iswt:nargin");
+                    0, 0, "iswt", "", "numkit:iswt:nargin");
     const bool a3text = args.size() >= 3 && (args[2].isChar()
                                              || args[2].isString());
     const bool a2text = args[1].isChar() || args[1].isString();
@@ -73,13 +73,13 @@ void iswt_reg(Span<const Value> args, size_t /*nargout*/, Span<Value> outs,
     if (args.size() == 3 && !a3text && !a2text)
         throw Error("iswt: custom reconstruction filters are not "
                     "supported yet (pass a wavelet name).",
-                    0, 0, "iswt", "", "nk:iswt:optionUnsupported");
+                    0, 0, "iswt", "", "numkit:iswt:optionUnsupported");
     if (args.size() == 4 && !a2text && !a3text)
         throw Error("iswt: custom reconstruction filters are not "
                     "supported yet (pass a wavelet name).",
-                    0, 0, "iswt", "", "nk:iswt:optionUnsupported");
+                    0, 0, "iswt", "", "numkit:iswt:optionUnsupported");
     throw Error("iswt: expected (swc, wname) or (swa, swd, wname)",
-                0, 0, "iswt", "", "nk:iswt:nargin");
+                0, 0, "iswt", "", "numkit:iswt:nargin");
 }
 
 void modwt_reg(Span<const Value> args, size_t /*nargout*/, Span<Value> outs,
@@ -93,7 +93,7 @@ void modwt_reg(Span<const Value> args, size_t /*nargout*/, Span<Value> outs,
     // Default wname = 'sym4'; default lev = floor(log2(N)).
     if (args.empty())
         throw Error("modwt: requires (x[, wname[, lev]])",
-                    0, 0, "modwt", "", "nk:modwt:nargin");
+                    0, 0, "modwt", "", "numkit:modwt:nargin");
     auto *mr = ctx.engine->resource();
     const Value &x = args[0];
     const size_t N = x.numel();
@@ -126,7 +126,7 @@ void imodwt_reg(Span<const Value> args, size_t /*nargout*/, Span<Value> outs,
 {
     if (args.size() < 2)
         throw Error("imodwt: requires (swc, wname)",
-                    0, 0, "imodwt", "", "nk:imodwt:nargin");
+                    0, 0, "imodwt", "", "numkit:imodwt:nargin");
     outs[0] = imodwt(args[0], argString(args[1]), ctx.engine->resource());
 }
 

@@ -68,12 +68,12 @@ Value wrcoef(const std::string &type, const Value &c, const Value &l,
 {
     if (type != "a" && type != "d")
         throw Error("wrcoef: type must be 'a' or 'd'",
-                    0, 0, "wrcoef", "", "nk:wrcoef:type");
+                    0, 0, "wrcoef", "", "numkit:wrcoef:type");
 
     const size_t Lcount = l.numel();
     if (Lcount < 3)
         throw Error("wrcoef: l must have at least 3 entries",
-                    0, 0, "wrcoef", "", "nk:wrcoef:l");
+                    0, 0, "wrcoef", "", "numkit:wrcoef:l");
     const int N = static_cast<int>(Lcount) - 2;
 
     if (n < 0)
@@ -82,12 +82,12 @@ Value wrcoef(const std::string &type, const Value &c, const Value &l,
         if (n < 0 || n > N)
             throw Error("wrcoef: for type='a', level must satisfy 0 <= n <= "
                         + std::to_string(N),
-                        0, 0, "wrcoef", "", "nk:wrcoef:level");
+                        0, 0, "wrcoef", "", "numkit:wrcoef:level");
     } else { // 'd'
         if (n < 1 || n > N)
             throw Error("wrcoef: for type='d', level must satisfy 1 <= n <= "
                         + std::to_string(N),
-                        0, 0, "wrcoef", "", "nk:wrcoef:level");
+                        0, 0, "wrcoef", "", "numkit:wrcoef:level");
     }
 
     auto cv = vec_from_value(c);
@@ -100,7 +100,7 @@ Value wrcoef(const std::string &type, const Value &c, const Value &l,
     for (int k = 0; k < N; ++k) expectedC += sliceLen(1 + k);
     if (cv.size() != expectedC)
         throw Error("wrcoef: c length does not match l bookkeeping",
-                    0, 0, "wrcoef", "", "nk:wrcoef:cl");
+                    0, 0, "wrcoef", "", "numkit:wrcoef:cl");
 
     // Detail at MATLAB level k (1-based, k=1 finest, k=N coarsest)
     // lives in c at L-index (1 + N - k). Compute the [start, end) byte
