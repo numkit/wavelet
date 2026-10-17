@@ -116,5 +116,48 @@ void fbspwavf_reg(Span<const Value> args, size_t nargout,
     if (nargout > 1) outs[1] = std::move(x);
 }
 
+void centfrq_reg(Span<const Value> args, size_t nargout,
+                 Span<Value> outs, CallContext &ctx)
+{
+    argcheck::checkNargin(args.size(), 1, 3, "centfrq");
+    if (!args[0].isChar() && !args[0].isString())
+        throw Error("centfrq: WNAME must be a string or char vector",
+                    0, 0, "centfrq", "", "numkit:centfrq:invalidWavelet");
+    const std::string wname = args[0].toString();
+    int iter = 8;
+    if (args.size() >= 2 && !args[1].isEmpty()) {
+        iter = argcheck::expectedPositiveInteger(
+            argcheck::expectedReal(args[1], 2, "ITER", "centfrq"),
+            2, "ITER", "centfrq");
+    }
+    bool withRecfreq = false;
+    if (args.size() >= 3) {
+        if (!args[2].isChar() && !args[2].isString())
+            throw Error("centfrq: third argument must be 'plot'",
+                        0, 0, "centfrq", "", "numkit:centfrq:invalidPlotArg");
+        withRecfreq = true;
+    }
+    auto res = centfrqGrid(wname, iter, withRecfreq, ctx.engine->resource());
+    outs[0] = Value::scalar(res.freq, ctx.engine->resource());
+    if (nargout > 1) outs[1] = std::move(res.xval);
+    if (nargout > 2) outs[2] = std::move(res.recfreq);
+}
+
+void scal2frq_reg(Span<const Value> args, size_t /*nargout*/,
+                  Span<Value> outs, CallContext &ctx)
+{
+    argcheck::checkNargin(args.size(), 2, 3, "scal2frq");
+    if (!args[1].isChar() && !args[1].isString())
+        throw Error("scal2frq: WNAME must be a string or char vector",
+                    0, 0, "scal2frq", "", "numkit:scal2frq:invalidWavelet");
+    const std::string wname = args[1].toString();
+    double delta = 1.0;
+    if (args.size() >= 3 && !args[2].isEmpty()) {
+        delta = argcheck::expectedReal(args[2], 3, "DELTA", "scal2frq");
+    }
+    outs[0] = scal2frq(args[0], wname, delta, ctx.engine->resource());
+}
+
 } // namespace detail
 } // namespace numkit::wavelet
+

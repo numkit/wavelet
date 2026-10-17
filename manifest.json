@@ -12,7 +12,8 @@
     "dwt2", "idwt2", "wavedec2", "waverec2", "appcoef2", "detcoef2",
     "wthresh", "wentropy", "ddencmp", "wnoisest", "wdenoise",
     "swt", "iswt", "modwt", "imodwt",
-    "mexihat", "morlet", "meyeraux", "shanwavf", "cmorwavf", "fbspwavf", "gauswavf", "cgauwavf"
+    "mexihat", "morlet", "meyeraux", "shanwavf", "cmorwavf", "fbspwavf", "gauswavf", "cgauwavf",
+    "centfrq", "scal2frq"
   ],
   "functions": [
     "wfilters", "qmf", "wrev", "dbwavf", "coifwavf", "symwavf", "orthfilt",
@@ -21,6 +22,8 @@
     "dwt2", "idwt2", "wavedec2", "waverec2", "appcoef2", "detcoef2",
     "wthresh", "wentropy", "ddencmp", "wnoisest", "wdenoise",
     "swt", "iswt", "modwt", "imodwt",
-    "mexihat", "morlet", "meyeraux", "shanwavf", "cmorwavf", "fbspwavf", "gauswavf", "cgauwavf"
+    "mexihat", "morlet", "meyeraux", "shanwavf", "cmorwavf", "fbspwavf", "gauswavf", "cgauwavf",
+    "centfrq", "scal2frq"
   ]
 }
+

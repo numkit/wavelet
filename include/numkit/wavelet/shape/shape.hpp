@@ -119,6 +119,58 @@ std::tuple<Value, Value>
 cgauwavf(double lb, double ub, size_t N, int p,
          std::pmr::memory_resource *mr = nullptr);
 
+/// Result of @ref centfrqGrid (`[freq, xval, recfreq] = centfrq(wname, iter[, 'plot'])`).
+struct CentfrqResult {
+    double freq;
+    Value xval;
+    Value recfreq;
+};
+
+/// Wavelet center frequency in Hz (`freq = centfrq(wname[, iter])`).
+///
+/// Estimates the dominant frequency of @p wname by evaluating the wavelet
+/// function on its canonical `iter`-level grid (cascade for orthogonal /
+/// biorthogonal families; analytical grid for continuous wavelets) and
+/// taking the peak bin of the magnitude spectrum.
+///
+/// @param wname  Wavelet name (e.g. `"db4"`, `"sym4"`, `"coif2"`, `"bior2.2"`,
+///               `"morl"`, `"mexh"`, `"gaus1"`, `"cgau1"`, `"shan1-1.5"`,
+///               `"fbsp1-1-1.5"`, `"cmor1-1.5"`).
+/// @param iter   Cascade / grid iteration count (default 8; positive integer).
+/// @return       Center frequency in Hz.
+///
+/// @see centfrqGrid, scal2frq
+double centfrq(const std::string &wname, int iter = 8);
+
+/// Wavelet center frequency with grid and single-bin sinusoidal approximation.
+///
+/// @param wname        Wavelet name.
+/// @param iter         Cascade / grid iteration count (default 8; positive integer).
+/// @param withRecfreq  When true, populates `recfreq` with the sinusoidal
+///                     approximation at the dominant FFT bin; otherwise `recfreq`
+///                     is empty `0x0`.
+/// @param mr           Memory resource (nullptr -> process default).
+/// @return             @ref CentfrqResult `(freq, xval, recfreq)`.
+CentfrqResult centfrqGrid(const std::string &wname, int iter = 8,
+                          bool withRecfreq = false,
+                          std::pmr::memory_resource *mr = nullptr);
+
+/// Convert scales to pseudo-frequencies (`frq = scal2frq(a, wname[, delta])`).
+///
+/// Computes @f$ f = \frac{F_c}{a \cdot \Delta} @f$ where @f$ F_c = \text{centfrq}(\text{wname}) @f$.
+///
+/// @param a      Positive real scale vector (`double` or `single`).
+/// @param wname  Wavelet name.
+/// @param delta  Sampling period (> 0, default 1.0).
+/// @param mr     Memory resource (nullptr -> process default).
+/// @return       Pseudo-frequency vector with the same shape and class as @p a.
+///
+/// @see centfrq
+Value scal2frq(const Value &a, const std::string &wname,
+               double delta = 1.0,
+               std::pmr::memory_resource *mr = nullptr);
+
 
 /// @}
 } // namespace numkit::wavelet
+

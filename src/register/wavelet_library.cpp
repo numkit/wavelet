@@ -69,6 +69,8 @@ void cmorwavf_reg (Span<const Value>, size_t, Span<Value>, CallContext &);
 void fbspwavf_reg (Span<const Value>, size_t, Span<Value>, CallContext &);
 void gauswavf_reg (Span<const Value>, size_t, Span<Value>, CallContext &);
 void cgauwavf_reg (Span<const Value>, size_t, Span<Value>, CallContext &);
+void centfrq_reg  (Span<const Value>, size_t, Span<Value>, CallContext &);
+void scal2frq_reg (Span<const Value>, size_t, Span<Value>, CallContext &);
 } // namespace numkit::wavelet::detail
 
 namespace numkit {
@@ -129,6 +131,9 @@ void WaveletLibrary::install(PluginContext &engine)
     reg("shape", "fbspwavf", &wavelet::detail::fbspwavf_reg);
     reg("shape", "gauswavf", &wavelet::detail::gauswavf_reg);
     reg("shape", "cgauwavf", &wavelet::detail::cgauwavf_reg);
+    reg("shape", "centfrq",  &wavelet::detail::centfrq_reg);
+    reg("shape", "scal2frq", &wavelet::detail::scal2frq_reg);
 }
 
 } // namespace numkit
+

@@ -97,12 +97,35 @@ TEST_F(WaveletKnownBug, Wavedec2Family)
     EXPECT_NEAR(evalScalar("A(2,2)"), 27.0, 1e-9);
 }
 
-// bugs/wavelet/centfrq-scal2frq.md — wavelet center frequency + scale mapping.
-TEST_F(WaveletKnownBug, DISABLED_CentfrqScal2frq)
+// bugs/closed/wavelet/centfrq-scal2frq.md — wavelet center frequency + scale mapping.
+TEST_F(WaveletKnownBug, CentfrqScal2frq)
 {
-    EXPECT_NEAR(evalScalar("centfrq('db4')"),        0.714285714285714, 1e-9);  // 5/7
-    EXPECT_NEAR(evalScalar("scal2frq(4, 'db4', 1)"), 0.178571428571429, 1e-9);  // /(a·Δ)
+    EXPECT_NEAR(evalScalar("centfrq('db4')"),        0.714285714285714, 1e-12); // 5/7
+    EXPECT_NEAR(evalScalar("centfrq('db2')"),        0.666666666666667, 1e-12); // 2/3
+    EXPECT_NEAR(evalScalar("centfrq('coif2')"),      0.727272727272727, 1e-12); // 8/11
+    EXPECT_NEAR(evalScalar("centfrq('sym4')"),       0.714285714285714, 1e-12); // 5/7
+    EXPECT_NEAR(evalScalar("centfrq('haar')"),       256.0 / 257.0,     1e-12);
+    EXPECT_NEAR(evalScalar("centfrq('haar', 5)"),    32.0 / 33.0,       1e-12);
+    EXPECT_NEAR(evalScalar("centfrq('bior2.2')"),    1280.0 / 1279.0,   1e-12);
+    EXPECT_NEAR(evalScalar("centfrq('rbio2.2', 5)"), 96.0 / 159.0,      1e-12);
+    EXPECT_NEAR(evalScalar("centfrq('morl')"),       0.8125,            1e-12);
+    EXPECT_NEAR(evalScalar("centfrq('mexh')"),       0.25,              1e-12);
+    EXPECT_NEAR(evalScalar("centfrq('gaus1')"),      0.2,               1e-12);
+    EXPECT_NEAR(evalScalar("centfrq('cgau1')"),      0.3,               1e-12);
+    EXPECT_NEAR(evalScalar("centfrq('shan1-1.5', 5)"), 0.2,             1e-12);
+    EXPECT_NEAR(evalScalar("centfrq('cmor1-1.5', 5)"), 0.4375,          1e-12);
+    eval("[f5, x5, r5] = centfrq('db4', 5, 'plot');");
+    EXPECT_NEAR(evalScalar("f5"), 5.0 / 7.0, 1e-12);
+    EXPECT_EQ(static_cast<int>(evalScalar("numel(x5)")), 225);
+    EXPECT_NEAR(evalScalar("r5(1)"), -0.25106497, 1e-6);
+    EXPECT_NEAR(evalScalar("scal2frq(4, 'db4', 1)"), 0.178571428571429, 1e-12);
+    eval("sf = scal2frq([2; 4; 8], 'db4', 0.5);");
+    EXPECT_EQ(static_cast<int>(evalScalar("size(sf, 1)")), 3);
+    EXPECT_EQ(static_cast<int>(evalScalar("size(sf, 2)")), 1);
+    EXPECT_NEAR(evalScalar("sf(1)"), 5.0 / 7.0, 1e-12);
+    EXPECT_TRUE(eval("isa(scal2frq(single([2 4]), 'db4'), 'single')").toBool());
 }
+
 
 // bugs/opened/wavelet/idwt-short-filter-input.md — idwt/idwt2 return an
 // empty result when the filter is longer than the coefficients support;
