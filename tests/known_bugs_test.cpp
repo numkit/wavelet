@@ -135,3 +135,19 @@ TEST_F(WaveletKnownBug, IswtUint8HaarValues)
     EXPECT_DOUBLE_EQ(evalScalar("y(3)"), 91.0);
     EXPECT_DOUBLE_EQ(evalScalar("y(4)"), 0.0);
 }
+
+// bugs/closed/wavelet/iswt-custom-filters.md — custom reconstruction/analysis filters
+TEST_F(WaveletKnownBug, IswtCustomFilters)
+{
+    eval("[LoD, HiD, LoR, HiR] = wfilters('db2');");
+    eval("swc = swt(1:16, 2, LoD, HiD);");
+    eval("y = iswt(swc, LoR, HiR);");
+    EXPECT_DOUBLE_EQ(evalScalar("max(abs(y - iswt(swc, 'db2')))"), 0.0);
+    EXPECT_NEAR(evalScalar("max(abs(y - (1:16)))"), 0.0, 1e-10);
+
+    eval("[swa, swd] = swt(1:16, 2, LoD, HiD);");
+    eval("y2 = iswt(swa, swd, LoR, HiR);");
+    EXPECT_DOUBLE_EQ(evalScalar("max(abs(y2 - y))"), 0.0);
+    EXPECT_NEAR(evalScalar("max(abs(y2 - (1:16)))"), 0.0, 1e-10);
+}
+

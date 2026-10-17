@@ -27,15 +27,38 @@ static std::string argString(const Value &v) {
     return v.toString();
 }
 
+static std::vector<double> extractFilterVec(const Value &v, const char *fn) {
+    if (!v.isNumeric() || v.isEmpty() || v.type() == ValueType::COMPLEX ||
+        (v.dims().rows() != 1 && v.dims().cols() != 1))
+        throw Error(std::string(fn) + ": expected real numeric filter vector",
+                    0, 0, fn, "", std::string("numkit:") + fn + ":filter");
+    const size_t n = v.numel();
+    std::vector<double> out(n);
+    for (size_t i = 0; i < n; ++i) out[i] = v.elemAsDouble(i);
+    return out;
+}
+
 void swt_reg(Span<const Value> args, size_t nargout, Span<Value> outs,
              CallContext &ctx)
 {
-    if (args.size() < 3)
-        throw Error("swt: requires (x, n, wname)",
+    if (args.size() < 3 || args.size() > 4)
+        throw Error("swt: requires (x, n, wname) or (x, n, Lo_D, Hi_D)",
                     0, 0, "swt", "", "numkit:swt:nargin");
     const int lev = argcheck::expectedPositiveInteger(
         argcheck::expectedReal(args[1], 2, "level", "swt"), 2, "level", "swt");
     auto *mr = ctx.engine->resource();
+    if (args.size() == 4) {
+        auto loD = extractFilterVec(args[2], "swt");
+        auto hiD = extractFilterVec(args[3], "swt");
+        if (nargout >= 2) {
+            auto [swa, swd] = swtAD(args[0], lev, loD, hiD, mr);
+            outs[0] = std::move(swa);
+            if (outs.size() >= 2) outs[1] = std::move(swd);
+            return;
+        }
+        outs[0] = swt(args[0], lev, loD, hiD, mr);
+        return;
+    }
     if (nargout >= 2) {
         // [SWA, SWD] = swt(x, n, wname) — per-level approximation and
         // detail matrices.
@@ -52,9 +75,7 @@ void iswt_reg(Span<const Value> args, size_t /*nargout*/, Span<Value> outs,
 {
     // Reference dispatch (iswt.m): 2 args = (SWC, wname);
     // 3 args = (SWA, SWD, wname) when the 3rd is text, else
-    // (SWC, Lo_R, Hi_R); 4 args = (SWA, SWD, Lo_R, Hi_R). The
-    // custom-filter forms are stubbed until the compute kernel grows a
-    // filter-vector entry point.
+    // (SWC, Lo_R, Hi_R); 4 args = (SWA, SWD, Lo_R, Hi_R).
     auto *mr = ctx.engine->resource();
     if (args.size() < 2)
         throw Error("iswt: requires (swc, wname) or (swa, swd, wname)",
@@ -70,14 +91,18 @@ void iswt_reg(Span<const Value> args, size_t /*nargout*/, Span<Value> outs,
         outs[0] = iswt(args[0], args[1], argString(args[2]), mr);
         return;
     }
-    if (args.size() == 3 && !a3text && !a2text)
-        throw Error("iswt: custom reconstruction filters are not "
-                    "supported yet (pass a wavelet name).",
-                    0, 0, "iswt", "", "numkit:iswt:optionUnsupported");
-    if (args.size() == 4 && !a2text && !a3text)
-        throw Error("iswt: custom reconstruction filters are not "
-                    "supported yet (pass a wavelet name).",
-                    0, 0, "iswt", "", "numkit:iswt:optionUnsupported");
+    if (args.size() == 3 && !a3text && !a2text) {
+        outs[0] = iswt(args[0],
+                       extractFilterVec(args[1], "iswt"),
+                       extractFilterVec(args[2], "iswt"), mr);
+        return;
+    }
+    if (args.size() == 4 && !a2text && !a3text) {
+        outs[0] = iswt(args[0], args[1],
+                       extractFilterVec(args[2], "iswt"),
+                       extractFilterVec(args[3], "iswt"), mr);
+        return;
+    }
     throw Error("iswt: expected (swc, wname) or (swa, swd, wname)",
                 0, 0, "iswt", "", "numkit:iswt:nargin");
 }

@@ -82,12 +82,17 @@ std::vector<double> circ_corr_back(const std::vector<double> &x,
 
 } // anonymous
 
-std::pair<Value, Value> swtAD(const Value &x, int n, const std::string &wname,
+std::pair<Value, Value> swtAD(const Value &x, int n,
+                              const std::vector<double> &Lo_D,
+                              const std::vector<double> &Hi_D,
                               std::pmr::memory_resource *mr)
 {
     if (n < 1)
         throw Error("swt: level must be ≥ 1",
                     0, 0, "swt", "", "numkit:swt:level");
+    if (Lo_D.size() < 2 || Lo_D.size() % 2 != 0 || Lo_D.size() != Hi_D.size())
+        throw Error("swt: filter vectors must have matching even length >= 2",
+                    0, 0, "swt", "", "numkit:swt:filter");
     const size_t N = x.numel();
     if (N == 0) {
         return {Value::matrix(static_cast<size_t>(n), 0, ValueType::DOUBLE, mr),
@@ -99,16 +104,9 @@ std::pair<Value, Value> swtAD(const Value &x, int n, const std::string &wname,
         throw Error("swt: signal length must be divisible by 2^n",
                     0, 0, "swt", "", "numkit:swt:size");
 
-    // Exact port of the reference swt.m: at each level the (per-extended)
-    // previous approximation is CONVOLVED with the analysis filters
-    // (upsampled between taps per level) and the central N samples are
-    // kept from 0-based offset lf. The previous fwd-correlation kernel
-    // produced detail rows with the OPPOSITE SIGN (a masked divergence
-    // the old parity spec papered over with abs() fingerprints).
-    auto fb = wavelet_filters(wname);
     std::vector<double> xv(N);
     for (size_t i = 0; i < N; ++i) xv[i] = x.elemAsDouble(i);
-    std::vector<double> tempLo = fb.Lo_D, tempHi = fb.Hi_D;
+    std::vector<double> tempLo = Lo_D, tempHi = Hi_D;
 
     Value swa = Value::matrix(static_cast<size_t>(n), N,
                               ValueType::DOUBLE, mr);
@@ -120,7 +118,6 @@ std::pair<Value, Value> swtAD(const Value &x, int n, const std::string &wname,
 
     auto convKeep = [&](const std::vector<double> &xe,
                         const std::vector<double> &h, size_t lf) {
-        // wkeep1(wconv1(xe, h), N, lf+1): out[i] = Σ_t h[t]·xe[lf+i−t].
         std::vector<double> out(N, 0.0);
         for (size_t j = 0; j < lf; ++j) {
             const double hj = h[j];
@@ -134,7 +131,6 @@ std::pair<Value, Value> swtAD(const Value &x, int n, const std::string &wname,
     for (int k = 0; k < n; ++k) {
         const size_t lf = tempLo.size();
         const size_t ext = lf / 2;
-        // wextend('1D','per', x, lf/2)
         std::vector<double> xe(N + 2 * ext);
         for (size_t i = 0; i < ext; ++i) {
             xe[i] = xv[(N + i - ext) % N];
@@ -148,7 +144,6 @@ std::pair<Value, Value> swtAD(const Value &x, int n, const std::string &wname,
             dd[c * H + k] = dRow[c];    // detail at level k+1
         }
         xv = std::move(aRow);
-        // dyadup(f, 0, 1): zero between taps, length 2·lf.
         auto up = [](const std::vector<double> &h) {
             std::vector<double> u(2 * h.size(), 0.0);
             for (size_t t = 0; t < h.size(); ++t) u[2 * t] = h[t];
@@ -160,7 +155,15 @@ std::pair<Value, Value> swtAD(const Value &x, int n, const std::string &wname,
     return {std::move(swa), std::move(swd)};
 }
 
-Value swt(const Value &x, int n, const std::string &wname, std::pmr::memory_resource *mr)
+std::pair<Value, Value> swtAD(const Value &x, int n, const std::string &wname,
+                              std::pmr::memory_resource *mr)
+{
+    auto fb = wavelet_filters(wname);
+    return swtAD(x, n, fb.Lo_D, fb.Hi_D, mr);
+}
+
+Value swt(const Value &x, int n, const std::vector<double> &Lo_D,
+          const std::vector<double> &Hi_D, std::pmr::memory_resource *mr)
 {
     if (n < 1)
         throw Error("swt: level must be ≥ 1",
@@ -170,19 +173,23 @@ Value swt(const Value &x, int n, const std::string &wname, std::pmr::memory_reso
         return Value::matrix(static_cast<size_t>(n + 1), 0,
                              ValueType::DOUBLE, mr);
 
-    auto [swa, swd] = swtAD(x, n, wname, mr);
+    auto [swa, swd] = swtAD(x, n, Lo_D, Hi_D, mr);
     const size_t H = static_cast<size_t>(n);
     Value out = Value::matrix(static_cast<size_t>(n + 1), N,
                               ValueType::DOUBLE, mr);
     double *od = out.doubleDataMut();
-    // Stacked layout: rows 1..n = details (level 1 = finest), row n+1 =
-    // the coarsest approximation — swd rows in order, then swa's last.
     for (size_t r = 0; r < H; ++r)
         for (size_t c = 0; c < N; ++c)
             od[c * (H + 1) + r] = swd.elemAsDouble(c * H + r);
     for (size_t c = 0; c < N; ++c)
         od[c * (H + 1) + H] = swa.elemAsDouble(c * H + H - 1);
     return out;
+}
+
+Value swt(const Value &x, int n, const std::string &wname, std::pmr::memory_resource *mr)
+{
+    auto fb = wavelet_filters(wname);
+    return swt(x, n, fb.Lo_D, fb.Hi_D, mr);
 }
 
 namespace {
@@ -303,11 +310,12 @@ Value iswtPhase(Value aRow, const Value &dSrc, size_t n,
 
 } // anonymous
 
-Value iswt(const Value &swc, const std::string &wname, std::pmr::memory_resource *mr)
+Value iswt(const Value &swc, const std::vector<double> &Lo_R,
+           const std::vector<double> &Hi_R, std::pmr::memory_resource *mr)
 {
-    // Probed R2025b: swc keeps the integer-wavelet classes — double,
-    // single, uint8/16, int8/16/32/64 — with logical and complex
-    // rejected; a single-row input is returned unchanged.
+    if (Lo_R.size() < 2 || Lo_R.size() % 2 != 0 || Lo_R.size() != Hi_R.size())
+        throw Error("iswt: filter vectors must have matching even length >= 2",
+                    0, 0, "iswt", "", "numkit:iswt:filter");
     internal::requireNonempty(swc, "iswt", "SWC", 1);
     internal::requireWaveClass(swc, "iswt", "SWC", 1,
                                internal::WvClasses::IntWavelet);
@@ -317,19 +325,26 @@ Value iswt(const Value &swc, const std::string &wname, std::pmr::memory_resource
         return internal::copyInClass(swc, mr);      // identity (0 levels)
     const size_t n = H - 1;
 
-    auto fb = wavelet_filters(wname);
     Value aRow = Value::matrix(1, N, swc.type(), mr);
     for (size_t c = 0; c < N; ++c)
         internal::storeElem(aRow, c, swc.elemAsDouble(c * H + n));
-    return iswtPhase(std::move(aRow), swc, n, fb.Lo_R, fb.Hi_R, mr);
+    return iswtPhase(std::move(aRow), swc, n, Lo_R, Hi_R, mr);
 }
 
-Value iswt(const Value &swa, const Value &swd, const std::string &wname,
+Value iswt(const Value &swc, const std::string &wname, std::pmr::memory_resource *mr)
+{
+    auto fb = wavelet_filters(wname);
+    return iswt(swc, fb.Lo_R, fb.Hi_R, mr);
+}
+
+Value iswt(const Value &swa, const Value &swd,
+           const std::vector<double> &Lo_R,
+           const std::vector<double> &Hi_R,
            std::pmr::memory_resource *mr)
 {
-    // The reference's SWA/SWD form: both validated like SWC, matching
-    // column counts, and only the LAST row of swa participates; the
-    // result class follows swa (probed: uint8 swa + double swd → uint8).
+    if (Lo_R.size() < 2 || Lo_R.size() % 2 != 0 || Lo_R.size() != Hi_R.size())
+        throw Error("iswt: filter vectors must have matching even length >= 2",
+                    0, 0, "iswt", "", "numkit:iswt:filter");
     internal::requireNonempty(swa, "iswt", "SWA", 1);
     internal::requireWaveClass(swa, "iswt", "SWA", 1,
                                internal::WvClasses::IntWavelet);
@@ -345,16 +360,20 @@ Value iswt(const Value &swa, const Value &swd, const std::string &wname,
     const size_t n = swd.dims().rows();
     const size_t N = swd.dims().cols();
 
-    // Only the last row of swa participates — even with zero levels the
-    // reference returns that row.
     Value aRow = Value::matrix(1, N, swa.type(), mr);
     const size_t aH = swa.dims().rows();
     for (size_t c = 0; c < N; ++c)
         internal::storeElem(aRow, c, swa.elemAsDouble(c * aH + aH - 1));
     if (n == 0)
         return aRow;
+    return iswtPhase(std::move(aRow), swd, n, Lo_R, Hi_R, mr);
+}
+
+Value iswt(const Value &swa, const Value &swd, const std::string &wname,
+           std::pmr::memory_resource *mr)
+{
     auto fb = wavelet_filters(wname);
-    return iswtPhase(std::move(aRow), swd, n, fb.Lo_R, fb.Hi_R, mr);
+    return iswt(swa, swd, fb.Lo_R, fb.Hi_R, mr);
 }
 
 // ════════════════════════════════════════════════════════════════════

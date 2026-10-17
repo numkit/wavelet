@@ -11,6 +11,7 @@
 #include <numkit/value/value.hpp>
 #include <string>
 #include <utility>
+#include <vector>
 
 namespace numkit::wavelet {
 
@@ -42,6 +43,10 @@ namespace numkit::wavelet {
 Value swt(const Value &x, int n, const std::string &wname,
           std::pmr::memory_resource *mr = nullptr);
 
+Value swt(const Value &x, int n, const std::vector<double> &Lo_D,
+          const std::vector<double> &Hi_D,
+          std::pmr::memory_resource *mr = nullptr);
+
 /// Two-output stationary DWT (`[swa, swd] = swt(x, n, wname)`).
 ///
 /// Same transform, but returns the per-level approximations and details
@@ -55,6 +60,11 @@ Value swt(const Value &x, int n, const std::string &wname,
 /// @param mr     Memory resource (nullptr → process default).
 /// @return       (SWA, SWD) pair of n × N matrices.
 std::pair<Value, Value> swtAD(const Value &x, int n, const std::string &wname,
+                              std::pmr::memory_resource *mr = nullptr);
+
+std::pair<Value, Value> swtAD(const Value &x, int n,
+                              const std::vector<double> &Lo_D,
+                              const std::vector<double> &Hi_D,
                               std::pmr::memory_resource *mr = nullptr);
 
 /// Inverse stationary DWT (`x = iswt(swc, wname)`).
@@ -72,6 +82,10 @@ std::pair<Value, Value> swtAD(const Value &x, int n, const std::string &wname,
 Value iswt(const Value &swc, const std::string &wname,
            std::pmr::memory_resource *mr = nullptr);
 
+Value iswt(const Value &swc, const std::vector<double> &Lo_R,
+           const std::vector<double> &Hi_R,
+           std::pmr::memory_resource *mr = nullptr);
+
 /// Two-array inverse stationary DWT (`x = iswt(swa, swd, wname)`).
 ///
 /// Same reconstruction with the approximation and detail coefficients
@@ -86,6 +100,11 @@ Value iswt(const Value &swc, const std::string &wname,
 ///
 /// @see swt
 Value iswt(const Value &swa, const Value &swd, const std::string &wname,
+           std::pmr::memory_resource *mr = nullptr);
+
+Value iswt(const Value &swa, const Value &swd,
+           const std::vector<double> &Lo_R,
+           const std::vector<double> &Hi_R,
            std::pmr::memory_resource *mr = nullptr);
 
 /// Maximal-overlap discrete wavelet transform (`swc = modwt(x, n, wname)`).
