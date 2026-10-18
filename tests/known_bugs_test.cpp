@@ -47,11 +47,21 @@ TEST_F(WaveletKnownBug, DwtBiorthogonal)
     EXPECT_NEAR(evalScalar("LoR(3)"),  0.7071067811865476, 1e-12);
 }
 
-// bugs/wavelet/wpdec.md — wavelet packet decomposition exists.
-// (Needs a tree type; verify node coefficients vs MATLAB when enabling.)
-TEST_F(WaveletKnownBug, DISABLED_WpdecExists)
+// bugs/closed/wavelet/wpdec.md — wavelet packet decomposition family.
+TEST_F(WaveletKnownBug, WpdecExists)
 {
-    EXPECT_NO_THROW(eval("t = wpdec([1 2 3 4 5 6 7 8], 2, 'db1');"));
+    eval("t = wpdec([1 2 3 4 5 6 7 8], 2, 'db1'); c1 = wpcoef(t, 1); c3 = wpcoef(t, 3); c4 = wpcoef(t, 4);");
+    EXPECT_NEAR(evalScalar("c1(1)"), 2.121320343559643, 1e-12);
+    EXPECT_NEAR(evalScalar("c3(1)"), 5.0,               1e-12);
+    EXPECT_NEAR(evalScalar("c3(2)"), 13.0,              1e-12);
+    EXPECT_NEAR(evalScalar("c4(1)"), -2.0,              1e-12);
+    EXPECT_NEAR(evalScalar("max(abs(wprec(t) - [1 2 3 4 5 6 7 8]))"), 0.0, 1e-12);
+    eval("[bt, e] = besttree(t);");
+    EXPECT_NEAR(evalScalar("e(1)"), -958.515138, 1e-4);
+    EXPECT_NEAR(evalScalar("max(abs(wprec(bt) - [1 2 3 4 5 6 7 8]))"), 0.0, 1e-12);
+    eval("[ts, c7, c8] = wpsplt(t, 3);");
+    EXPECT_NEAR(evalScalar("c7(1)"), 18.0 / 1.4142135623730951, 1e-12);
+    EXPECT_NEAR(evalScalar("c8(1)"), -8.0 / 1.4142135623730951, 1e-12);
 }
 
 // bugs/wavelet/wenergy.md — energy distribution of a decomposition.
@@ -72,13 +82,21 @@ TEST_F(WaveletKnownBug, Upcoef)
     EXPECT_NEAR(evalScalar("y(1)"), 2.5, 1e-9);
 }
 
-// bugs/wavelet/cwt.md — continuous wavelet transform (complex coeff matrix).
-TEST_F(WaveletKnownBug, DISABLED_Cwt)
+// bugs/closed/wavelet/cwt.md — continuous wavelet transform (complex coeff matrix).
+TEST_F(WaveletKnownBug, Cwt)
 {
-    eval("cfs = cwt([1 2 3 4 5 6 7 8 7 6 5 4 3 2 1 0]);");
-    EXPECT_EQ(static_cast<int>(evalScalar("size(cfs,2)")), 16);  // time dim == N
-    EXPECT_GT(evalScalar("size(cfs,1)"), 1.0);                   // multiple scales
-    EXPECT_TRUE(eval("~isreal(cfs)").toBool());                  // complex (Morse)
+    eval("[cfs, f, coi] = cwt([1 2 3 4 5 6 7 8 7 6 5 4 3 2 1 0]);");
+    EXPECT_EQ(static_cast<int>(evalScalar("size(cfs,1)")), 11);
+    EXPECT_EQ(static_cast<int>(evalScalar("size(cfs,2)")), 16);
+    EXPECT_EQ(static_cast<int>(evalScalar("numel(f)")), 11);
+    EXPECT_EQ(static_cast<int>(evalScalar("numel(coi)")), 16);
+    EXPECT_TRUE(eval("~isreal(cfs)").toBool());
+    EXPECT_NEAR(evalScalar("f(1)"),   0.434124467922179, 1e-12);
+    EXPECT_NEAR(evalScalar("f(end)"), 0.217062233961090, 1e-12);
+    EXPECT_NEAR(evalScalar("real(cfs(1,1))"),  -0.006280749295345, 1e-12);
+    EXPECT_NEAR(evalScalar("imag(cfs(1,1))"),  -0.044352946200824, 1e-12);
+    EXPECT_NEAR(evalScalar("real(cfs(11,1))"), -0.222082377118554, 1e-12);
+    EXPECT_NEAR(evalScalar("imag(cfs(11,1))"), -0.159544611141409, 1e-12);
 }
 
 // bugs/wavelet/wavedec2-family.md — 2-D multilevel decomposition + extractors (FIXED).

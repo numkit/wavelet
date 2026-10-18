@@ -13,7 +13,8 @@
     "wthresh", "wentropy", "ddencmp", "wnoisest", "wdenoise",
     "swt", "iswt", "modwt", "imodwt",
     "mexihat", "morlet", "meyeraux", "shanwavf", "cmorwavf", "fbspwavf", "gauswavf", "cgauwavf",
-    "centfrq", "scal2frq"
+    "centfrq", "scal2frq", "cwt",
+    "wpdec", "wpcoef", "wprec", "wpsplt", "besttree"
   ],
   "functions": [
     "wfilters", "qmf", "wrev", "dbwavf", "coifwavf", "symwavf", "orthfilt",
@@ -23,7 +24,8 @@
     "wthresh", "wentropy", "ddencmp", "wnoisest", "wdenoise",
     "swt", "iswt", "modwt", "imodwt",
     "mexihat", "morlet", "meyeraux", "shanwavf", "cmorwavf", "fbspwavf", "gauswavf", "cgauwavf",
-    "centfrq", "scal2frq"
+    "centfrq", "scal2frq", "cwt",
+    "wpdec", "wpcoef", "wprec", "wpsplt", "besttree"
   ]
 }
 

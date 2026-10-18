@@ -465,5 +465,229 @@ Value scal2frq(const Value &a, const std::string &wname,
     return out;
 }
 
+namespace {
+
+void cwt_argcheck(const Value &x, const std::string &wname, double fs,
+                  int voicesPerOctave, double timeBandwidth, double gamma,
+                  const Value &freqLimits)
+{
+    if (!x.isNumeric() || x.isComplex())
+        throw Error("cwt: X must be a real numeric vector",
+                    0, 0, "cwt", "", "numkit:cwt:expectedReal");
+    if (x.dims().ndims() > 2 || (x.dims().rows() > 1 && x.dims().cols() > 1) || x.numel() < 4)
+        throw Error("cwt: X must be a 1-D vector with at least 4 samples",
+                    0, 0, "cwt", "", "numkit:cwt:expectedVector");
+    for (size_t i = 0; i < x.numel(); ++i) {
+        if (!std::isfinite(x.elemAsDouble(i)))
+            throw Error("cwt: X must be finite",
+                        0, 0, "cwt", "", "numkit:cwt:expectedFinite");
+    }
+    std::string wl = wname;
+    for (char &c : wl)
+        c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+    if (wl != "morse" && wl != "amor" && wl != "bump")
+        throw Error("cwt: WAVELET must be 'morse', 'amor', or 'bump' (got '" + wname + "')",
+                    0, 0, "cwt", "", "numkit:cwt:invalidWavelet");
+    if (!(fs > 0.0) || !std::isfinite(fs))
+        throw Error("cwt: FS must be a positive finite scalar",
+                    0, 0, "cwt", "", "numkit:cwt:invalidFs");
+    if (voicesPerOctave < 1 || voicesPerOctave > 48)
+        throw Error("cwt: VoicesPerOctave must be an integer in [1, 48]",
+                    0, 0, "cwt", "", "numkit:cwt:invalidVoicesPerOctave");
+    if (wl == "morse") {
+        if (!(gamma > 0.0) || !std::isfinite(gamma))
+            throw Error("cwt: gamma must be positive and finite",
+                        0, 0, "cwt", "", "numkit:cwt:invalidGamma");
+        if (!(timeBandwidth > gamma) || timeBandwidth > 40.0 * gamma || !std::isfinite(timeBandwidth))
+            throw Error("cwt: TimeBandwidth must be in (gamma, 40*gamma]",
+                        0, 0, "cwt", "", "numkit:cwt:invalidTimeBandwidth");
+    }
+    if (!freqLimits.isEmpty()) {
+        if (!freqLimits.isNumeric() || freqLimits.isComplex() || freqLimits.numel() != 2)
+            throw Error("cwt: FrequencyLimits must be a 2-element real vector [fmin, fmax]",
+                        0, 0, "cwt", "", "numkit:cwt:invalidFrequencyLimits");
+        const double fmin = freqLimits.elemAsDouble(0);
+        const double fmax = freqLimits.elemAsDouble(1);
+        if (!(fmin > 0.0) || !(fmax > fmin) || !std::isfinite(fmin) || !std::isfinite(fmax))
+            throw Error("cwt: FrequencyLimits must satisfy 0 < fmin < fmax",
+                        0, 0, "cwt", "", "numkit:cwt:invalidFrequencyLimits");
+    }
+}
+
+} // anonymous
+
+CwtResult cwt(const Value &x,
+              const std::string &wname,
+              double fs,
+              int voicesPerOctave,
+              double timeBandwidth,
+              double gamma,
+              bool extendSignal,
+              const Value &freqLimits,
+              std::pmr::memory_resource *mr)
+{
+    cwt_argcheck(x, wname, fs, voicesPerOctave, timeBandwidth, gamma, freqLimits);
+
+    std::string wl = wname;
+    for (char &c : wl)
+        c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+
+    const size_t N = x.numel();
+    const double nv = static_cast<double>(voicesPerOctave);
+    const double beta = timeBandwidth / gamma;
+
+    double wpsi = 0.0;
+    double wc = 0.0;
+    double sigt = 0.0;
+
+    if (wl == "morse") {
+        wpsi = std::pow(beta / gamma, 1.0 / gamma);
+        const double target = std::log(0.5);
+        const double wpsi_ga = beta / gamma;
+        double w = wpsi * (1.0 + std::sqrt(2.0 * std::log(2.0) / (beta * gamma)));
+        for (int it = 0; it < 20; ++it) {
+            const double w_ga = std::pow(w, gamma);
+            const double g = beta * std::log(w / wpsi) - (w_ga - wpsi_ga) - target;
+            const double gp = beta / w - gamma * (w_ga / w);
+            if (std::abs(gp) < 1e-30) break;
+            const double step = g / gp;
+            w -= step;
+            if (w <= wpsi) w = 0.5 * (w + step + wpsi);
+            if (std::abs(step) <= 1e-15 * w) break;
+        }
+        wc = w;
+
+        auto log_term = [&](double a) {
+            return std::lgamma(a / gamma) - (a / gamma) * std::log(2.0);
+        };
+        const double ld = log_term(2.0 * beta + 1.0);
+        const double t1 = (beta * beta) * std::exp(log_term(2.0 * beta - 1.0) - ld);
+        const double t2 = (gamma * gamma) * std::exp(log_term(2.0 * beta + 2.0 * gamma - 1.0) - ld);
+        const double t3 = (2.0 * beta * gamma) * std::exp(log_term(2.0 * beta + gamma - 1.0) - ld);
+        sigt = wpsi * std::sqrt(std::max(0.0, t1 + t2 - t3));
+    } else if (wl == "amor") {
+        wpsi = 6.0;
+        wc = wpsi + std::sqrt(2.0 * std::log(10.0));
+        sigt = std::sqrt(2.0);
+    } else {
+        // bump: mu = 5, sigma = 0.6
+        wpsi = 5.0;
+        const double sig = 0.6;
+        wc = wpsi + sig * std::sqrt(1.0 - 1.0 / (1.0 - std::log(0.1)));
+        sigt = 5.847705277601328;
+    }
+
+    double s0 = wc / M_PI;
+    double smax = static_cast<double>(N) / (2.0 * sigt);
+    if (smax < s0 * std::pow(2.0, 1.0 / nv))
+        smax = s0 * std::pow(2.0, 1.0 / nv);
+
+    if (!freqLimits.isEmpty()) {
+        const double fmin = freqLimits.elemAsDouble(0) / fs;
+        const double fmax = freqLimits.elemAsDouble(1) / fs;
+        const double s_from_fmax = wpsi / (2.0 * M_PI * fmax);
+        const double s_from_fmin = wpsi / (2.0 * M_PI * fmin);
+        if (s_from_fmax > s0) s0 = s_from_fmax;
+        if (s_from_fmin < smax) smax = s_from_fmin;
+        if (smax < s0) smax = s0;
+    }
+
+    const double nOct = std::max(0.0, std::log2(smax / s0));
+    const size_t nScales = 1 + static_cast<size_t>(std::floor(nv * nOct + 1e-12));
+
+    std::vector<double> scales(nScales);
+    std::vector<double> freqs(nScales);
+    for (size_t j = 0; j < nScales; ++j) {
+        scales[j] = s0 * std::pow(2.0, static_cast<double>(j) / nv);
+        freqs[j] = (wpsi * fs) / (2.0 * M_PI * scales[j]);
+    }
+
+    const size_t padL = extendSignal ? std::min<size_t>(N / 2, 100000) : 0;
+    const size_t Npad = N + 2 * padL;
+
+    Value xpad = Value::matrix(1, Npad, ValueType::DOUBLE, mr);
+    double *xpd = xpad.doubleDataMut();
+    for (size_t i = 0; i < padL; ++i)
+        xpd[i] = x.elemAsDouble(padL - 1 - i);
+    for (size_t i = 0; i < N; ++i)
+        xpd[padL + i] = x.elemAsDouble(i);
+    for (size_t i = 0; i < padL; ++i)
+        xpd[padL + N + i] = x.elemAsDouble(N - 1 - i);
+
+    Value X = signal::fft(xpad, -1, 0, mr);
+    auto getX = [&](size_t k) -> Complex {
+        if (X.type() == ValueType::COMPLEX)
+            return X.complexData()[k];
+        return Complex(X.elemAsDouble(k), 0.0);
+    };
+
+    const size_t kMax = Npad / 2;
+    std::vector<double> omega(kMax + 1);
+    const double dOmega = (2.0 * M_PI) / static_cast<double>(Npad);
+    for (size_t k = 0; k <= kMax; ++k)
+        omega[k] = static_cast<double>(k) * dOmega;
+
+    const bool outSingle = (x.type() == ValueType::SINGLE);
+    Value cfs = Value::matrix(nScales, N, ValueType::COMPLEX, mr);
+    Complex *cfs_d = cfs.complexDataMut();
+
+    Value prodRow = Value::matrix(1, Npad, ValueType::COMPLEX, mr);
+    Complex *prd = prodRow.complexDataMut();
+    const double wpsi_ga = (wl == "morse") ? (beta / gamma) : 0.0;
+
+    for (size_t j = 0; j < nScales; ++j) {
+        const double s = scales[j];
+        std::fill(prd, prd + Npad, Complex(0.0, 0.0));
+        for (size_t k = 1; k <= kMax; ++k) {
+            const double sw = s * omega[k];
+            double Hval = 0.0;
+            if (wl == "morse") {
+                if (sw > 0.0) {
+                    const double log_H = beta * std::log(sw / wpsi) - (std::pow(sw, gamma) - wpsi_ga);
+                    if (log_H > -745.0)
+                        Hval = 2.0 * std::exp(log_H);
+                }
+            } else if (wl == "amor") {
+                const double diff = sw - wpsi;
+                Hval = 2.0 * std::exp(-0.5 * diff * diff);
+            } else {
+                const double u = (sw - wpsi) / 0.6;
+                if (std::abs(u) < 1.0 - 1e-15)
+                    Hval = 2.0 * std::exp(1.0 - 1.0 / (1.0 - u * u));
+            }
+            if (Hval != 0.0)
+                prd[k] = getX(k) * Hval;
+        }
+
+        Value yRow = signal::ifft(prodRow, -1, 0, mr);
+        for (size_t n = 0; n < N; ++n) {
+            const Complex c = (yRow.type() == ValueType::COMPLEX)
+                                  ? yRow.complexData()[padL + n]
+                                  : Complex(yRow.elemAsDouble(padL + n), 0.0);
+            const size_t idx = j + n * nScales; // column-major (nScales x N)
+            cfs_d[idx] = c;
+        }
+    }
+
+    Value fOut = Value::matrix(nScales, 1,
+                               outSingle ? ValueType::SINGLE : ValueType::DOUBLE,
+                               mr);
+    for (size_t j = 0; j < nScales; ++j)
+        internal::storeElem(fOut, j, freqs[j]);
+
+    Value coiOut = Value::matrix(N, 1,
+                                 outSingle ? ValueType::SINGLE : ValueType::DOUBLE,
+                                 mr);
+    const double coiNum = (fs * wpsi * sigt) / (2.0 * M_PI);
+    const double fTop = freqs[0];
+    for (size_t n = 0; n < N; ++n) {
+        const size_t dist = std::min(n + 1, N - n);
+        const double val = std::min(fTop, coiNum / static_cast<double>(dist));
+        internal::storeElem(coiOut, n, val);
+    }
+
+    return {std::move(cfs), std::move(fOut), std::move(coiOut)};
+}
+
 } // namespace numkit::wavelet
 

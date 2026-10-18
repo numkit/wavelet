@@ -170,6 +170,43 @@ Value scal2frq(const Value &a, const std::string &wname,
                double delta = 1.0,
                std::pmr::memory_resource *mr = nullptr);
 
+/// Result of @ref cwt (`[cfs, f, coi] = cwt(x, ...)`).
+struct CwtResult {
+    Value cfs;  ///< Complex CWT coefficients (`nScales x N`).
+    Value f;    ///< Center frequencies (`nScales x 1`).
+    Value coi;  ///< Cone of influence (`N x 1`).
+};
+
+/// 1-D continuous wavelet transform (`[cfs, f, coi] = cwt(x[, wname][, fs], ...)`).
+///
+/// Computes the analytic continuous wavelet transform over a log-spaced scale
+/// grid (`voicesPerOctave` voices per octave) via FFT-domain filter-bank
+/// multiplication, with symmetric reflection boundary extension by default.
+///
+/// Supported analyzing wavelets: `"morse"` (default, @f$ \gamma = 3, P^2 = 60 @f$),
+/// `"amor"` (analytic Morlet, @f$ \omega_0 = 6 @f$), and `"bump"`
+/// (@f$ \mu = 5, \sigma = 0.6 @f$).
+///
+/// @param x                Real 1-D input vector (`double` or `single`, length >= 4).
+/// @param wname            Wavelet name (`"morse"`, `"amor"`, `"bump"`).
+/// @param fs               Sampling frequency (> 0; default 1.0 -> cycles/sample).
+/// @param voicesPerOctave  Number of voices per octave in `[1, 48]` (default 10).
+/// @param timeBandwidth    Morse time-bandwidth product @f$ P^2 = \beta\gamma @f$ (default 60.0).
+/// @param gamma            Morse symmetry parameter @f$ \gamma @f$ (default 3.0).
+/// @param extendSignal     Whether to reflect-pad the signal at boundaries (default true).
+/// @param freqLimits       Optional 2-element `[fmin, fmax]` frequency bounds (empty -> auto).
+/// @param mr               Memory resource (nullptr -> process default).
+/// @return                 @ref CwtResult `(cfs, f, coi)`.
+CwtResult cwt(const Value &x,
+              const std::string &wname = "morse",
+              double fs = 1.0,
+              int voicesPerOctave = 10,
+              double timeBandwidth = 60.0,
+              double gamma = 3.0,
+              bool extendSignal = true,
+              const Value &freqLimits = Value(),
+              std::pmr::memory_resource *mr = nullptr);
+
 
 /// @}
 } // namespace numkit::wavelet

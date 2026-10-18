@@ -235,5 +235,53 @@ void upcoef_reg(Span<const Value> args, size_t, Span<Value> outs, CallContext &c
     outs[0] = upcoef(type, args[1], wname, n, len, ctx.engine->resource());
 }
 
+void wpdec_reg(Span<const Value> args, size_t /*nargout*/, Span<Value> outs,
+               CallContext &ctx)
+{
+    argcheck::checkNargin(args.size(), 3, 5, "wpdec");
+    const int n = argcheck::expectedPositiveInteger(
+        argcheck::expectedReal(args[1], 2, "N", "wpdec"), 2, "N", "wpdec");
+    const std::string wname = argString(args[2]);
+    const std::string entName = (args.size() >= 4) ? argString(args[3]) : "shannon";
+    const double entPar = (args.size() >= 5 && !args[4].isEmpty())
+                              ? argcheck::expectedReal(args[4], 5, "P", "wpdec")
+                              : 0.0;
+    outs[0] = wpdec(args[0], n, wname, entName, entPar, ctx.engine->resource());
+}
+
+void wpcoef_reg(Span<const Value> args, size_t /*nargout*/, Span<Value> outs,
+                CallContext &ctx)
+{
+    argcheck::checkNargin(args.size(), 1, 2, "wpcoef");
+    const Value node = (args.size() >= 2) ? args[1] : Value::scalar(0.0);
+    outs[0] = wpcoef(args[0], node, ctx.engine->resource());
+}
+
+void wprec_reg(Span<const Value> args, size_t /*nargout*/, Span<Value> outs,
+               CallContext &ctx)
+{
+    argcheck::checkNargin(args.size(), 1, 1, "wprec");
+    outs[0] = wprec(args[0], ctx.engine->resource());
+}
+
+void wpsplt_reg(Span<const Value> args, size_t nargout, Span<Value> outs,
+                CallContext &ctx)
+{
+    argcheck::checkNargin(args.size(), 2, 2, "wpsplt");
+    auto res = wpsplt(args[0], args[1], ctx.engine->resource());
+    outs[0] = std::move(res.tree);
+    if (nargout > 1) outs[1] = std::move(res.cA);
+    if (nargout > 2) outs[2] = std::move(res.cD);
+}
+
+void besttree_reg(Span<const Value> args, size_t nargout, Span<Value> outs,
+                  CallContext &ctx)
+{
+    argcheck::checkNargin(args.size(), 1, 1, "besttree");
+    auto res = besttree(args[0], ctx.engine->resource());
+    outs[0] = std::move(res.tree);
+    if (nargout > 1) outs[1] = std::move(res.entropy);
+}
+
 } // namespace detail
 } // namespace numkit::wavelet

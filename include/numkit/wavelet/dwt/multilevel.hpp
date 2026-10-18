@@ -201,6 +201,69 @@ WenergyResult wenergy(const Value &C, const Value &L,
 Value upcoef(const std::string &type, const Value &X, const std::string &wname,
              int n, long long len = -1, std::pmr::memory_resource *mr = nullptr);
 
+/// Result of @ref wpsplt (`[T, cA, cD] = wpsplt(T, node)`).
+struct WpspltResult {
+    Value tree; ///< Updated wavelet packet tree.
+    Value cA;   ///< Approximation coefficients of the split node (`2*node + 1`).
+    Value cD;   ///< Detail coefficients of the split node (`2*node + 2`).
+};
+
+/// Result of @ref besttree (`[T, E] = besttree(T)`).
+struct BesttreeResult {
+    Value tree;     ///< Optimal pruned wavelet packet tree.
+    Value entropy;  ///< Optimal entropy vector for active nodes in `tree`.
+};
+
+/// 1-D wavelet packet decomposition (`T = wpdec(x, n, wname[, E[, P]])`).
+///
+/// Builds a full binary wavelet-packet tree of depth `n` by recursively
+/// applying @ref dwt (`wname`) to both the approximation and detail branches
+/// at each level (`node 0` = root, children of `k` = `2k+1` and `2k+2`), and
+/// computes @ref wentropy(`E`, `P`) at every node.
+///
+/// @param x        1-D input signal (`double` or `single`).
+/// @param n        Decomposition depth (>= 1).
+/// @param wname    Wavelet name.
+/// @param entName  Entropy type (default `"shannon"`).
+/// @param entPar   Optional entropy parameter (default 0.0).
+/// @param mr       Memory resource (nullptr -> process default).
+/// @return         Wavelet packet tree struct.
+Value wpdec(const Value &x, int n, const std::string &wname,
+            const std::string &entName = "shannon", double entPar = 0.0,
+            std::pmr::memory_resource *mr = nullptr);
+
+/// Extract wavelet packet node coefficients (`X = wpcoef(T[, node])`).
+///
+/// @param tree  Wavelet packet tree from @ref wpdec / @ref wpsplt / @ref besttree.
+/// @param node  0-based linear node index (`0` = root) or 2-element `[depth, pos]` vector.
+/// @param mr    Memory resource (nullptr -> process default).
+/// @return      Coefficient vector at @p node.
+Value wpcoef(const Value &tree, const Value &node = Value::scalar(0.0),
+             std::pmr::memory_resource *mr = nullptr);
+
+/// Reconstruct 1-D signal from a wavelet packet tree (`X = wprec(T)`).
+///
+/// @param tree  Wavelet packet tree from @ref wpdec / @ref wpsplt / @ref besttree.
+/// @param mr    Memory resource (nullptr -> process default).
+/// @return      Reconstructed 1-D signal matching the root signal orientation.
+Value wprec(const Value &tree, std::pmr::memory_resource *mr = nullptr);
+
+/// Split (decompose) a terminal wavelet packet node (`[T, cA, cD] = wpsplt(T, node)`).
+///
+/// @param tree  Wavelet packet tree.
+/// @param node  0-based linear node index or 2-element `[depth, pos]` vector of a leaf node.
+/// @param mr    Memory resource (nullptr -> process default).
+/// @return      @ref WpspltResult `(tree, cA, cD)`.
+WpspltResult wpsplt(const Value &tree, const Value &node,
+                    std::pmr::memory_resource *mr = nullptr);
+
+/// Optimal wavelet packet tree pruning by minimum additive entropy (`[T, E] = besttree(T)`).
+///
+/// @param tree  Wavelet packet tree.
+/// @param mr    Memory resource (nullptr -> process default).
+/// @return      @ref BesttreeResult `(tree, entropy)`.
+BesttreeResult besttree(const Value &tree, std::pmr::memory_resource *mr = nullptr);
+
 
 /// @}
 } // namespace numkit::wavelet

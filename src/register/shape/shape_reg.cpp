@@ -14,6 +14,7 @@
 #include <numkit/value/argcheck.hpp>
 #include <numkit/value/error.hpp>
 
+#include <cctype>
 #include <string>
 #include <tuple>
 #include <utility>
@@ -156,6 +157,82 @@ void scal2frq_reg(Span<const Value> args, size_t /*nargout*/,
         delta = argcheck::expectedReal(args[2], 3, "DELTA", "scal2frq");
     }
     outs[0] = scal2frq(args[0], wname, delta, ctx.engine->resource());
+}
+
+void cwt_reg(Span<const Value> args, size_t nargout,
+             Span<Value> outs, CallContext &ctx)
+{
+    argcheck::checkNargin(args.size(), 1, 13, "cwt");
+    std::string wname = "morse";
+    double fs = 1.0;
+    int voicesPerOctave = 10;
+    double timeBandwidth = 60.0;
+    double gamma = 3.0;
+    bool extendSignal = true;
+    Value freqLimits;
+
+    auto lowerStr = [](std::string s) {
+        for (char &c : s)
+            c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+        return s;
+    };
+
+    size_t idx = 1;
+    // Parse optional positional wname and/or fs before Name-Value pairs.
+    if (idx < args.size() && (args[idx].isChar() || args[idx].isString())) {
+        const std::string s = lowerStr(args[idx].toString());
+        if (s == "morse" || s == "amor" || s == "bump") {
+            wname = s;
+            ++idx;
+        }
+    }
+    if (idx < args.size() && args[idx].isNumeric() && args[idx].numel() == 1) {
+        fs = argcheck::expectedReal(args[idx], static_cast<int>(idx + 1), "FS", "cwt");
+        ++idx;
+    }
+
+    while (idx < args.size()) {
+        if (!args[idx].isChar() && !args[idx].isString())
+            throw Error("cwt: expected option name at argument " + std::to_string(idx + 1),
+                        0, 0, "cwt", "", "numkit:cwt:invalidOption");
+        if (idx + 1 >= args.size())
+            throw Error("cwt: missing value for option '" + args[idx].toString() + "'",
+                        0, 0, "cwt", "", "numkit:cwt:missingOptionValue");
+        const std::string key = lowerStr(args[idx].toString());
+        const Value &val = args[idx + 1];
+        if (key == "voicesperoctave") {
+            voicesPerOctave = argcheck::expectedPositiveInteger(
+                argcheck::expectedReal(val, static_cast<int>(idx + 2), "VoicesPerOctave", "cwt"),
+                static_cast<int>(idx + 2), "VoicesPerOctave", "cwt");
+        } else if (key == "timebandwidth") {
+            timeBandwidth = argcheck::expectedReal(val, static_cast<int>(idx + 2), "TimeBandwidth", "cwt");
+        } else if (key == "waveletparameters") {
+            if (!val.isNumeric() || val.isComplex() || val.numel() != 2)
+                throw Error("cwt: WaveletParameters must be a 2-element real vector [gamma, TimeBandwidth]",
+                            0, 0, "cwt", "", "numkit:cwt:invalidWaveletParameters");
+            gamma = val.elemAsDouble(0);
+            timeBandwidth = val.elemAsDouble(1);
+        } else if (key == "extendsignal") {
+            if (val.isLogical() || (val.isNumeric() && val.numel() == 1)) {
+                extendSignal = val.toBool();
+            } else {
+                throw Error("cwt: ExtendSignal must be a logical scalar",
+                            0, 0, "cwt", "", "numkit:cwt:invalidExtendSignal");
+            }
+        } else if (key == "frequencylimits") {
+            freqLimits = val;
+        } else {
+            throw Error("cwt: unrecognized option '" + args[idx].toString() + "'",
+                        0, 0, "cwt", "", "numkit:cwt:unknownOption");
+        }
+        idx += 2;
+    }
+
+    auto res = cwt(args[0], wname, fs, voicesPerOctave, timeBandwidth,
+                   gamma, extendSignal, freqLimits, ctx.engine->resource());
+    outs[0] = std::move(res.cfs);
+    if (nargout > 1) outs[1] = std::move(res.f);
+    if (nargout > 2) outs[2] = std::move(res.coi);
 }
 
 } // namespace detail

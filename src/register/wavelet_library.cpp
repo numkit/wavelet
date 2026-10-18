@@ -28,6 +28,11 @@ void appcoef_reg  (Span<const Value>, size_t, Span<Value>, CallContext &);
 void detcoef_reg  (Span<const Value>, size_t, Span<Value>, CallContext &);
 void wenergy_reg  (Span<const Value>, size_t, Span<Value>, CallContext &);
 void upcoef_reg   (Span<const Value>, size_t, Span<Value>, CallContext &);
+void wpdec_reg    (Span<const Value>, size_t, Span<Value>, CallContext &);
+void wpcoef_reg   (Span<const Value>, size_t, Span<Value>, CallContext &);
+void wprec_reg    (Span<const Value>, size_t, Span<Value>, CallContext &);
+void wpsplt_reg   (Span<const Value>, size_t, Span<Value>, CallContext &);
+void besttree_reg (Span<const Value>, size_t, Span<Value>, CallContext &);
 // dwt/dwt2.cpp
 void dwt2_reg     (Span<const Value>, size_t, Span<Value>, CallContext &);
 void idwt2_reg    (Span<const Value>, size_t, Span<Value>, CallContext &);
@@ -71,6 +76,7 @@ void gauswavf_reg (Span<const Value>, size_t, Span<Value>, CallContext &);
 void cgauwavf_reg (Span<const Value>, size_t, Span<Value>, CallContext &);
 void centfrq_reg  (Span<const Value>, size_t, Span<Value>, CallContext &);
 void scal2frq_reg (Span<const Value>, size_t, Span<Value>, CallContext &);
+void cwt_reg      (Span<const Value>, size_t, Span<Value>, CallContext &);
 } // namespace numkit::wavelet::detail
 
 namespace numkit {
@@ -97,6 +103,11 @@ void WaveletLibrary::install(PluginContext &engine)
     reg("dwt",  "detcoef",  &wavelet::detail::detcoef_reg);
     reg("dwt",  "wenergy",  &wavelet::detail::wenergy_reg);
     reg("dwt",  "upcoef",   &wavelet::detail::upcoef_reg);
+    reg("dwt",  "wpdec",    &wavelet::detail::wpdec_reg);
+    reg("dwt",  "wpcoef",   &wavelet::detail::wpcoef_reg);
+    reg("dwt",  "wprec",    &wavelet::detail::wprec_reg);
+    reg("dwt",  "wpsplt",   &wavelet::detail::wpsplt_reg);
+    reg("dwt",  "besttree", &wavelet::detail::besttree_reg);
     reg("dwt",  "dyaddown", &wavelet::detail::dyaddown_reg);
     reg("dwt",  "dyadup",   &wavelet::detail::dyadup_reg);
     reg("dwt",  "wmaxlev",  &wavelet::detail::wmaxlev_reg);
@@ -133,6 +144,7 @@ void WaveletLibrary::install(PluginContext &engine)
     reg("shape", "cgauwavf", &wavelet::detail::cgauwavf_reg);
     reg("shape", "centfrq",  &wavelet::detail::centfrq_reg);
     reg("shape", "scal2frq", &wavelet::detail::scal2frq_reg);
+    reg("shape", "cwt",      &wavelet::detail::cwt_reg);
 }
 
 } // namespace numkit
