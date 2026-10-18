@@ -212,6 +212,7 @@ inline Value copyInClass(const Value &src,
 {
     if (src.type() == ValueType::COMPLEX) {
         Value out = Value::complexMatrix(src.dims().rows(), src.dims().cols(), mr);
+        if (src.isSingleComplex()) out.setSingleComplex(true);
         const Complex *sd = src.complexData();
         Complex *od = out.complexDataMut();
         for (std::size_t i = 0; i < src.numel(); ++i) od[i] = sd[i];

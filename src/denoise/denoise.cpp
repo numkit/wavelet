@@ -73,13 +73,15 @@ Value wthresh(const Value &X, const std::string &sorh, const Value &T,
                     0, 0, "wthresh", "", "numkit:wthresh:size");
 
     const size_t N = X.numel();
-    const ValueType outT =
-        (X.type() == ValueType::SINGLE || T.type() == ValueType::SINGLE)
-            ? ValueType::SINGLE
-            : ValueType::DOUBLE;
+    const bool wantSingle =
+        (X.type() == ValueType::SINGLE || X.isSingleComplex() ||
+         T.type() == ValueType::SINGLE || T.isSingleComplex());
+    const ValueType outT = wantSingle ? ValueType::SINGLE : ValueType::DOUBLE;
     const bool cplx = X.type() == ValueType::COMPLEX;
     Value Y = cplx ? Value::complexMatrix(X.dims().rows(), X.dims().cols(), mr)
                    : Value::matrix(X.dims().rows(), X.dims().cols(), outT, mr);
+    if (cplx && wantSingle)
+        Y.setSingleComplex(true);
     if (N == 0) return Y;
 
     auto tOf = [&](size_t i) {

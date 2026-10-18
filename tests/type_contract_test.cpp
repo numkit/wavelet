@@ -32,9 +32,12 @@ TEST_F(WaveletTypeContract, WthreshFloatOnlyComplexComputed)
 {
     eval("v = [3 -1 4 1 5 9 2 6];");
     EXPECT_NEAR(evalScalar("wthresh(v,'s',2)(3)"), 2.0, 1e-12);
-    // single in, single out — from X or from T (single contagion)
+    // single in, single out — from X or from T (single contagion), including complex
     EXPECT_EQ(evalClass("class(wthresh(single(v),'s',2))"), "single");
     EXPECT_EQ(evalClass("class(wthresh(v,'s',single(2)))"), "single");
+    EXPECT_EQ(evalClass("class(wthresh(single(complex(1:4, -(1:4))),'s',1))"), "single");
+    EXPECT_EQ(evalClass("class(wkeep(single(complex(1:4, -(1:4))),2))"), "single");
+    EXPECT_EQ(evalClass("class(wextend('1','sym',single(complex(1:4, -(1:4))),1))"), "single");
     // complex soft-threshold keeps the phase (probed R2025b)
     eval("y = wthresh([1+2i 3-1i 2],'s',1);");
     EXPECT_NEAR(eval("real(y(1))").toScalar(), 0.552786, 1e-6);

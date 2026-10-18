@@ -143,6 +143,7 @@ Value wkeep(const Value &x, const Value &len, const Value &opt,
                                               static_cast<size_t>(C), mr)
                        : Value::matrix(static_cast<size_t>(R),
                                        static_cast<size_t>(C), x.type(), mr);
+        if (cplx && x.isSingleComplex()) y.setSingleComplex(true);
         if (R == 0 || C == 0) return y;
         for (long long c = 0; c < C; ++c) {
             const size_t srcC = static_cast<size_t>(fc1 - 1 + c);
@@ -204,6 +205,7 @@ Value wkeep(const Value &x, const Value &len, const Value &opt,
     const bool cplx = x.type() == ValueType::COMPLEX;
     Value y = cplx ? Value::complexMatrix(outRows, outCols, mr)
                    : Value::matrix(outRows, outCols, x.type(), mr);
+    if (cplx && x.isSingleComplex()) y.setSingleComplex(true);
     if (n == 0) return y;
     for (long long k = 0; k < n; ++k) {
         const size_t src = static_cast<size_t>(start1 - 1 + k);
@@ -495,6 +497,7 @@ Value wextend(const Value &type, const std::string &modeRaw, const Value &x,
             size_t outRows, outCols;
             outShape(col, outN, outRows, outCols);
             y = Value::complexMatrix(outRows, outCols, mr);
+            if (x.isSingleComplex()) y.setSingleComplex(true);
             std::copy(ext.begin(), ext.end(), y.complexDataMut());
             return y;
         }
@@ -594,6 +597,7 @@ Value wextend(const Value &type, const std::string &modeRaw, const Value &x,
         cols = newCols;
     }
     Value y = Value::complexMatrix(rows, cols, mr);
+    if (x.isSingleComplex()) y.setSingleComplex(true);
     for (size_t c = 0; c < cols; ++c)
         for (size_t r = 0; r < rows; ++r)
             y.complexDataMut()[c * rows + r] = data[r][c];
