@@ -41,9 +41,7 @@ static std::vector<double> extractFilterVec(const Value &v, const char *fn) {
 void swt_reg(Span<const Value> args, size_t nargout, Span<Value> outs,
              CallContext &ctx)
 {
-    if (args.size() < 3 || args.size() > 4)
-        throw Error("swt: requires (x, n, wname) or (x, n, Lo_D, Hi_D)",
-                    0, 0, "swt", "", "numkit:swt:nargin");
+    argcheck::checkNargin(args.size(), 3, 4, "swt");
     const int lev = argcheck::expectedPositiveInteger(
         argcheck::expectedReal(args[1], 2, "level", "swt"), 2, "level", "swt");
     auto *mr = ctx.engine->resource();
@@ -77,9 +75,7 @@ void iswt_reg(Span<const Value> args, size_t /*nargout*/, Span<Value> outs,
     // 3 args = (SWA, SWD, wname) when the 3rd is text, else
     // (SWC, Lo_R, Hi_R); 4 args = (SWA, SWD, Lo_R, Hi_R).
     auto *mr = ctx.engine->resource();
-    if (args.size() < 2)
-        throw Error("iswt: requires (swc, wname) or (swa, swd, wname)",
-                    0, 0, "iswt", "", "numkit:iswt:nargin");
+    argcheck::checkNargin(args.size(), 2, 4, "iswt");
     const bool a3text = args.size() >= 3 && (args[2].isChar()
                                              || args[2].isString());
     const bool a2text = args[1].isChar() || args[1].isString();
@@ -116,9 +112,7 @@ void modwt_reg(Span<const Value> args, size_t /*nargout*/, Span<Value> outs,
     //   w = modwt(x, wname, lev)
     //   w = modwt(x, lev)            (numeric 2nd arg → uses default wname)
     // Default wname = 'sym4'; default lev = floor(log2(N)).
-    if (args.empty())
-        throw Error("modwt: requires (x[, wname[, lev]])",
-                    0, 0, "modwt", "", "numkit:modwt:nargin");
+    argcheck::checkNargin(args.size(), 1, 3, "modwt");
     auto *mr = ctx.engine->resource();
     const Value &x = args[0];
     const size_t N = x.numel();
@@ -149,9 +143,7 @@ void modwt_reg(Span<const Value> args, size_t /*nargout*/, Span<Value> outs,
 void imodwt_reg(Span<const Value> args, size_t /*nargout*/, Span<Value> outs,
                 CallContext &ctx)
 {
-    if (args.size() < 2)
-        throw Error("imodwt: requires (swc, wname)",
-                    0, 0, "imodwt", "", "numkit:imodwt:nargin");
+    argcheck::checkNargin(args.size(), 2, 2, "imodwt");
     outs[0] = imodwt(args[0], argString(args[1]), ctx.engine->resource());
 }
 

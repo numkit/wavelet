@@ -50,9 +50,7 @@ static int parseGaussOrder(const Value &arg, const char *prefix, const char *fn)
 void gauswavf_reg(Span<const Value> args, size_t nargout,
                   Span<Value> outs, CallContext &ctx)
 {
-    if (args.size() < 3)
-        throw Error("gauswavf: requires (LB, UB, N[, p|'gausN'])",
-                    0, 0, "gauswavf", "", "numkit:gauswavf:nargin");
+    argcheck::checkNargin(args.size(), 3, 4, "gauswavf");
     const double lb = args[0].toScalar();
     const double ub = args[1].toScalar();
     const size_t N  = static_cast<size_t>(argcheck::expectedPositiveInteger(
@@ -67,9 +65,7 @@ void gauswavf_reg(Span<const Value> args, size_t nargout,
 void cgauwavf_reg(Span<const Value> args, size_t nargout,
                   Span<Value> outs, CallContext &ctx)
 {
-    if (args.size() < 3)
-        throw Error("cgauwavf: requires (LB, UB, N[, p|'cgauN'])",
-                    0, 0, "cgauwavf", "", "numkit:cgauwavf:nargin");
+    argcheck::checkNargin(args.size(), 3, 4, "cgauwavf");
     const double lb = args[0].toScalar();
     const double ub = args[1].toScalar();
     const size_t N  = static_cast<size_t>(argcheck::expectedPositiveInteger(

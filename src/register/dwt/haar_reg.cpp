@@ -12,6 +12,7 @@
 #include <numkit/wavelet/dwt/ihaart.hpp>
 
 #include <numkit/sys/plugin.hpp>   // CallContext, ctx.engine->resource()
+#include <numkit/value/argcheck.hpp>
 #include <numkit/value/error.hpp>
 
 #include <cctype>
@@ -24,9 +25,7 @@ namespace detail {
 void haart_reg(Span<const Value> args, size_t nargout,
                Span<Value> outs, CallContext &ctx)
 {
-    if (args.empty())
-        throw Error("haart: requires (x[, level[, integerflag]])",
-                    0, 0, "haart", "", "numkit:haart:nargin");
+    argcheck::checkNargin(args.size(), 1, 3, "haart");
     // Parse level (positive integer) + integerflag string here for
     // script-quality errors, then delegate to the public haart().
     int level = 0;  // 0 -> auto (max level), resolved inside haart()
@@ -65,9 +64,7 @@ void haart_reg(Span<const Value> args, size_t nargout,
 void ihaart_reg(Span<const Value> args, size_t /*nargout*/,
                 Span<Value> outs, CallContext &ctx)
 {
-    if (args.size() < 2)
-        throw Error("ihaart: requires (a, d[, level[, integerflag]])",
-                    0, 0, "ihaart", "", "numkit:ihaart:nargin");
+    argcheck::checkNargin(args.size(), 2, 4, "ihaart");
     // Lax positional parse: level (number) and/or integerflag (string), in
     // any order. The level < Nlevels range check is done inside ihaart().
     int level = 0;

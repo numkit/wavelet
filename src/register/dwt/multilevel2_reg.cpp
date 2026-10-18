@@ -29,9 +29,7 @@ static std::string argString(const Value &v) {
 void wavedec2_reg(Span<const Value> args, size_t /*nargout*/, Span<Value> outs,
                   CallContext &ctx)
 {
-    if (args.size() < 3)
-        throw Error("wavedec2: requires (X, N, wname)",
-                    0, 0, "wavedec2", "", "numkit:wavedec2:nargin");
+    argcheck::checkNargin(args.size(), 3, 3, "wavedec2");
     auto *mr = ctx.engine->resource();
     auto r = wavedec2(args[0], argcheck::expectedPositiveInteger(
         argcheck::expectedReal(args[1], 2, "level", "wavedec2"), 2, "level", "wavedec2"),
@@ -43,9 +41,7 @@ void wavedec2_reg(Span<const Value> args, size_t /*nargout*/, Span<Value> outs,
 void waverec2_reg(Span<const Value> args, size_t /*nargout*/, Span<Value> outs,
                   CallContext &ctx)
 {
-    if (args.size() < 3)
-        throw Error("waverec2: requires (C, S, wname)",
-                    0, 0, "waverec2", "", "numkit:waverec2:nargin");
+    argcheck::checkNargin(args.size(), 3, 3, "waverec2");
     outs[0] = waverec2(args[0], args[1], argString(args[2]),
                        ctx.engine->resource());
 }
@@ -53,9 +49,7 @@ void waverec2_reg(Span<const Value> args, size_t /*nargout*/, Span<Value> outs,
 void appcoef2_reg(Span<const Value> args, size_t /*nargout*/, Span<Value> outs,
                   CallContext &ctx)
 {
-    if (args.size() < 3)
-        throw Error("appcoef2: requires (C, S, wname[, level])",
-                    0, 0, "appcoef2", "", "numkit:appcoef2:nargin");
+    argcheck::checkNargin(args.size(), 3, 4, "appcoef2");
     auto *mr = ctx.engine->resource();
     int level = -1;   // default = coarsest
     if (args.size() >= 4 && !args[3].isEmpty()
@@ -68,9 +62,7 @@ void appcoef2_reg(Span<const Value> args, size_t /*nargout*/, Span<Value> outs,
 void detcoef2_reg(Span<const Value> args, size_t /*nargout*/, Span<Value> outs,
                   CallContext &ctx)
 {
-    if (args.size() < 4)
-        throw Error("detcoef2: requires (type, C, S, level)",
-                    0, 0, "detcoef2", "", "numkit:detcoef2:nargin");
+    argcheck::checkNargin(args.size(), 4, 4, "detcoef2");
     auto *mr = ctx.engine->resource();
     std::string type = argString(args[0]);
     std::string lt = type;

@@ -27,9 +27,7 @@ static void shape_grid_reg(const char *fn,
                            Span<const Value> args, size_t nargout,
                            Span<Value> outs, CallContext &ctx)
 {
-    if (args.size() < 3)
-        throw Error(std::string(fn) + ": requires (LB, UB, N)",
-                    0, 0, fn, "", "numkit:wav:nargin");
+    argcheck::checkNargin(args.size(), 3, 3, fn);
     const double lb = args[0].toScalar();
     const double ub = args[1].toScalar();
     const double Nd = args[2].toScalar();
@@ -57,18 +55,14 @@ void morlet_reg(Span<const Value> args, size_t nargout,
 void meyeraux_reg(Span<const Value> args, size_t /*nargout*/,
                   Span<Value> outs, CallContext &ctx)
 {
-    if (args.empty())
-        throw Error("meyeraux: requires x",
-                    0, 0, "meyeraux", "", "numkit:meyeraux:nargin");
+    argcheck::checkNargin(args.size(), 1, 1, "meyeraux");
     outs[0] = meyeraux(args[0], ctx.engine->resource());
 }
 
 void shanwavf_reg(Span<const Value> args, size_t nargout,
                   Span<Value> outs, CallContext &ctx)
 {
-    if (args.size() < 5)
-        throw Error("shanwavf: requires (LB, UB, N, fb, fc)",
-                    0, 0, "shanwavf", "", "numkit:shanwavf:nargin");
+    argcheck::checkNargin(args.size(), 5, 5, "shanwavf");
     const double lb = args[0].toScalar();
     const double ub = args[1].toScalar();
     const size_t N  = static_cast<size_t>(argcheck::expectedPositiveInteger(
@@ -83,9 +77,7 @@ void shanwavf_reg(Span<const Value> args, size_t nargout,
 void cmorwavf_reg(Span<const Value> args, size_t nargout,
                   Span<Value> outs, CallContext &ctx)
 {
-    if (args.size() < 3)
-        throw Error("cmorwavf: requires (LB, UB, N[, fb, fc])",
-                    0, 0, "cmorwavf", "", "numkit:cmorwavf:nargin");
+    argcheck::checkNargin(args.size(), 3, 5, "cmorwavf");
     const double lb = args[0].toScalar();
     const double ub = args[1].toScalar();
     const size_t N  = static_cast<size_t>(argcheck::expectedPositiveInteger(
@@ -101,9 +93,7 @@ void cmorwavf_reg(Span<const Value> args, size_t nargout,
 void fbspwavf_reg(Span<const Value> args, size_t nargout,
                   Span<Value> outs, CallContext &ctx)
 {
-    if (args.size() < 6)
-        throw Error("fbspwavf: requires (LB, UB, N, m, fb, fc)",
-                    0, 0, "fbspwavf", "", "numkit:fbspwavf:nargin");
+    argcheck::checkNargin(args.size(), 6, 6, "fbspwavf");
     const double lb = args[0].toScalar();
     const double ub = args[1].toScalar();
     const size_t N  = static_cast<size_t>(argcheck::expectedPositiveInteger(

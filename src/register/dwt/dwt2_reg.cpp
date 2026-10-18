@@ -30,9 +30,7 @@ static std::string argString(const Value &v) {
 void dwt2_reg(Span<const Value> args, size_t /*nargout*/, Span<Value> outs,
               CallContext &ctx)
 {
-    if (args.size() < 2)
-        throw Error("dwt2: requires (X, wname)",
-                    0, 0, "dwt2", "", "numkit:dwt2:nargin");
+    argcheck::checkNargin(args.size(), 2, 2, "dwt2");
     auto *mr = ctx.engine->resource();
     auto r = dwt2(args[0], argString(args[1]), mr);
     if (outs.size() >= 1) outs[0] = std::move(r.cA);

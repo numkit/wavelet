@@ -10,6 +10,7 @@
 #include <numkit/wavelet/filter/wfilters.hpp>
 
 #include <numkit/sys/plugin.hpp>   // CallContext, ctx.engine->resource()
+#include <numkit/value/argcheck.hpp>
 #include <numkit/value/error.hpp>
 
 #include <string>
@@ -28,9 +29,7 @@ static std::string argString(const Value &v) {
 void wfilters_reg(Span<const Value> args, size_t nargout, Span<Value> outs,
                   CallContext &ctx)
 {
-    if (args.empty())
-        throw Error("wfilters: requires the wavelet name",
-                    0, 0, "wfilters", "", "numkit:wfilters:nargin");
+    argcheck::checkNargin(args.size(), 1, 2, "wfilters");
     const std::string name = argString(args[0]);
     std::string kind;
     if (args.size() >= 2) kind = argString(args[1]);

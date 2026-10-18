@@ -10,6 +10,7 @@
 #include <numkit/wavelet/dwt/multilevel.hpp>
 
 #include <numkit/sys/plugin.hpp>   // CallContext, ctx.engine->resource()
+#include <numkit/value/argcheck.hpp>
 #include <numkit/value/error.hpp>
 
 #include <cctype>
@@ -22,9 +23,7 @@ namespace detail {
 void wrcoef_reg(Span<const Value> args, size_t /*nargout*/,
                 Span<Value> outs, CallContext &ctx)
 {
-    if (args.size() < 4)
-        throw Error("wrcoef: requires (type, c, l, wname[, n])",
-                    0, 0, "wrcoef", "", "numkit:wrcoef:nargin");
+    argcheck::checkNargin(args.size(), 4, 5, "wrcoef");
 
     if (!args[0].isChar() && !args[0].isString())
         throw Error("wrcoef: type must be a character vector ('a' or 'd')",

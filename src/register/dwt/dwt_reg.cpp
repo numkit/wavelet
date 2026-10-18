@@ -12,6 +12,7 @@
 #include <numkit/wavelet/dwt/dwt.hpp>
 
 #include <numkit/sys/plugin.hpp>   // CallContext, ctx.engine->resource()
+#include <numkit/value/argcheck.hpp>
 #include <numkit/value/error.hpp>
 
 #include <cctype>
@@ -64,9 +65,7 @@ static bool parse_mode_nv(Span<const Value> args, size_t start,
 void dwt_reg(Span<const Value> args, size_t /*nargout*/, Span<Value> outs,
              CallContext &ctx)
 {
-    if (args.size() < 2)
-        throw Error("dwt: requires (x, wname) or (x, Lo_D, Hi_D)",
-                    0, 0, "dwt", "", "numkit:dwt:nargin");
+    argcheck::checkNargin(args.size(), 2, 5, "dwt");
     auto *mr = ctx.engine->resource();
     Value cA, cD;
     if (args[1].isChar() || args[1].isString()) {
@@ -90,10 +89,7 @@ void dwt_reg(Span<const Value> args, size_t /*nargout*/, Span<Value> outs,
 void idwt_reg(Span<const Value> args, size_t /*nargout*/, Span<Value> outs,
               CallContext &ctx)
 {
-    if (args.size() < 3)
-        throw Error("idwt: requires (cA, cD, wname[, len]) or "
-                    "(cA, cD, Lo_R, Hi_R[, len])",
-                    0, 0, "idwt", "", "numkit:idwt:nargin");
+    argcheck::checkNargin(args.size(), 3, 7, "idwt");
     auto *mr = ctx.engine->resource();
     long long len = -1;
 

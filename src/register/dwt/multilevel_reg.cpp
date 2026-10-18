@@ -33,9 +33,7 @@ static std::string argString(const Value &v) {
 void wavedec_reg(Span<const Value> args, size_t /*nargout*/, Span<Value> outs,
                  CallContext &ctx)
 {
-    if (args.size() < 3)
-        throw Error("wavedec: requires (x, n, wname)",
-                    0, 0, "wavedec", "", "numkit:wavedec:nargin");
+    argcheck::checkNargin(args.size(), 3, 3, "wavedec");
     auto *mr = ctx.engine->resource();
     auto [C, L] = wavedec(args[0], argcheck::expectedPositiveInteger(
         argcheck::expectedReal(args[1], 2, "level", "wavedec"), 2, "level", "wavedec"),
@@ -47,9 +45,7 @@ void wavedec_reg(Span<const Value> args, size_t /*nargout*/, Span<Value> outs,
 void waverec_reg(Span<const Value> args, size_t /*nargout*/, Span<Value> outs,
                  CallContext &ctx)
 {
-    if (args.size() < 3)
-        throw Error("waverec: requires (C, L, wname)",
-                    0, 0, "waverec", "", "numkit:waverec:nargin");
+    argcheck::checkNargin(args.size(), 3, 3, "waverec");
     outs[0] = waverec(args[0], args[1], argString(args[2]),
                       ctx.engine->resource());
 }
@@ -57,10 +53,7 @@ void waverec_reg(Span<const Value> args, size_t /*nargout*/, Span<Value> outs,
 void appcoef_reg(Span<const Value> args, size_t /*nargout*/, Span<Value> outs,
                  CallContext &ctx)
 {
-    if (args.size() < 3)
-        throw Error("appcoef: requires (C, L, wname[, level]) or "
-                    "(C, L, Lo_R, Hi_R[, level])",
-                    0, 0, "appcoef", "", "numkit:appcoef:nargin");
+    argcheck::checkNargin(args.size(), 3, 7, "appcoef");
     auto *mr = ctx.engine->resource();
 
     // Parse trailing 'mode' / Mode= N-V: only 'sym' supported.
@@ -124,9 +117,7 @@ void appcoef_reg(Span<const Value> args, size_t /*nargout*/, Span<Value> outs,
 void detcoef_reg(Span<const Value> args, size_t nargout, Span<Value> outs,
                  CallContext &ctx)
 {
-    if (args.size() < 2)
-        throw Error("detcoef: requires (C, L[, level[, 'cells']])",
-                    0, 0, "detcoef", "", "numkit:detcoef:nargin");
+    argcheck::checkNargin(args.size(), 2, 4, "detcoef");
     auto *mr = ctx.engine->resource();
     // Default level = max (deepest decomposition level) when not supplied.
     // MATLAB R2025b: detcoef(c, l) returns the level numel(L) - 2 detail.
@@ -208,9 +199,7 @@ void detcoef_reg(Span<const Value> args, size_t nargout, Span<Value> outs,
 
 void wenergy_reg(Span<const Value> args, size_t, Span<Value> outs, CallContext &ctx)
 {
-    if (args.size() < 2)
-        throw Error("wenergy: requires (C, L)",
-                    0, 0, "wenergy", "", "numkit:wenergy:nargin");
+    argcheck::checkNargin(args.size(), 2, 2, "wenergy");
     auto r = wenergy(args[0], args[1], ctx.engine->resource());
     if (outs.size() >= 1) outs[0] = std::move(r.Ea);
     if (outs.size() >= 2) outs[1] = std::move(r.Ed);
@@ -218,9 +207,7 @@ void wenergy_reg(Span<const Value> args, size_t, Span<Value> outs, CallContext &
 
 void upcoef_reg(Span<const Value> args, size_t, Span<Value> outs, CallContext &ctx)
 {
-    if (args.size() < 3)
-        throw Error("upcoef: requires (O, X, wname [, N [, L]])",
-                    0, 0, "upcoef", "", "numkit:upcoef:nargin");
+    argcheck::checkNargin(args.size(), 3, 5, "upcoef");
     const std::string type = args[0].toString();
     const std::string wname = args[2].toString();
     // N = 0 is the documented "derive the level count from X" form

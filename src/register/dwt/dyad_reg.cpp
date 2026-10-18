@@ -58,9 +58,7 @@ namespace detail {
 void dyaddown_reg(Span<const Value> args, size_t /*nargout*/,
                   Span<Value> outs, CallContext &ctx)
 {
-    if (args.empty())
-        throw Error("dyaddown: requires an input vector",
-                    0, 0, "dyaddown", "", "numkit:dyaddown:nargin");
+    argcheck::checkNargin(args.size(), 1, 3, "dyaddown");
     int odd; char type;
     parseDyadArgs(args, /*defaultOdd=*/0, odd, type);
     outs[0] = dyaddown(args[0], odd, type, ctx.engine->resource());
@@ -77,9 +75,7 @@ void dyaddown_reg(Span<const Value> args, size_t /*nargout*/,
 void dyadup_reg(Span<const Value> args, size_t /*nargout*/,
                 Span<Value> outs, CallContext &ctx)
 {
-    if (args.empty())
-        throw Error("dyadup: requires an input vector",
-                    0, 0, "dyadup", "", "numkit:dyadup:nargin");
+    argcheck::checkNargin(args.size(), 1, 3, "dyadup");
     int odd; char type;
     parseDyadArgs(args, /*defaultOdd=*/1, odd, type);
     outs[0] = dyadup(args[0], odd, type, ctx.engine->resource());
@@ -98,9 +94,7 @@ void dyadup_reg(Span<const Value> args, size_t /*nargout*/,
 void wmaxlev_reg(Span<const Value> args, size_t /*nargout*/,
                  Span<Value> outs, CallContext &ctx)
 {
-    if (args.size() < 2)
-        throw Error("wmaxlev: requires (N, wname)",
-                    0, 0, "wmaxlev", "", "numkit:wmaxlev:nargin");
+    argcheck::checkNargin(args.size(), 2, 2, "wmaxlev");
     if (!args[1].isChar() && !args[1].isString())
         throw Error("wmaxlev: wname must be a character vector",
                     0, 0, "wmaxlev", "", "numkit:wmaxlev:type");

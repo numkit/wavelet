@@ -11,6 +11,7 @@
 #include <numkit/wavelet/filter/families.hpp>
 
 #include <numkit/sys/plugin.hpp>   // CallContext, ctx.engine->resource()
+#include <numkit/value/argcheck.hpp>
 #include <numkit/value/error.hpp>
 
 #include <string>
@@ -34,27 +35,21 @@ namespace detail {
 void dbwavf_reg(Span<const Value> args, size_t /*nargout*/,
                 Span<Value> outs, CallContext &ctx)
 {
-    if (args.empty())
-        throw Error("dbwavf: requires the wavelet name (e.g. 'db4')",
-                    0, 0, "dbwavf", "", "numkit:dbwavf:nargin");
+    argcheck::checkNargin(args.size(), 1, 1, "dbwavf");
     outs[0] = dbwavf(argName(args[0], "dbwavf"), ctx.engine->resource());
 }
 
 void coifwavf_reg(Span<const Value> args, size_t /*nargout*/,
                   Span<Value> outs, CallContext &ctx)
 {
-    if (args.empty())
-        throw Error("coifwavf: requires the wavelet name (e.g. 'coif1')",
-                    0, 0, "coifwavf", "", "numkit:coifwavf:nargin");
+    argcheck::checkNargin(args.size(), 1, 1, "coifwavf");
     outs[0] = coifwavf(argName(args[0], "coifwavf"), ctx.engine->resource());
 }
 
 void symwavf_reg(Span<const Value> args, size_t /*nargout*/,
                  Span<Value> outs, CallContext &ctx)
 {
-    if (args.empty())
-        throw Error("symwavf: requires the wavelet name (e.g. 'sym4')",
-                    0, 0, "symwavf", "", "numkit:symwavf:nargin");
+    argcheck::checkNargin(args.size(), 1, 1, "symwavf");
     outs[0] = symwavf(argName(args[0], "symwavf"), ctx.engine->resource());
 }
 
@@ -62,9 +57,7 @@ void symwavf_reg(Span<const Value> args, size_t /*nargout*/,
 void orthfilt_reg(Span<const Value> args, size_t /*nargout*/,
                   Span<Value> outs, CallContext &ctx)
 {
-    if (args.empty())
-        throw Error("orthfilt: requires a scaling filter W",
-                    0, 0, "orthfilt", "", "numkit:orthfilt:nargin");
+    argcheck::checkNargin(args.size(), 1, 1, "orthfilt");
     OrthfiltResult r = orthfilt(args[0], ctx.engine->resource());
     if (outs.size() >= 1) outs[0] = r.Lo_D;
     if (outs.size() >= 2) outs[1] = r.Hi_D;
