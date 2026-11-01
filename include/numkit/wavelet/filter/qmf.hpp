@@ -1,6 +1,6 @@
 /// @file qmf.hpp
 /// @ingroup group_wavelet
-// toolboxes/wavelet/include/nk/wavelet/filter/qmf.hpp
+// toolboxes/wavelet/include/numkit/wavelet/filter/qmf.hpp
 //
 // Wavelet filter helpers: qmf (quadrature mirror filter) and wrev (reverse).
 

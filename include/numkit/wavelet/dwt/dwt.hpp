@@ -1,6 +1,6 @@
 /// @file dwt.hpp
 /// @ingroup group_wavelet
-// toolboxes/wavelet/include/nk/wavelet/dwt/dwt.hpp
+// toolboxes/wavelet/include/numkit/wavelet/dwt/dwt.hpp
 
 #pragma once
 

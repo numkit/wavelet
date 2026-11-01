@@ -1,6 +1,6 @@
 /// @file haart.hpp
 /// @ingroup group_wavelet
-// toolboxes/wavelet/include/nk/wavelet/dwt/haart.hpp
+// toolboxes/wavelet/include/numkit/wavelet/dwt/haart.hpp
 //
 // 1-D Haar discrete wavelet transform (haart).
 

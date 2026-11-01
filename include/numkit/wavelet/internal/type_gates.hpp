@@ -1,6 +1,6 @@
 /// @file type_gates.hpp
 /// @ingroup group_wavelet
-// toolboxes/wavelet/include/nk/wavelet/internal/type_gates.hpp
+// toolboxes/wavelet/include/numkit/wavelet/internal/type_gates.hpp
 //
 // Shared <fn>_argcheck cores for toolboxes/wavelet (argcheck separation,
 // dev-docs/todo/argcheck_separation.md — boundary rule: raw arguments in,

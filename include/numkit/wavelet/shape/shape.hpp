@@ -1,6 +1,6 @@
 /// @file shape.hpp
 /// @ingroup group_wavelet
-// toolboxes/wavelet/include/nk/wavelet/shape/shape.hpp
+// toolboxes/wavelet/include/numkit/wavelet/shape/shape.hpp
 //
 // Continuous wavelet shapes — analytical functions sampled on a grid.
 // Each returns (psi, x) where x is the time grid linspace(LB, UB, N)

@@ -1,6 +1,6 @@
 /// @file families.hpp
 /// @ingroup group_wavelet
-// toolboxes/wavelet/include/nk/wavelet/filter/families.hpp
+// toolboxes/wavelet/include/numkit/wavelet/filter/families.hpp
 //
 // Family-named scaling filters (dbwavf / coifwavf / symwavf) and the
 // orthogonal filter quadruple (orthfilt).

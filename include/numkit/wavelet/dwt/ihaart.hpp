@@ -1,6 +1,6 @@
 /// @file ihaart.hpp
 /// @ingroup group_wavelet
-// toolboxes/wavelet/include/nk/wavelet/dwt/ihaart.hpp
+// toolboxes/wavelet/include/numkit/wavelet/dwt/ihaart.hpp
 //
 // 1-D inverse Haar discrete wavelet transform (ihaart).
 

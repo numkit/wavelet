@@ -1,6 +1,6 @@
 /// @file dyad.hpp
 /// @ingroup group_wavelet
-// toolboxes/wavelet/include/nk/wavelet/dwt/dyad.hpp
+// toolboxes/wavelet/include/numkit/wavelet/dwt/dyad.hpp
 //
 // Dyadic upsample / downsample helpers (dyaddown / dyadup) and wmaxlev.
 

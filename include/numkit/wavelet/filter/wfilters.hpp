@@ -1,6 +1,6 @@
 /// @file wfilters.hpp
 /// @ingroup group_wavelet
-// toolboxes/wavelet/include/nk/wavelet/filter/wfilters.hpp
+// toolboxes/wavelet/include/numkit/wavelet/filter/wfilters.hpp
 
 #pragma once
 

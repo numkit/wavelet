@@ -1,6 +1,6 @@
 /// @file denoise.hpp
 /// @ingroup group_wavelet
-// toolboxes/wavelet/include/nk/wavelet/denoise/denoise.hpp
+// toolboxes/wavelet/include/numkit/wavelet/denoise/denoise.hpp
 //
 // Wavelet-domain denoising: thresholding rules (wthresh), noise σ
 // estimation (wnoisest), and the composite VisuShrink-style

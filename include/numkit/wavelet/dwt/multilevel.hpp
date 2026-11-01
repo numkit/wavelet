@@ -1,6 +1,6 @@
 /// @file multilevel.hpp
 /// @ingroup group_wavelet
-// toolboxes/wavelet/include/nk/wavelet/dwt/multilevel.hpp
+// toolboxes/wavelet/include/numkit/wavelet/dwt/multilevel.hpp
 //
 // Multi-level discrete wavelet transform: wavedec / waverec, plus the
 // appcoef / detcoef extractors that index into the (C, L) bookkeeping
