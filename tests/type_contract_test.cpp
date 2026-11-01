@@ -8,7 +8,7 @@
 // integer classes, imodwt's complex support).
 // Reference: MATLAB R2025b, build/probe41..53 (≈340 mirrored probes).
 
-#include <numkit/bundle/standard_engine.hpp>
+#include <numkit/core/standard_engine.hpp>
 #include <numkit/core/engine.hpp>
 #include <cmath>
 #include <gtest/gtest.h>

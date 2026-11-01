@@ -5,7 +5,7 @@
 // wraps dwt). [C,S] layout is MATLAB-canonical. Expected values verified
 // vs MATLAB R2025b. Fixes bugs/wavelet/wavedec2-family.md.
 
-#include <numkit/bundle/standard_engine.hpp>
+#include <numkit/core/standard_engine.hpp>
 #include <numkit/core/engine.hpp>
 #include <gtest/gtest.h>
 

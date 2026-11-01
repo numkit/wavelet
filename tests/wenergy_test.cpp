@@ -5,7 +5,7 @@
 // R2025b. Ed is ordered finest-first (level 1 … level N), the reverse of
 // the C-vector packing.
 
-#include <numkit/bundle/standard_engine.hpp>
+#include <numkit/core/standard_engine.hpp>
 #include <numkit/core/engine.hpp>
 #include <gtest/gtest.h>
 

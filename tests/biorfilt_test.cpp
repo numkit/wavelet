@@ -8,7 +8,7 @@
 // Cohen-Daubechies-Feauveau coefficients, verified vs MATLAB R2025b.
 // Fixes bugs/wavelet/dwt-biorthogonal.md.
 
-#include <numkit/bundle/standard_engine.hpp>
+#include <numkit/core/standard_engine.hpp>
 #include <numkit/core/engine.hpp>
 #include <gtest/gtest.h>
 

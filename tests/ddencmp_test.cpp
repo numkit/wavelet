@@ -3,7 +3,7 @@
 // ddencmp(opt, type, x) — default denoising / compression parameters.
 // bugs/wavelet/ddencmp.md. Reference values from MATLAB R2025b.
 
-#include <numkit/bundle/standard_engine.hpp>
+#include <numkit/core/standard_engine.hpp>
 #include <numkit/core/engine.hpp>
 #include <gtest/gtest.h>
 

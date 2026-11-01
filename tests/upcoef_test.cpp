@@ -4,7 +4,7 @@
 // coefficient vector up N levels. bugs/wavelet/upcoef.md. Reference values
 // from MATLAB R2025b.
 
-#include <numkit/bundle/standard_engine.hpp>
+#include <numkit/core/standard_engine.hpp>
 #include <numkit/core/engine.hpp>
 #include <gtest/gtest.h>
 
