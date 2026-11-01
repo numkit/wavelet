@@ -62,15 +62,28 @@ std::vector<double> conv_full(const std::vector<double> &a,
     return y;
 }
 
-// Downsample by 2 starting at index 1 (drop sample 0). After
-// convolving the extended signal with a length-Lf filter, the sequence
-// of valid indices is shifted, and MATLAB picks every other sample
-// starting at offset 1 to align with the canonical DWT convention.
-std::vector<double> downsample_evens(const std::vector<double> &y) {
-    std::vector<double> z;
-    z.reserve(y.size() / 2);
-    for (size_t i = 1; i < y.size(); i += 2) z.push_back(y[i]);
-    return z;
+FilterBank dwt_argcheck(const std::string &wname) {
+    return wavelet_filters(wname);
+}
+
+void dwt_argcheck(const std::vector<double> &Lo_D,
+                  const std::vector<double> &Hi_D) {
+    const size_t Lf = Lo_D.size();
+    if (Lf < 2 || Hi_D.size() != Lf)
+        throw Error("dwt: filter length < 2 or Lo_D/Hi_D length mismatch",
+                    0, 0, "dwt", "", "numkit:dwt:filt");
+}
+
+FilterBank idwt_argcheck(const std::string &wname) {
+    return wavelet_filters(wname);
+}
+
+void idwt_argcheck(const std::vector<double> &Lo_R,
+                   const std::vector<double> &Hi_R) {
+    const size_t Lf = Lo_R.size();
+    if (Lf < 2 || Hi_R.size() != Lf)
+        throw Error("idwt: filter length < 2 or Lo_R/Hi_R length mismatch",
+                    0, 0, "idwt", "", "numkit:idwt:filt");
 }
 
 } // anonymous
@@ -84,10 +97,8 @@ dwt_with_filters(const Value &x,
                  const std::vector<double> &Hi_D,
                  std::pmr::memory_resource *mr)
 {
+    dwt_argcheck(Lo_D, Hi_D);
     const size_t Lf = Lo_D.size();
-    if (Lf < 2 || Hi_D.size() != Lf)
-        throw Error("dwt: filter length < 2 or Lo_D/Hi_D length mismatch",
-                    0, 0, "dwt", "", "numkit:dwt:filt");
 
     const size_t N = x.numel();
     if (N == 0)
@@ -137,7 +148,7 @@ std::pair<Value, Value>
 dwt(const Value &x, const std::string &wname,
     std::pmr::memory_resource *mr)
 {
-    auto fb = wavelet_filters(wname);
+    auto fb = dwt_argcheck(wname);
     return dwt_with_filters(x, fb.Lo_D, fb.Hi_D, mr);
 }
 
@@ -148,6 +159,7 @@ dwt_with_filters_pub(const Value &x,
                      const std::vector<double> &Hi_D,
                      std::pmr::memory_resource *mr)
 {
+    dwt_argcheck(Lo_D, Hi_D);
     return dwt_with_filters(x, Lo_D, Hi_D, mr);
 }
 
@@ -158,10 +170,8 @@ Value idwt_with_filters(const Value &cA, const Value &cD,
                         long long len,
                         std::pmr::memory_resource *mr)
 {
+    idwt_argcheck(Lo_R, Hi_R);
     const size_t Lf = Lo_R.size();
-    if (Lf < 2 || Hi_R.size() != Lf)
-        throw Error("idwt: filter length < 2 or Lo_R/Hi_R length mismatch",
-                    0, 0, "idwt", "", "numkit:idwt:filt");
 
     const size_t la = cA.numel();
     const size_t ld = cD.numel();
@@ -234,7 +244,7 @@ Value idwt(const Value &cA, const Value &cD,
            long long len,
            std::pmr::memory_resource *mr)
 {
-    auto fb = wavelet_filters(wname);
+    auto fb = idwt_argcheck(wname);
     return idwt_with_filters(cA, cD, fb.Lo_R, fb.Hi_R, len, mr);
 }
 
@@ -246,6 +256,7 @@ Value idwt_with_filters_pub(const Value &cA, const Value &cD,
                             long long len,
                             std::pmr::memory_resource *mr)
 {
+    idwt_argcheck(Lo_R, Hi_R);
     return idwt_with_filters(cA, cD, Lo_R, Hi_R, len, mr);
 }
 

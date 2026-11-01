@@ -62,16 +62,8 @@ bool validKeepLen(double n, long long N)
     return n >= 0.0 && n <= static_cast<double>(N) && n == std::floor(n);
 }
 
-} // anonymous
-
-// ── Public C++ API (see dwt/wkeep_wextend.hpp) ────────────────────────
-
-Value wkeep(const Value &x, const Value &len, const Value &opt,
-            std::pmr::memory_resource *mr)
+void wkeep_argcheck(const Value &x, const Value &len)
 {
-    // Class gate: every array class passes through (char included — the
-    // reference keeps it); cells/structs/strings reject. 3-D inputs are
-    // outside the documented 1-D/2-D surface.
     internal::requireWaveClass(x, "wkeep", "X", 1,
                                internal::WvClasses::AnyWithChar,
                                /*allowComplex=*/true);
@@ -83,6 +75,19 @@ Value wkeep(const Value &x, const Value &len, const Value &opt,
         throw Error("wkeep: input 2 (L) must be numeric (got a "
                         + std::string(mtypeName(len.type())) + " array).",
                     0, 0, "wkeep", "", "numkit:wkeep:inputType");
+}
+
+} // anonymous
+
+// ── Public C++ API (see dwt/wkeep_wextend.hpp) ────────────────────────
+
+Value wkeep(const Value &x, const Value &len, const Value &opt,
+            std::pmr::memory_resource *mr)
+{
+    // Class gate: every array class passes through (char included — the
+    // reference keeps it); cells/structs/strings reject. 3-D inputs are
+    // outside the documented 1-D/2-D surface.
+    wkeep_argcheck(x, len);
 
     size_t rows, cols;
     readShape(x, rows, cols);
@@ -405,19 +410,15 @@ void parseExtLf(const Value &lf, const char *fn,
     lfRows = lfCols = static_cast<long long>(v);
 }
 
-} // anonymous
-
-// ── Public C++ API: wextend (see dwt/wkeep_wextend.hpp) ───────────────
-// Reuses detail::extend1D (the file-internal 1-D extension core).
-Value wextend(const Value &type, const std::string &modeRaw, const Value &x,
-              const Value &lf, const std::string &sideRaw,
-              std::pmr::memory_resource *mr)
+void wextend_argcheck(const Value &type, const std::string &modeRaw,
+                      const Value &x, const Value &lf,
+                      int &dim, bool &extRows, bool &extCols,
+                      std::string &mode,
+                      long long &lfRows, long long &lfCols)
 {
-    // type: 1, 2, '1', '1d', '2', '2d', 'ar', 'ac' (probed R2025b; the
-    // reference also takes numeric 1/2 and the 'd'-suffixed aliases).
-    int dim = 0;
-    bool extRows = true;
-    bool extCols = true;
+    dim = 0;
+    extRows = true;
+    extCols = true;
     if (type.isChar() || type.isString()) {
         const std::string s = lower(type.toString());
         if (s == "1" || s == "1d") dim = 1;
@@ -438,8 +439,6 @@ Value wextend(const Value &type, const std::string &modeRaw, const Value &x,
                     0, 0, "wextend", "", "numkit:wextend:dim");
     }
 
-    // Class gate: double / single / integer classes, complex allowed;
-    // logical and char are rejected by the reference (invalidType).
     internal::requireWaveClass(x, "wextend", "X", 3,
                                internal::WvClasses::IntWavelet,
                                /*allowComplex=*/true);
@@ -448,7 +447,7 @@ Value wextend(const Value &type, const std::string &modeRaw, const Value &x,
                         + internal::shapeOf(x) + " array).",
                     0, 0, "wextend", "", "numkit:wextend:inputType");
 
-    const std::string mode = lower(modeRaw);
+    mode = lower(modeRaw);
     static const char *kModes[] = {"sym", "symh", "symw",
                                     "asym", "asymh", "asymw",
                                     "sp0", "sp1", "spd",
@@ -461,8 +460,26 @@ Value wextend(const Value &type, const std::string &modeRaw, const Value &x,
                     "sp0/sp1/spd, per, zpd, ppd)",
                     0, 0, "wextend", "", "numkit:wextend:mode");
 
-    long long lfRows = 0, lfCols = 0;
+    lfRows = 0;
+    lfCols = 0;
     parseExtLf(lf, "wextend", lfRows, lfCols, dim == 2);
+}
+
+} // anonymous
+
+// ── Public C++ API: wextend (see dwt/wkeep_wextend.hpp) ───────────────
+// Reuses detail::extend1D (the file-internal 1-D extension core).
+Value wextend(const Value &type, const std::string &modeRaw, const Value &x,
+              const Value &lf, const std::string &sideRaw,
+              std::pmr::memory_resource *mr)
+{
+    int dim = 0;
+    bool extRows = true;
+    bool extCols = true;
+    std::string mode;
+    long long lfRows = 0, lfCols = 0;
+    wextend_argcheck(type, modeRaw, x, lf, dim, extRows, extCols,
+                     mode, lfRows, lfCols);
 
     // LOC: per-axis side letters (see parseLocChar). 'n' → x unchanged.
     char sideRows = 'b', sideCols = 'b';

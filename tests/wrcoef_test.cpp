@@ -1,8 +1,6 @@
 // toolboxes/wavelet/tests/wrcoef_test.cpp
 //
 // Backfill gtest for toolboxes/wavelet/src/dwt/wrcoef.cpp::wrcoef.
-// Parity verified on Haar (where nk's wavedec matches MATLAB);
-// db/sym/coif use a different boundary convention (BUGS.md #37).
 
 #include <numkit/core/standard_engine.hpp>
 #include <numkit/wavelet/dwt/multilevel.hpp>
@@ -16,7 +14,7 @@ public:
     StandardEngine engine;
     void SetUp() override
     {
-                engine.eval("v10 = [1:16];");
+        engine.eval("v10 = [1:16];");
         engine.eval("[c, l] = wavedec(v10, 3, 'haar');");
     }
     Value eval(const std::string &c) { return engine.eval(c); }
@@ -70,4 +68,27 @@ TEST_F(WrcoefTest, DetailLevelZeroRejected)
     EXPECT_THROW(wavelet::wrcoef("a", c, l, "haar", -2, engine.resource()), numkit::Error);
     Value aUpper = wavelet::wrcoef("A", c, l, "haar", 3, engine.resource());
     EXPECT_DOUBLE_EQ(aUpper.elemAsDouble(0), 4.5);
+}
+
+TEST_F(WrcoefTest, TwoFilterFormMatchesWaveletName)
+{
+    eval("[~, ~, Lo_R, Hi_R] = wfilters('db2');");
+    eval("[C, L] = wavedec(v10, 3, 'db2');");
+    for (int n = 1; n <= 3; ++n) {
+        const std::string ns = std::to_string(n);
+        eval("a_name = wrcoef('a', C, L, 'db2', " + ns + ");");
+        eval("a_filt = wrcoef('a', C, L, Lo_R, Hi_R, " + ns + ");");
+        EXPECT_DOUBLE_EQ(evalScalar("max(abs(a_filt - a_name))"), 0.0);
+
+        eval("d_name = wrcoef('d', C, L, 'db2', " + ns + ");");
+        eval("d_filt = wrcoef('d', C, L, Lo_R, Hi_R, " + ns + ");");
+        EXPECT_DOUBLE_EQ(evalScalar("max(abs(d_filt - d_name))"), 0.0);
+    }
+    eval("a_def_name = wrcoef('a', C, L, 'db2');");
+    eval("a_def_filt = wrcoef('a', C, L, Lo_R, Hi_R);");
+    EXPECT_DOUBLE_EQ(evalScalar("max(abs(a_def_filt - a_def_name))"), 0.0);
+
+    eval("d_def_name = wrcoef('d', C, L, 'db2');");
+    eval("d_def_filt = wrcoef('d', C, L, Lo_R, Hi_R);");
+    EXPECT_DOUBLE_EQ(evalScalar("max(abs(d_def_filt - d_def_name))"), 0.0);
 }

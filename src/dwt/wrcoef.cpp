@@ -2,12 +2,12 @@
 //
 // 1-D single-band reconstruction — wrcoef.
 //
-// MATLAB R2025b semantics (verified end-to-end via probe scripts):
+// Reference engine semantics:
 //
 //   y = wrcoef(type, c, l, wname[, n])
+//   y = wrcoef(type, c, l, Lo_R, Hi_R[, n])
 //
-// The (c, l) pair is the output of `wavedec`. Layout (nk convention,
-// matching the MATLAB doc):
+// The (c, l) pair is the output of `wavedec`. Layout:
 //
 //   c = [cA_N, cD_N, cD_{N-1}, ..., cD_1]
 //   l = [|cA_N|, |cD_N|, ..., |cD_1|, |x|]            (length N+2)
@@ -18,19 +18,17 @@
 //       'a': n ∈ [0, N], default = N.
 //            n = 0 → full reconstruction (= original signal).
 //            n ∈ [1, N] → keep cA_N and cD_{n+1}..cD_N, zero cD_1..cD_n,
-//            then run waverec.
+//            then run multi-level inverse DWT.
 //       'd': n ∈ [1, N], default = N.
-//            Zero cA_N and every cD_k except k = n; then waverec.
-//   * wname is the wavelet name (haar, db1..db4, sym2/sym4, coif1).
-//     The two-filter form `wrcoef(type, c, l, Lo_R, Hi_R[, n])` is
-//     intentionally NOT supported in this release — pass wname instead.
+//            Zero cA_N and every cD_k except k = n; then reconstruct.
+//   * Either wname or explicit reconstruction filter vectors (Lo_R, Hi_R)
+//     may be supplied.
 //
-// Output y is a row vector of length |x| (matches nk's wavedec/
-// waverec which always emit row outputs). MATLAB preserves the
-// orientation of c into y; nk's wavedec coerces c into a row
-// internally, so wrcoef output is row-shaped here too.
+// Output y is a row vector of length |x|.
 
 #include <numkit/wavelet/dwt/multilevel.hpp>
+#include <numkit/wavelet/dwt/dwt.hpp>
+#include <numkit/wavelet/filter/wfilters.hpp>
 
 // Compute-only TU: Value substrate + Error, no engine. The wrcoef builtin
 // (CallContext wrapper) lives in dwt/wrcoef_reg.cpp.
@@ -68,8 +66,10 @@ std::string lower_type(std::string s)
     return s;
 }
 
-void wrcoef_argcheck(const std::string &tl, const Value &c, const Value &l, int n)
+std::string wrcoef_argcheck(const std::string &type, const Value &c,
+                            const Value &l, int n)
 {
+    const std::string tl = lower_type(type);
     if (tl != "a" && tl != "d")
         throw Error("wrcoef: type must be 'a' or 'd'",
                     0, 0, "wrcoef", "", "numkit:wrcoef:type");
@@ -102,17 +102,29 @@ void wrcoef_argcheck(const std::string &tl, const Value &c, const Value &l, int 
     if (c.numel() != expectedC)
         throw Error("wrcoef: c length does not match l bookkeeping",
                     0, 0, "wrcoef", "", "numkit:wrcoef:cl");
+    return tl;
 }
 
-} // anonymous
-
-Value wrcoef(const std::string &type, const Value &c, const Value &l,
-             const std::string &wname, int n,
-             std::pmr::memory_resource *mr)
+std::string wrcoef_argcheck(const std::string &type, const Value &c,
+                            const Value &l,
+                            const std::vector<double> &Lo_R,
+                            const std::vector<double> &Hi_R,
+                            int n)
 {
-    const std::string tl = lower_type(type);
-    wrcoef_argcheck(tl, c, l, n);
+    std::string tl = wrcoef_argcheck(type, c, l, n);
+    if (Lo_R.size() < 2 || Hi_R.size() != Lo_R.size())
+        throw Error("wrcoef: filter length < 2 or Lo_R/Hi_R length mismatch",
+                    0, 0, "wrcoef", "", "numkit:wrcoef:filt");
+    return tl;
+}
 
+Value wrcoef_reconstruct_impl(const std::string &tl, const Value &c,
+                              const Value &l,
+                              const std::vector<double> &Lo_R,
+                              const std::vector<double> &Hi_R,
+                              int n,
+                              std::pmr::memory_resource *mr)
+{
     const size_t Lcount = l.numel();
     const int N = static_cast<int>(Lcount) - 2;
     if (n == -1)
@@ -123,8 +135,8 @@ Value wrcoef(const std::string &type, const Value &c, const Value &l,
         return static_cast<size_t>(l.elemAsDouble(idx));
     };
 
-    // Detail at MATLAB level k (1-based, k=1 finest, k=N coarsest)
-    // lives in c at L-index (1 + N - k). Compute the [start, end) byte
+    // Detail at level k (1-based, k=1 finest, k=N coarsest)
+    // lives in c at L-index (1 + N - k). Compute the [start, end)
     // ranges in c for each detail.
     std::vector<std::pair<size_t, size_t>> dRange(N + 1);   // index 1..N
     {
@@ -154,8 +166,44 @@ Value wrcoef(const std::string &type, const Value &c, const Value &l,
         }
     }
 
-    Value cMod = row_from_vec(cv, mr);
-    return waverec(cMod, l, wname, mr);
+    size_t off = 0;
+    const size_t aLen = sliceLen(0);
+    std::vector<double> running(cv.begin() + off, cv.begin() + off + aLen);
+    off += aLen;
+
+    for (int k = 0; k < N; ++k) {
+        const size_t dLen = sliceLen(1 + k);
+        std::vector<double> detail(cv.begin() + off, cv.begin() + off + dLen);
+        off += dLen;
+        const size_t recLen = sliceLen(2 + k);
+        Value cA = row_from_vec(running, mr);
+        Value cD = row_from_vec(detail, mr);
+        Value next = idwt_with_filters_pub(cA, cD, Lo_R, Hi_R,
+                                           static_cast<long long>(recLen), mr);
+        running = vec_from_value(next);
+    }
+    return row_from_vec(running, mr);
+}
+
+} // anonymous
+
+Value wrcoef(const std::string &type, const Value &c, const Value &l,
+             const std::string &wname, int n,
+             std::pmr::memory_resource *mr)
+{
+    const std::string tl = wrcoef_argcheck(type, c, l, n);
+    auto fb = wavelet_filters(wname);
+    return wrcoef_reconstruct_impl(tl, c, l, fb.Lo_R, fb.Hi_R, n, mr);
+}
+
+Value wrcoef(const std::string &type, const Value &c, const Value &l,
+             const std::vector<double> &Lo_R,
+             const std::vector<double> &Hi_R,
+             int n,
+             std::pmr::memory_resource *mr)
+{
+    const std::string tl = wrcoef_argcheck(type, c, l, Lo_R, Hi_R, n);
+    return wrcoef_reconstruct_impl(tl, c, l, Lo_R, Hi_R, n, mr);
 }
 
 } // namespace numkit::wavelet

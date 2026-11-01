@@ -64,7 +64,7 @@ const std::vector<Case> kBounds = {
     {"wkeep", 3},
     {"wmaxlev", 2},
     {"wnoisest", 3},
-    {"wrcoef", 5},
+    {"wrcoef", 6},
     {"wrev", 1},
     {"wthresh", 3},
 };

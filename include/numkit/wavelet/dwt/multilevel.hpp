@@ -12,6 +12,7 @@
 #include <numkit/value/value.hpp>
 #include <string>
 #include <utility>
+#include <vector>
 
 namespace numkit::wavelet {
 
@@ -151,7 +152,15 @@ Value detcoef(const Value &C, const Value &L, int level,
 ///
 /// @see appcoef, detcoef, waverec
 Value wrcoef(const std::string &type, const Value &c, const Value &l,
-             const std::string &wname, int n,
+             const std::string &wname, int n = -1,
+             std::pmr::memory_resource *mr = nullptr);
+
+/// Single-band reconstruction with explicit synthesis filters
+/// (`wrcoef(type, c, l, Lo_R, Hi_R[, n])`).
+Value wrcoef(const std::string &type, const Value &c, const Value &l,
+             const std::vector<double> &Lo_R,
+             const std::vector<double> &Hi_R,
+             int n = -1,
              std::pmr::memory_resource *mr = nullptr);
 
 /// Energy distribution of a wavelet decomposition.
