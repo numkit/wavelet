@@ -30,6 +30,49 @@ namespace numkit::wavelet {
 
 namespace {
 
+void mexihat_argcheck(double /*lb*/, double /*ub*/, size_t /*N*/) {}
+void morlet_argcheck(double /*lb*/, double /*ub*/, size_t /*N*/) {}
+
+void shanwavf_argcheck(double /*lb*/, double /*ub*/, size_t /*N*/, double fb, double fc)
+{
+    if (!(fb > 0.0) || !std::isfinite(fb))
+        throw Error("shanwavf: bandwidth FB must be positive and finite",
+                    0, 0, "shanwavf", "", "numkit:shanwavf:fb");
+    if (!(fc > 0.0) || !std::isfinite(fc))
+        throw Error("shanwavf: center frequency FC must be positive and finite",
+                    0, 0, "shanwavf", "", "numkit:shanwavf:fc");
+}
+
+void cmorwavf_argcheck(double /*lb*/, double /*ub*/, size_t /*N*/, double fb, double fc)
+{
+    if (!(fb > 0.0) || !std::isfinite(fb))
+        throw Error("cmorwavf: bandwidth FB must be positive and finite",
+                    0, 0, "cmorwavf", "", "numkit:cmorwavf:fb");
+    if (!(fc > 0.0) || !std::isfinite(fc))
+        throw Error("cmorwavf: center frequency FC must be positive and finite",
+                    0, 0, "cmorwavf", "", "numkit:cmorwavf:fc");
+}
+
+void fbspwavf_argcheck(double /*lb*/, double /*ub*/, size_t /*N*/, int m, double fb, double fc)
+{
+    if (m < 1)
+        throw Error("fbspwavf: order m must be >= 1",
+                    0, 0, "fbspwavf", "", "numkit:fbspwavf:order");
+    if (!(fb > 0.0) || !std::isfinite(fb))
+        throw Error("fbspwavf: bandwidth FB must be positive and finite",
+                    0, 0, "fbspwavf", "", "numkit:fbspwavf:fb");
+    if (!(fc > 0.0) || !std::isfinite(fc))
+        throw Error("fbspwavf: center frequency FC must be positive and finite",
+                    0, 0, "fbspwavf", "", "numkit:fbspwavf:fc");
+}
+
+void meyeraux_argcheck(const Value &x)
+{
+    internal::requireNonempty(x, "meyeraux", "X", 1);
+    internal::requireWaveClass(x, "meyeraux", "X", 1,
+                               internal::WvClasses::FloatOnly);
+}
+
 // linspace(LB, UB, N) into a freshly-allocated Value row.
 Value linspace_row(double lb, double ub, size_t N, std::pmr::memory_resource *mr)
 {
@@ -49,6 +92,7 @@ Value linspace_row(double lb, double ub, size_t N, std::pmr::memory_resource *mr
 std::tuple<Value, Value>
 mexihat(double lb, double ub, size_t N, std::pmr::memory_resource *mr)
 {
+    mexihat_argcheck(lb, ub, N);
     Value xv = linspace_row(lb, ub, N, mr);
     Value pv = Value::matrix(1, N, ValueType::DOUBLE, mr);
     if (N == 0) return {std::move(pv), std::move(xv)};
@@ -67,6 +111,7 @@ mexihat(double lb, double ub, size_t N, std::pmr::memory_resource *mr)
 std::tuple<Value, Value>
 morlet(double lb, double ub, size_t N, std::pmr::memory_resource *mr)
 {
+    morlet_argcheck(lb, ub, N);
     Value xv = linspace_row(lb, ub, N, mr);
     Value pv = Value::matrix(1, N, ValueType::DOUBLE, mr);
     if (N == 0) return {std::move(pv), std::move(xv)};
@@ -100,6 +145,7 @@ inline Complex cexp_2pi(double kx)
 std::tuple<Value, Value>
 shanwavf(double lb, double ub, size_t N, double fb, double fc, std::pmr::memory_resource *mr)
 {
+    shanwavf_argcheck(lb, ub, N, fb, fc);
     Value xv = linspace_row(lb, ub, N, mr);
     Value pv = Value::matrix(1, N, ValueType::COMPLEX, mr);
     if (N == 0) return {std::move(pv), std::move(xv)};
@@ -117,6 +163,7 @@ shanwavf(double lb, double ub, size_t N, double fb, double fc, std::pmr::memory_
 std::tuple<Value, Value>
 cmorwavf(double lb, double ub, size_t N, double fb, double fc, std::pmr::memory_resource *mr)
 {
+    cmorwavf_argcheck(lb, ub, N, fb, fc);
     Value xv = linspace_row(lb, ub, N, mr);
     Value pv = Value::matrix(1, N, ValueType::COMPLEX, mr);
     if (N == 0) return {std::move(pv), std::move(xv)};
@@ -134,9 +181,7 @@ cmorwavf(double lb, double ub, size_t N, double fb, double fc, std::pmr::memory_
 std::tuple<Value, Value>
 fbspwavf(double lb, double ub, size_t N, int m, double fb, double fc, std::pmr::memory_resource *mr)
 {
-    if (m < 1)
-        throw Error("fbspwavf: order m must be >= 1",
-                    0, 0, "fbspwavf", "", "numkit:fbspwavf:order");
+    fbspwavf_argcheck(lb, ub, N, m, fb, fc);
     Value xv = linspace_row(lb, ub, N, mr);
     Value pv = Value::matrix(1, N, ValueType::COMPLEX, mr);
     if (N == 0) return {std::move(pv), std::move(xv)};
@@ -156,9 +201,7 @@ fbspwavf(double lb, double ub, size_t N, int m, double fb, double fc, std::pmr::
 
 Value meyeraux(const Value &x, std::pmr::memory_resource *mr)
 {
-    internal::requireNonempty(x, "meyeraux", "X", 1);
-    internal::requireWaveClass(x, "meyeraux", "X", 1,
-                               internal::WvClasses::FloatOnly);
+    meyeraux_argcheck(x);
     const auto poly = [](double v) {
         if (v <= 0.0) return 0.0;
         if (v >= 1.0) return 1.0;

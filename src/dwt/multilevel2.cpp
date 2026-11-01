@@ -68,14 +68,41 @@ Sz sRow(const Value &S, size_t i) {
              static_cast<size_t>(S.elemAsDouble(R + i)) };
 }
 
+void wavedec2_argcheck(int n)
+{
+    if (n < 1)
+        throw Error("wavedec2: level must be >= 1",
+                    0, 0, "wavedec2", "", "numkit:wavedec2:level");
+}
+
+int detcoef2_argcheck(const std::string &type, const Value &C, const Value &S, int level)
+{
+    internal::requireWaveClass(C, "detcoef2", "C", 2,
+                               internal::WvClasses::AnyNumeric,
+                               /*allowComplex=*/true);
+    internal::requireWaveClass(S, "detcoef2", "S", 3,
+                               internal::WvClasses::AnyNumeric);
+    const int N = static_cast<int>(S.dims().rows()) - 2;
+    if (N < 1)
+        throw Error("detcoef2: S must have at least 3 rows (1 level)",
+                    0, 0, "detcoef2", "", "numkit:detcoef2:size");
+    if (level < 1 || level > N)
+        throw Error("detcoef2: level out of range [1, N]",
+                    0, 0, "detcoef2", "", "numkit:detcoef2:level");
+
+    if (type == "h" || type == "H") return 0;
+    if (type == "v" || type == "V") return 1;
+    if (type == "d" || type == "D") return 2;
+    throw Error("detcoef2: type must be 'h', 'v' or 'd' (got '" + type + "')",
+                0, 0, "detcoef2", "", "numkit:detcoef2:type");
+}
+
 } // anonymous
 
 Wavedec2Result wavedec2(const Value &X, int n, const std::string &wname,
                         std::pmr::memory_resource *mr)
 {
-    if (n < 1)
-        throw Error("wavedec2: level must be >= 1",
-                    0, 0, "wavedec2", "", "numkit:wavedec2:level");
+    wavedec2_argcheck(n);
 
     const Sz xsz{ X.dims().rows(), X.dims().cols() };
 
@@ -176,30 +203,8 @@ Value appcoef2(const Value &C, const Value &S, const std::string &wname,
 Value detcoef2(const std::string &type, const Value &C, const Value &S,
                int level, std::pmr::memory_resource *mr)
 {
-    // Probed R2025b: C is a free gather — every numeric class (logical
-    // and integer included) plus complex passes through with the class
-    // preserved; S must be real numeric (complex S rejects with a
-    // subscript diagnostic, char with the toolbox's invalid-arg).
-    internal::requireWaveClass(C, "detcoef2", "C", 2,
-                               internal::WvClasses::AnyNumeric,
-                               /*allowComplex=*/true);
-    internal::requireWaveClass(S, "detcoef2", "S", 3,
-                               internal::WvClasses::AnyNumeric);
+    const int which = detcoef2_argcheck(type, C, S, level);
     const int N = static_cast<int>(S.dims().rows()) - 2;
-    if (N < 1)
-        throw Error("detcoef2: S must have at least 3 rows (1 level)",
-                    0, 0, "detcoef2", "", "numkit:detcoef2:size");
-    if (level < 1 || level > N)
-        throw Error("detcoef2: level out of range [1, N]",
-                    0, 0, "detcoef2", "", "numkit:detcoef2:level");
-
-    int which;   // 0 = H, 1 = V, 2 = D
-    if      (type == "h" || type == "H") which = 0;
-    else if (type == "v" || type == "V") which = 1;
-    else if (type == "d" || type == "D") which = 2;
-    else
-        throw Error("detcoef2: type must be 'h', 'v' or 'd' (got '" + type + "')",
-                    0, 0, "detcoef2", "", "numkit:detcoef2:type");
 
     // Offset: skip cA_N, then the three detail blocks for levels N..level+1.
     size_t off = sRow(S, 0).numel();

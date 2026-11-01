@@ -28,14 +28,12 @@ void wrcoef_reg(Span<const Value> args, size_t /*nargout*/,
     if (!args[0].isChar() && !args[0].isString())
         throw Error("wrcoef: type must be a character vector ('a' or 'd')",
                     0, 0, "wrcoef", "", "numkit:wrcoef:type");
-    std::string type = args[0].toString();
-    for (auto &ch : type)
-        ch = static_cast<char>(std::tolower(static_cast<unsigned char>(ch)));
+    const std::string type = args[0].toString();
 
-    // MATLAB also accepts (Lo_R, Hi_R) in place of wname — guard
+    // The reference also accepts (Lo_R, Hi_R) in place of wname — guard
     // against that misuse with a clear message.
     if (!args[3].isChar() && !args[3].isString())
-        throw Error("wrcoef: nk only supports the wname form "
+        throw Error("wrcoef: numkit only supports the wname form "
                     "wrcoef(type, c, l, wname[, n]). The (Lo_R, Hi_R) "
                     "two-filter form is not implemented.",
                     0, 0, "wrcoef", "", "numkit:wrcoef:wname");

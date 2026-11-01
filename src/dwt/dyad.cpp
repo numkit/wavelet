@@ -10,12 +10,29 @@
 #include <numkit/value/value.hpp>
 #include <numkit/value/error.hpp>
 
+#include <cctype>
 #include <cmath>
 #include <string>
 
 namespace numkit::wavelet {
 
 namespace {
+
+char dyad_argcheck(const Value & /*x*/, int /*odd*/, char type)
+{
+    const char c = static_cast<char>(std::tolower(static_cast<unsigned char>(type)));
+    if (c != 'c' && c != 'r' && c != 'm')
+        throw Error("dyad: type must be 'c', 'r', or 'm'",
+                    0, 0, "dyad", "", "numkit:dyad:type");
+    return c;
+}
+
+void wmaxlev_argcheck(const Value &N, const std::string & /*wname*/)
+{
+    if (N.numel() == 0)
+        throw Error("wmaxlev: N must not be empty",
+                    0, 0, "wmaxlev", "", "numkit:wmaxlev:empty");
+}
 
 void readShape(const Value &x, size_t &rows, size_t &cols)
 {
@@ -55,6 +72,7 @@ inline bool isMatrix(size_t rows, size_t cols)
 Value dyaddown(const Value &x, int odd, char type,
                std::pmr::memory_resource *mr)
 {
+    type = dyad_argcheck(x, odd, type);
     size_t rows, cols;
     readShape(x, rows, cols);
 
@@ -115,6 +133,7 @@ Value dyaddown(const Value &x, int odd, char type,
 Value dyadup(const Value &x, int odd, char type,
              std::pmr::memory_resource *mr)
 {
+    type = dyad_argcheck(x, odd, type);
     size_t rows, cols;
     readShape(x, rows, cols);
 
@@ -176,11 +195,9 @@ Value dyadup(const Value &x, int odd, char type,
 Value wmaxlev(const Value &N, const std::string &wname,
               std::pmr::memory_resource *mr)
 {
+    wmaxlev_argcheck(N, wname);
     // Accept scalar N or a 1×k vector; use min(N) as the effective length.
     const size_t k = N.numel();
-    if (k == 0)
-        throw Error("wmaxlev: N must not be empty",
-                    0, 0, "wmaxlev", "", "numkit:wmaxlev:empty");
     double Nmin = N.elemAsDouble(0);
     for (size_t i = 1; i < k; ++i) {
         const double v = N.elemAsDouble(i);

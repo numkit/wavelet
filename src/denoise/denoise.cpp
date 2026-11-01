@@ -42,15 +42,8 @@ std::vector<double> vecFromValue(const Value &v) {
     return out;
 }
 
-} // anonymous
-
-Value wthresh(const Value &X, const std::string &sorh, const Value &T,
-              std::pmr::memory_resource *mr)
+void wthresh_argcheck(const Value &X, const std::string &sorh, const Value &T)
 {
-    // Probed R2025b: X is double/single (complex computed — the soft
-    // threshold shrinks |z| keeping the phase); T is real, scalar or the
-    // same size as X (elementwise); the result takes single from either
-    // X or T. sorh matches one character 's'/'h', case-insensitive.
     internal::requireWaveClass(X, "wthresh", "X", 1,
                                internal::WvClasses::FloatOnly,
                                /*allowComplex=*/true);
@@ -71,6 +64,57 @@ Value wthresh(const Value &X, const std::string &sorh, const Value &T,
                         + mtypeName(T.type()) + " array for a "
                         + internal::shapeOf(X) + " X).",
                     0, 0, "wthresh", "", "numkit:wthresh:size");
+}
+
+std::string wentropy_argcheck(const std::string &type, double param)
+{
+    std::string t = type;
+    std::transform(t.begin(), t.end(), t.begin(),
+                   [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+    if (t == "norm") {
+        if (param < 1.0)
+            throw Error("wentropy: 'norm' exponent P must be >= 1",
+                        0, 0, "wentropy", "", "numkit:wentropy:norm");
+    } else if (t != "shannon" && t != "log energy" && t != "logenergy"
+               && t != "threshold" && t != "sure") {
+        throw Error("wentropy: unknown type '" + type +
+                        "' (shannon / log energy / threshold / sure / norm)",
+                    0, 0, "wentropy", "", "numkit:wentropy:type");
+    }
+    return t;
+}
+
+std::string ddencmp_argcheck(const std::string &opt, const std::string &type)
+{
+    auto lower = [](std::string s) {
+        std::transform(s.begin(), s.end(), s.begin(),
+                       [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+        return s;
+    };
+    const std::string o = lower(opt);
+    const std::string t = lower(type);
+
+    if (t == "wp")
+        throw Error("ddencmp: wavelet-packet ('wp') defaults are not yet "
+                    "supported (use 'wv')",
+                    0, 0, "ddencmp", "", "numkit:ddencmp:wp");
+    if (t != "wv")
+        throw Error("ddencmp: type must be 'wv' (wavelet) or 'wp'",
+                    0, 0, "ddencmp", "", "numkit:ddencmp:type");
+    if (o != "den" && o != "cmp")
+        throw Error("ddencmp: option must be 'den' (denoise) or 'cmp' (compress)",
+                    0, 0, "ddencmp", "", "numkit:ddencmp:opt");
+    return o;
+}
+
+} // anonymous
+
+Value wthresh(const Value &X, const std::string &sorh, const Value &T,
+              std::pmr::memory_resource *mr)
+{
+    wthresh_argcheck(X, sorh, T);
+    const bool hard = (sorh == "h" || sorh == "H");
+    const bool elemT = T.numel() != 1;
 
     const size_t N = X.numel();
     const bool wantSingle =
@@ -206,9 +250,7 @@ Value wdenoise(const Value &x, int level, const std::string &wname, std::pmr::me
 Value wentropy(const Value &X, const std::string &type, double param,
                std::pmr::memory_resource *mr)
 {
-    std::string t = type;
-    std::transform(t.begin(), t.end(), t.begin(),
-                   [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+    const std::string t = wentropy_argcheck(type, param);
 
     auto x = vecFromValue(X);
     const std::size_t n = x.size();
@@ -227,15 +269,8 @@ Value wentropy(const Value &X, const std::string &type, double param,
             if (std::fabs(v) <= param) e -= 2.0;
             e += std::min(v * v, t2);
         }
-    } else if (t == "norm") {
-        if (param < 1.0)
-            throw Error("wentropy: 'norm' exponent P must be >= 1",
-                        0, 0, "wentropy", "", "numkit:wentropy:norm");
+    } else { // "norm"
         for (double v : x) e += std::pow(std::fabs(v), param);
-    } else {
-        throw Error("wentropy: unknown type '" + type +
-                        "' (shannon / log energy / threshold / sure / norm)",
-                    0, 0, "wentropy", "", "numkit:wentropy:type");
     }
     return Value::scalar(e, mr);
 }
@@ -243,21 +278,7 @@ Value wentropy(const Value &X, const std::string &type, double param,
 DdencmpResult ddencmp(const std::string &opt, const std::string &type,
                       const Value &x, std::pmr::memory_resource *mr)
 {
-    auto lower = [](std::string s) {
-        std::transform(s.begin(), s.end(), s.begin(),
-                       [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
-        return s;
-    };
-    const std::string o = lower(opt);
-    const std::string t = lower(type);
-
-    if (t == "wp")
-        throw Error("ddencmp: wavelet-packet ('wp') defaults are not yet "
-                    "supported (use 'wv')",
-                    0, 0, "ddencmp", "", "numkit:ddencmp:wp");
-    if (t != "wv")
-        throw Error("ddencmp: type must be 'wv' (wavelet) or 'wp'",
-                    0, 0, "ddencmp", "", "numkit:ddencmp:type");
+    const std::string o = ddencmp_argcheck(opt, type);
 
     // Noise level from the finest-detail coefficients of a 1-level db1 DWT.
     auto [cA, cD] = dwt(x, "db1", mr);
@@ -270,12 +291,9 @@ DdencmpResult ddencmp(const std::string &opt, const std::string &type,
     if (o == "den") {
         r.thr = Value::scalar(std::sqrt(2.0 * std::log(n)) * sigma, mr);
         r.sorh = Value::fromString("s", mr);
-    } else if (o == "cmp") {
+    } else { // "cmp"
         r.thr = Value::scalar(med, mr);
         r.sorh = Value::fromString("h", mr);
-    } else {
-        throw Error("ddencmp: option must be 'den' (denoise) or 'cmp' (compress)",
-                    0, 0, "ddencmp", "", "numkit:ddencmp:opt");
     }
     r.keepapp = Value::scalar(1.0, mr);
     return r;

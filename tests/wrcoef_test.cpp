@@ -5,7 +5,7 @@
 // db/sym/coif use a different boundary convention (BUGS.md #37).
 
 #include <numkit/core/standard_engine.hpp>
-#include <numkit/core/standard_engine.hpp>
+#include <numkit/wavelet/dwt/multilevel.hpp>
 #include <gtest/gtest.h>
 
 using namespace numkit;
@@ -64,4 +64,10 @@ TEST_F(WrcoefTest, BadTypeRejected)
 TEST_F(WrcoefTest, DetailLevelZeroRejected)
 {
     EXPECT_THROW(eval("wrcoef('d', c, l, 'haar', 0);"), numkit::Error);
+    const Value c = *engine.getVariable("c");
+    const Value l = *engine.getVariable("l");
+    EXPECT_THROW(wavelet::wrcoef("x", c, l, "haar", 1, engine.resource()), numkit::Error);
+    EXPECT_THROW(wavelet::wrcoef("a", c, l, "haar", -2, engine.resource()), numkit::Error);
+    Value aUpper = wavelet::wrcoef("A", c, l, "haar", 3, engine.resource());
+    EXPECT_DOUBLE_EQ(aUpper.elemAsDouble(0), 4.5);
 }

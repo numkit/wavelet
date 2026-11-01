@@ -64,40 +64,60 @@ Value family_scaling(std::pmr::memory_resource *mr, const std::string &name)
     return rowVec(mr, v);
 }
 
+void dbwavf_argcheck(const std::string &name)
+{
+    if (name.rfind("db", 0) != 0 && name != "haar")
+        throw Error("dbwavf: name must be 'haar' or 'dbN' (got '" + name + "')",
+                    0, 0, "dbwavf", "", "numkit:dbwavf:name");
+}
+
+void coifwavf_argcheck(const std::string &name)
+{
+    if (name.rfind("coif", 0) != 0)
+        throw Error("coifwavf: name must be 'coifK' (got '" + name + "')",
+                    0, 0, "coifwavf", "", "numkit:coifwavf:name");
+}
+
+void symwavf_argcheck(const std::string &name)
+{
+    if (name.rfind("sym", 0) != 0)
+        throw Error("symwavf: name must be 'symN' (got '" + name + "')",
+                    0, 0, "symwavf", "", "numkit:symwavf:name");
+}
+
+void orthfilt_argcheck(const Value &W)
+{
+    if (W.numel() == 0)
+        throw Error("orthfilt: scaling filter must be non-empty",
+                    0, 0, "orthfilt", "", "numkit:orthfilt:empty");
+}
+
 } // anonymous
 
 // ── Public C++ API (see filter/families.hpp) ──────────────────────────
 
 Value dbwavf(const std::string &name, std::pmr::memory_resource *mr)
 {
-    if (name.rfind("db", 0) != 0 && name != "haar")
-        throw Error("dbwavf: name must be 'haar' or 'dbN' (got '" + name + "')",
-                    0, 0, "dbwavf", "", "numkit:dbwavf:name");
+    dbwavf_argcheck(name);
     return family_scaling(mr, name);
 }
 
 Value coifwavf(const std::string &name, std::pmr::memory_resource *mr)
 {
-    if (name.rfind("coif", 0) != 0)
-        throw Error("coifwavf: name must be 'coifK' (got '" + name + "')",
-                    0, 0, "coifwavf", "", "numkit:coifwavf:name");
+    coifwavf_argcheck(name);
     return family_scaling(mr, name);
 }
 
 Value symwavf(const std::string &name, std::pmr::memory_resource *mr)
 {
-    if (name.rfind("sym", 0) != 0)
-        throw Error("symwavf: name must be 'symN' (got '" + name + "')",
-                    0, 0, "symwavf", "", "numkit:symwavf:name");
+    symwavf_argcheck(name);
     return family_scaling(mr, name);
 }
 
 OrthfiltResult orthfilt(const Value &W, std::pmr::memory_resource *mr)
 {
+    orthfilt_argcheck(W);
     const size_t N = W.numel();
-    if (N == 0)
-        throw Error("orthfilt: scaling filter must be non-empty",
-                    0, 0, "orthfilt", "", "numkit:orthfilt:empty");
 
     std::vector<double> Lo_R(N), Lo_D(N), Hi_R(N), Hi_D(N);
     for (size_t k = 0; k < N; ++k)

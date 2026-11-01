@@ -477,6 +477,14 @@ Value vecToRow(const std::vector<double> &v, std::pmr::memory_resource *mr) {
     return r;
 }
 
+void wfilters_argcheck(const std::string &kind)
+{
+    if (!kind.empty() && kind != "all" && kind != "d" && kind != "r" && kind != "l" && kind != "h")
+        throw Error("wfilters: unknown kind '" + kind +
+                    "' (expected 'd', 'r', 'l' or 'h')",
+                    0, 0, "wfilters", "", "numkit:wfilters:kind");
+}
+
 } // anonymous
 
 FilterBank wavelet_filters(const std::string &name) {
@@ -527,6 +535,7 @@ FilterBank wavelet_filters(const std::string &name) {
 WFiltersResult wfilters(const std::string &name, const std::string &kind,
                         std::pmr::memory_resource *mr)
 {
+    wfilters_argcheck(kind);
     auto fb = wavelet_filters(name);
     WFiltersResult r;
     if (kind.empty() || kind == "all") {
@@ -544,13 +553,9 @@ WFiltersResult wfilters(const std::string &name, const std::string &kind,
     } else if (kind == "l") {
         r.Lo_D = vecToRow(fb.Lo_D, mr);
         r.Lo_R = vecToRow(fb.Lo_R, mr);
-    } else if (kind == "h") {
+    } else { // "h"
         r.Hi_D = vecToRow(fb.Hi_D, mr);
         r.Hi_R = vecToRow(fb.Hi_R, mr);
-    } else {
-        throw Error("wfilters: unknown kind '" + kind +
-                    "' (expected 'd', 'r', 'l' or 'h')",
-                    0, 0, "wfilters", "", "numkit:wfilters:kind");
     }
     return r;
 }

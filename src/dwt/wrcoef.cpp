@@ -38,6 +38,7 @@
 #include <numkit/value/error.hpp>
 
 #include <algorithm>
+#include <cctype>
 #include <string>
 #include <vector>
 
@@ -60,47 +61,67 @@ Value row_from_vec(const std::vector<double> &v,
     return r;
 }
 
-} // anonymous
-
-Value wrcoef(const std::string &type, const Value &c, const Value &l,
-             const std::string &wname, int n,
-             std::pmr::memory_resource *mr)
+std::string lower_type(std::string s)
 {
-    if (type != "a" && type != "d")
+    for (auto &ch : s)
+        ch = static_cast<char>(std::tolower(static_cast<unsigned char>(ch)));
+    return s;
+}
+
+void wrcoef_argcheck(const std::string &tl, const Value &c, const Value &l, int n)
+{
+    if (tl != "a" && tl != "d")
         throw Error("wrcoef: type must be 'a' or 'd'",
                     0, 0, "wrcoef", "", "numkit:wrcoef:type");
+    if (n < -1)
+        throw Error("wrcoef: level n must be a non-negative integer",
+                    0, 0, "wrcoef", "", "numkit:wrcoef:level");
 
     const size_t Lcount = l.numel();
     if (Lcount < 3)
         throw Error("wrcoef: l must have at least 3 entries",
                     0, 0, "wrcoef", "", "numkit:wrcoef:l");
     const int N = static_cast<int>(Lcount) - 2;
+    const int effN = (n == -1) ? N : n;
 
-    if (n < 0)
-        n = N;            // sentinel: caller passed -1 to mean "default"
-    if (type == "a") {
-        if (n < 0 || n > N)
+    if (tl == "a") {
+        if (effN < 0 || effN > N)
             throw Error("wrcoef: for type='a', level must satisfy 0 <= n <= "
                         + std::to_string(N),
                         0, 0, "wrcoef", "", "numkit:wrcoef:level");
     } else { // 'd'
-        if (n < 1 || n > N)
+        if (effN < 1 || effN > N)
             throw Error("wrcoef: for type='d', level must satisfy 1 <= n <= "
                         + std::to_string(N),
                         0, 0, "wrcoef", "", "numkit:wrcoef:level");
     }
 
+    size_t expectedC = static_cast<size_t>(l.elemAsDouble(0));
+    for (int k = 0; k < N; ++k)
+        expectedC += static_cast<size_t>(l.elemAsDouble(1 + k));
+    if (c.numel() != expectedC)
+        throw Error("wrcoef: c length does not match l bookkeeping",
+                    0, 0, "wrcoef", "", "numkit:wrcoef:cl");
+}
+
+} // anonymous
+
+Value wrcoef(const std::string &type, const Value &c, const Value &l,
+             const std::string &wname, int n,
+             std::pmr::memory_resource *mr)
+{
+    const std::string tl = lower_type(type);
+    wrcoef_argcheck(tl, c, l, n);
+
+    const size_t Lcount = l.numel();
+    const int N = static_cast<int>(Lcount) - 2;
+    if (n == -1)
+        n = N;            // sentinel: caller passed -1 to mean "default"
+
     auto cv = vec_from_value(c);
     auto sliceLen = [&](size_t idx) -> size_t {
         return static_cast<size_t>(l.elemAsDouble(idx));
     };
-
-    // Validate that c agrees with l.
-    size_t expectedC = sliceLen(0);
-    for (int k = 0; k < N; ++k) expectedC += sliceLen(1 + k);
-    if (cv.size() != expectedC)
-        throw Error("wrcoef: c length does not match l bookkeeping",
-                    0, 0, "wrcoef", "", "numkit:wrcoef:cl");
 
     // Detail at MATLAB level k (1-based, k=1 finest, k=N coarsest)
     // lives in c at L-index (1 + N - k). Compute the [start, end) byte
@@ -116,7 +137,7 @@ Value wrcoef(const std::string &type, const Value &c, const Value &l,
         }
     }
 
-    if (type == "a") {
+    if (tl == "a") {
         // Zero detail levels 1..n  (do nothing if n==0).
         for (int k = 1; k <= n; ++k) {
             for (size_t i = dRange[k].first; i < dRange[k].second; ++i)

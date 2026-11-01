@@ -115,6 +115,34 @@ Buf load_x(const Value &x, bool /*integer_mode*/)
     return b;
 }
 
+void haart_argcheck(const Value &x, int level, bool integer)
+{
+    if (level < 0)
+        throw Error("haart: expected LEVEL to be positive",
+                    0, 0, "haart", "", "numkit:haart:level");
+    if (x.numel() == 0)
+        throw Error("haart: expected input number 1, X, to be nonempty",
+                    0, 0, "haart", "", "numkit:haart:empty");
+    const size_t rows = x.dims().rows();
+    const size_t cols = x.dims().cols();
+    const size_t N    = rows * cols;
+    const bool isVec  = (rows <= 1) || (cols <= 1);
+    const size_t colLen = isVec ? N : rows;
+    if (colLen < 2 || (colLen % 2) != 0)
+        throw Error("haart: the data length must be even. Consider replicating "
+                    "for an even length signal, or removing the last element.",
+                    0, 0, "haart", "", "numkit:haart:even");
+    const int max_lev = max_haar_level(colLen);
+    const int lev = (level == 0) ? max_lev : level;
+    if (lev > max_lev)
+        throw Error("haart: expected LEVEL to be a scalar with value <= " +
+                    std::to_string(max_lev),
+                    0, 0, "haart", "", "numkit:haart:level");
+    if (integer && x.isComplex())
+        throw Error("haart: integer mode is not supported for complex data",
+                    0, 0, "haart", "", "numkit:haart:flag");
+}
+
 } // anonymous
 
 // ── Public C++ API (see dwt/haart.hpp) ────────────────────────────────
@@ -122,29 +150,14 @@ Buf load_x(const Value &x, bool /*integer_mode*/)
 HaartResult haart(const Value &x, int level, bool integer,
                   std::pmr::memory_resource *mr)
 {
-    const size_t numel = x.numel();
-    if (numel == 0)
-        throw Error("haart: expected input number 1, X, to be nonempty",
-                    0, 0, "haart", "", "numkit:haart:empty");
+    haart_argcheck(x, level, integer);
 
     Buf buf = load_x(x, false);
     const size_t colLen = buf.colLen;
     const size_t ncols  = buf.ncols;
 
-    if (colLen < 2 || (colLen % 2) != 0)
-        throw Error("haart: the data length must be even. Consider replicating "
-                    "for an even length signal, or removing the last element.",
-                    0, 0, "haart", "", "numkit:haart:even");
-
     const int max_lev = max_haar_level(colLen);
-    const int lev = (level <= 0) ? max_lev : level;
-    if (lev > max_lev)
-        throw Error("haart: expected LEVEL to be a scalar with value <= " +
-                    std::to_string(max_lev),
-                    0, 0, "haart", "", "numkit:haart:level");
-    if (integer && buf.isComplex)
-        throw Error("haart: integer mode is not supported for complex data",
-                    0, 0, "haart", "", "numkit:haart:flag");
+    const int lev = (level == 0) ? max_lev : level;
 
     const ValueType vt = buf.isComplex ? ValueType::COMPLEX : ValueType::DOUBLE;
     std::vector<double>  curR = buf.real;

@@ -40,6 +40,9 @@ TEST(DyadPublicApi, Dyaddown)
     EXPECT_EQ(ym.dims().rows(), 2u);
     EXPECT_EQ(ym.dims().cols(), 2u);
     EXPECT_DOUBLE_EQ(ym.doubleData()[0], 2.0); // (1,1) = col 2, row 1
+    // invalid type rejected by dyad_argcheck on direct C++ call
+    EXPECT_THROW(wavelet::dyaddown(m, 0, 'z', e.resource()), numkit::Error);
+    EXPECT_THROW(wavelet::dyadup(m, 1, 'z', e.resource()), numkit::Error);
 }
 
 TEST(DyadPublicApi, Dyadup)

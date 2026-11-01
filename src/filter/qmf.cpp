@@ -28,6 +28,13 @@ Value sameShape(std::pmr::memory_resource *mr,
     return Value::matrix(rows, cols, ValueType::DOUBLE, mr);
 }
 
+void wrev_argcheck(const Value &x)
+{
+    internal::requireWaveClass(x, "wrev", "X", 1,
+                               internal::WvClasses::AnyWithChar,
+                               /*allowComplex=*/true);
+}
+
 } // anonymous
 
 // ── Public C++ API (see filter/qmf.hpp) ───────────────────────────────
@@ -39,9 +46,7 @@ Value sameShape(std::pmr::memory_resource *mr,
 // kernel returned double for every real input, silently losing the class).
 Value wrev(const Value &x, std::pmr::memory_resource *mr)
 {
-    internal::requireWaveClass(x, "wrev", "X", 1,
-                               internal::WvClasses::AnyWithChar,
-                               /*allowComplex=*/true);
+    wrev_argcheck(x);
     size_t rows, cols;
     readShape(x, rows, cols);
     const size_t N = rows * cols;

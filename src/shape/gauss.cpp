@@ -86,17 +86,29 @@ double dblfact_norm_sq(int p)
     return r;
 }
 
+void gauswavf_argcheck(double /*lb*/, double /*ub*/, size_t /*N*/, int p)
+{
+    if (p < 1)
+        throw Error("gauswavf: derivative order p must be ≥ 1",
+                    0, 0, "gauswavf", "", "numkit:gauswavf:p");
+}
+
+void cgauwavf_argcheck(double /*lb*/, double /*ub*/, size_t /*N*/, int p)
+{
+    if (p < 1)
+        throw Error("cgauwavf: derivative order p must be ≥ 1",
+                    0, 0, "cgauwavf", "", "numkit:cgauwavf:p");
+}
+
 } // anonymous
 
 std::tuple<Value, Value>
 gauswavf(double lb, double ub, size_t N, int p, std::pmr::memory_resource *mr)
 {
+    gauswavf_argcheck(lb, ub, N, p);
     Value xv = linspace_row(lb, ub, N, mr);
     Value pv = Value::matrix(1, N, ValueType::DOUBLE, mr);
     if (N == 0) return {std::move(pv), std::move(xv)};
-    if (p < 1)
-        throw Error("gauswavf: derivative order p must be ≥ 1",
-                    0, 0, "gauswavf", "", "numkit:gauswavf:p");
 
     const double *xd = xv.doubleData();
     double *pd = pv.doubleDataMut();
@@ -115,12 +127,10 @@ gauswavf(double lb, double ub, size_t N, int p, std::pmr::memory_resource *mr)
 std::tuple<Value, Value>
 cgauwavf(double lb, double ub, size_t N, int p, std::pmr::memory_resource *mr)
 {
+    cgauwavf_argcheck(lb, ub, N, p);
     Value xv = linspace_row(lb, ub, N, mr);
     Value pv = Value::matrix(1, N, ValueType::COMPLEX, mr);
     if (N == 0) return {std::move(pv), std::move(xv)};
-    if (p < 1)
-        throw Error("cgauwavf: derivative order p must be ≥ 1",
-                    0, 0, "cgauwavf", "", "numkit:cgauwavf:p");
 
     const double *xd = xv.doubleData();
     Complex *pd = pv.complexDataMut();

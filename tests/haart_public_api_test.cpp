@@ -57,7 +57,9 @@ TEST(HaartPublicApi, MultiLevelAndInteger)
     Value xri = wavelet::ihaart(ri.a, ri.d, 0, true, e.resource());
     for (size_t i = 0; i < 8; ++i)
         EXPECT_NEAR(xri.doubleData()[i], x.doubleData()[i], 1e-9);
-    // errors: odd-length haart; out-of-range ihaart level
+    // errors: odd-length haart; negative haart level; out-of-range ihaart level
     EXPECT_ANY_THROW(wavelet::haart(hv(e, "[1 2 3]", "xo")));
+    EXPECT_ANY_THROW(wavelet::haart(x, -1));
+    EXPECT_ANY_THROW(wavelet::ihaart(r.a, r.d, -1, false, e.resource()));
     EXPECT_ANY_THROW(wavelet::ihaart(r.a, r.d, 99, false, e.resource()));
 }

@@ -123,12 +123,7 @@ DetailLevel grab_level(const Value &d, bool isCell, size_t idx,
     return L;
 }
 
-} // anonymous
-
-// ── Public C++ API (see dwt/ihaart.hpp) ───────────────────────────────
-
-Value ihaart(const Value &aV, const Value &dV, int level, bool integer,
-             std::pmr::memory_resource *mr)
+size_t ihaart_argcheck(const Value &aV, const Value &dV, int level, bool integer)
 {
     if (aV.numel() == 0)
         throw Error("ihaart: expected input number 1, A, to be nonempty",
@@ -180,6 +175,18 @@ Value ihaart(const Value &aV, const Value &dV, int level, bool integer,
     if (integer && aV.isComplex())
         throw Error("ihaart: integer mode is not supported for complex data",
                     0, 0, "ihaart", "", "numkit:ihaart:flag");
+    return Nlevels;
+}
+
+} // anonymous
+
+// ── Public C++ API (see dwt/ihaart.hpp) ───────────────────────────────
+
+Value ihaart(const Value &aV, const Value &dV, int level, bool integer,
+             std::pmr::memory_resource *mr)
+{
+    const size_t Nlevels = ihaart_argcheck(aV, dV, level, integer);
+    const bool isCell = dV.isCell();
 
     // `a` is always shaped to match the detail dimensions (haart emits
     // columns for vector inputs), so the matrix shape is read directly.

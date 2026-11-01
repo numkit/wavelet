@@ -80,12 +80,9 @@ std::vector<double> circ_corr_back(const std::vector<double> &x,
     return y;
 }
 
-} // anonymous
-
-std::pair<Value, Value> swtAD(const Value &x, int n,
-                              const std::vector<double> &Lo_D,
-                              const std::vector<double> &Hi_D,
-                              std::pmr::memory_resource *mr)
+void swtAD_argcheck(const Value &x, int n,
+                    const std::vector<double> &Lo_D,
+                    const std::vector<double> &Hi_D)
 {
     if (n < 1)
         throw Error("swt: level must be ≥ 1",
@@ -94,15 +91,47 @@ std::pair<Value, Value> swtAD(const Value &x, int n,
         throw Error("swt: filter vectors must have matching even length >= 2",
                     0, 0, "swt", "", "numkit:swt:filter");
     const size_t N = x.numel();
+    if (N > 0) {
+        const size_t needed = static_cast<size_t>(1) << n;
+        if (N % needed != 0)
+            throw Error("swt: signal length must be divisible by 2^n",
+                        0, 0, "swt", "", "numkit:swt:size");
+    }
+}
+
+void modwt_argcheck(int n)
+{
+    if (n < 1)
+        throw Error("modwt: level must be ≥ 1",
+                    0, 0, "modwt", "", "numkit:modwt:level");
+}
+
+void imodwt_argcheck(const Value &swc)
+{
+    internal::requireWaveClass(swc, "imodwt", "W", 1,
+                               internal::WvClasses::FloatOnly,
+                               /*allowComplex=*/true);
+    const size_t H = swc.dims().rows();
+    const size_t N = swc.dims().cols();
+    if (H < 2 || N < 2)
+        throw Error("imodwt: W must be at least 2-by-2 (got a "
+                        + internal::shapeOf(swc) + " array).",
+                    0, 0, "imodwt", "", "numkit:imodwt:size");
+}
+
+} // anonymous
+
+std::pair<Value, Value> swtAD(const Value &x, int n,
+                              const std::vector<double> &Lo_D,
+                              const std::vector<double> &Hi_D,
+                              std::pmr::memory_resource *mr)
+{
+    swtAD_argcheck(x, n, Lo_D, Hi_D);
+    const size_t N = x.numel();
     if (N == 0) {
         return {Value::matrix(static_cast<size_t>(n), 0, ValueType::DOUBLE, mr),
                 Value::matrix(static_cast<size_t>(n), 0, ValueType::DOUBLE, mr)};
     }
-
-    const size_t needed = static_cast<size_t>(1) << n;
-    if (N % needed != 0)
-        throw Error("swt: signal length must be divisible by 2^n",
-                    0, 0, "swt", "", "numkit:swt:size");
 
     std::vector<double> xv(N);
     for (size_t i = 0; i < N; ++i) xv[i] = x.elemAsDouble(i);
@@ -395,9 +424,7 @@ Value iswt(const Value &swa, const Value &swd, const std::string &wname,
 
 Value modwt(const Value &x, int n, const std::string &wname, std::pmr::memory_resource *mr)
 {
-    if (n < 1)
-        throw Error("modwt: level must be ≥ 1",
-                    0, 0, "modwt", "", "numkit:modwt:level");
+    modwt_argcheck(n);
     const size_t N = x.numel();
     if (N == 0)
         return Value::matrix(static_cast<size_t>(n + 1), 0,
@@ -439,18 +466,9 @@ Value modwt(const Value &x, int n, const std::string &wname, std::pmr::memory_re
 
 Value imodwt(const Value &swc, const std::string &wname, std::pmr::memory_resource *mr)
 {
-    // Probed R2025b: w is double/single only (the integer classes and
-    // logical reject with the toolbox's InvalidCFSSize diagnostic) but
-    // complex w computes a complex result; both H and N must be >= 2.
-    internal::requireWaveClass(swc, "imodwt", "W", 1,
-                               internal::WvClasses::FloatOnly,
-                               /*allowComplex=*/true);
+    imodwt_argcheck(swc);
     const size_t H = swc.dims().rows();
     const size_t N = swc.dims().cols();
-    if (H < 2 || N < 2)
-        throw Error("imodwt: W must be at least 2-by-2 (got a "
-                        + internal::shapeOf(swc) + " array).",
-                    0, 0, "imodwt", "", "numkit:imodwt:size");
     const int n = static_cast<int>(H) - 1;
 
     auto fb = wavelet_filters(wname);

@@ -45,15 +45,68 @@ std::vector<double> vecFromValue(const Value &v) {
     return out;
 }
 
+void wavedec_argcheck(int n)
+{
+    if (n < 1)
+        throw Error("wavedec: level must be ≥ 1",
+                    0, 0, "wavedec", "", "numkit:wavedec:level");
+}
+
+void waverec_argcheck(const Value &L)
+{
+    if (L.numel() < 3)
+        throw Error("waverec: L must have at least 3 entries (1 level)",
+                    0, 0, "waverec", "", "numkit:waverec:size");
+}
+
+void detcoef_argcheck(const Value &L, int level)
+{
+    const size_t Lcount = L.numel();
+    if (Lcount < 3)
+        throw Error("detcoef: L too short",
+                    0, 0, "detcoef", "", "numkit:detcoef:size");
+    const int nMax = static_cast<int>(Lcount) - 2;
+    if (level < 1 || level > nMax)
+        throw Error("detcoef: level out of range",
+                    0, 0, "detcoef", "", "numkit:detcoef:level");
+}
+
+void wenergy_argcheck(const Value &L)
+{
+    if (L.numel() < 3)
+        throw Error("wenergy: L must have at least 3 entries (a + 1 detail + length)",
+                    0, 0, "wenergy", "", "numkit:wenergy:L");
+}
+
+void upcoef_argcheck(const std::string &type, int n)
+{
+    if (type != "a" && type != "d")
+        throw Error("upcoef: type must be 'a' (approximation) or 'd' (detail)",
+                    0, 0, "upcoef", "", "numkit:upcoef:type");
+    if (n < 0)
+        throw Error("upcoef: N must be >= 0",
+                    0, 0, "upcoef", "", "numkit:upcoef:N");
+}
+
+void wpdec_argcheck(const Value &x, int n)
+{
+    if (!x.isNumeric() || x.isComplex() || x.isEmpty() ||
+        x.dims().ndims() > 2 || (x.dims().rows() > 1 && x.dims().cols() > 1)) {
+        throw Error("wpdec: X must be a non-empty real 1-D vector",
+                    0, 0, "wpdec", "", "numkit:wpdec:expectedVector");
+    }
+    if (n < 1 || n > 16)
+        throw Error("wpdec: N must be an integer in [1, 16]",
+                    0, 0, "wpdec", "", "numkit:wpdec:invalidLevel");
+}
+
 } // anonymous
 
 std::pair<Value, Value>
 wavedec(const Value &x, int n, const std::string &wname,
         std::pmr::memory_resource *mr)
 {
-    if (n < 1)
-        throw Error("wavedec: level must be ≥ 1",
-                    0, 0, "wavedec", "", "numkit:wavedec:level");
+    wavedec_argcheck(n);
 
     // Run n successive single-level DWTs on the running approximation.
     // Stash each cD in `details[level-1]` (0-indexed: details[0] = cD_1
@@ -97,10 +150,8 @@ wavedec(const Value &x, int n, const std::string &wname,
 Value waverec(const Value &C, const Value &L, const std::string &wname,
               std::pmr::memory_resource *mr)
 {
+    waverec_argcheck(L);
     const size_t Lcount = L.numel();
-    if (Lcount < 3)
-        throw Error("waverec: L must have at least 3 entries (1 level)",
-                    0, 0, "waverec", "", "numkit:waverec:size");
     const int n = static_cast<int>(Lcount) - 2; // number of decomposition levels
     auto sliceLen = [&](size_t idx) -> size_t {
         return static_cast<size_t>(L.elemAsDouble(idx));
@@ -201,14 +252,9 @@ Value appcoef_with_filters_pub(const Value &C, const Value &L,
 Value detcoef(const Value &C, const Value &L, int level,
               std::pmr::memory_resource *mr)
 {
+    detcoef_argcheck(L, level);
     const size_t Lcount = L.numel();
-    if (Lcount < 3)
-        throw Error("detcoef: L too short",
-                    0, 0, "detcoef", "", "numkit:detcoef:size");
     const int nMax = static_cast<int>(Lcount) - 2;
-    if (level < 1 || level > nMax)
-        throw Error("detcoef: level out of range",
-                    0, 0, "detcoef", "", "numkit:detcoef:level");
 
     // C layout: [cA_n, cD_n, cD_{n-1}, ..., cD_1].
     // Detail at MATLAB level `level` (1=finest, nMax=coarsest) lives
@@ -234,11 +280,9 @@ Value detcoef(const Value &C, const Value &L, int level,
 WenergyResult wenergy(const Value &C, const Value &L,
                       std::pmr::memory_resource *mr)
 {
+    wenergy_argcheck(L);
     auto Cv = vecFromValue(C);
     auto Lv = vecFromValue(L);
-    if (Lv.size() < 3)
-        throw Error("wenergy: L must have at least 3 entries (a + 1 detail + length)",
-                    0, 0, "wenergy", "", "numkit:wenergy:L");
     const size_t nLev = Lv.size() - 2;   // number of detail levels
 
     auto energy = [&](size_t off, size_t len) {
@@ -287,12 +331,7 @@ std::vector<double> convFull(const std::vector<double> &a,
 Value upcoef(const std::string &type, const Value &X, const std::string &wname,
              int n, long long len, std::pmr::memory_resource *mr)
 {
-    if (type != "a" && type != "d")
-        throw Error("upcoef: type must be 'a' (approximation) or 'd' (detail)",
-                    0, 0, "upcoef", "", "numkit:upcoef:type");
-    if (n < 0)
-        throw Error("upcoef: N must be >= 0",
-                    0, 0, "upcoef", "", "numkit:upcoef:N");
+    upcoef_argcheck(type, n);
 
     auto fb = wavelet_filters(wname);
     auto y = vecFromValue(X);
@@ -367,14 +406,7 @@ Value wpdec(const Value &x, int n, const std::string &wname,
             const std::string &entName, double entPar,
             std::pmr::memory_resource *mr)
 {
-    if (!x.isNumeric() || x.isComplex() || x.isEmpty() ||
-        x.dims().ndims() > 2 || (x.dims().rows() > 1 && x.dims().cols() > 1)) {
-        throw Error("wpdec: X must be a non-empty real 1-D vector",
-                    0, 0, "wpdec", "", "numkit:wpdec:expectedVector");
-    }
-    if (n < 1 || n > 16)
-        throw Error("wpdec: N must be an integer in [1, 16]",
-                    0, 0, "wpdec", "", "numkit:wpdec:invalidLevel");
+    wpdec_argcheck(x, n);
 
     // Validate wavelet filters up front.
     (void)wavelet_filters(wname);

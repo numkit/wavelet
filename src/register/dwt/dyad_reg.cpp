@@ -31,11 +31,7 @@ void parseDyadArgs(Span<const Value> args, int defaultOdd, int &odd, char &type)
         if (args[i].isChar() || args[i].isString()) {
             const std::string s = args[i].toString();
             if (s.empty()) continue;
-            const char c = static_cast<char>(std::tolower(static_cast<unsigned char>(s[0])));
-            if (c != 'c' && c != 'r' && c != 'm')
-                throw Error("dyad: type must be 'c', 'r', or 'm'",
-                             0, 0, "dyad", "", "numkit:dyad:type");
-            type = c;
+            type = s[0];
         } else {
             odd = (argcheck::expectedInteger(
                 argcheck::expectedReal(args[i], int(i) + 1, "odd", "dyadup"),
