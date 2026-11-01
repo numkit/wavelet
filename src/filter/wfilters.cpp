@@ -20,6 +20,7 @@
 // wavelet_filters() is the filter-bank lookup other compute TUs call.
 #include <numkit/value/value.hpp>
 #include <numkit/value/error.hpp>
+#include <numkit/value/argcheck.hpp>
 
 #include <algorithm>
 #include <cmath>
@@ -477,6 +478,17 @@ Value vecToRow(const std::vector<double> &v, std::pmr::memory_resource *mr) {
     return r;
 }
 
+void wavelet_filters_argcheck(const std::string &name, const Spec *&s, FilterBank &bfb)
+{
+    s = findSpec(name);
+    if (!s && !bior_filterbank(name, bfb)) {
+        throw Error("wfilters: unsupported wavelet name '" + name +
+                    "' (try haar, db1..db10, sym2..sym10, coif1..coif5, "
+                    "bior1.1..bior6.8, rbio1.1..rbio6.8)",
+                    0, 0, "wfilters", "", "numkit:wfilters:name");
+    }
+}
+
 void wfilters_argcheck(const std::string &kind)
 {
     if (!kind.empty() && kind != "all" && kind != "d" && kind != "r" && kind != "l" && kind != "h")
@@ -488,17 +500,13 @@ void wfilters_argcheck(const std::string &kind)
 } // anonymous
 
 FilterBank wavelet_filters(const std::string &name) {
-    const Spec *s = findSpec(name);
+    const Spec *s = nullptr;
+    FilterBank bfb;
+    wavelet_filters_argcheck(name, s, bfb);
     if (!s) {
         // Biorthogonal / reverse-biorthogonal families have distinct
         // analysis/synthesis pairs and are tabulated directly (biorfilt.cpp).
-        FilterBank bfb;
-        if (bior_filterbank(name, bfb))
-            return bfb;
-        throw Error("wfilters: unsupported wavelet name '" + name +
-                    "' (try haar, db1..db10, sym2..sym10, coif1..coif5, "
-                    "bior1.1..bior6.8, rbio1.1..rbio6.8)",
-                    0, 0, "wfilters", "", "numkit:wfilters:name");
+        return bfb;
     }
     const int N = s->len;
 

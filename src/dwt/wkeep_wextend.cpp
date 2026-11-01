@@ -287,7 +287,7 @@ static std::vector<T> extend1D(const std::vector<T> &xv,
         if (mode == "sp1" || mode == "spd") {
             // Linear extrapolation using slope x(2) - x(1).
             const T slope = (N >= 2) ? (xv[1] - xv[0]) : T(0);
-            return xv[0] - T(lf - k) * slope;
+            return xv[0] - T(static_cast<double>(lf - k)) * slope;
         }
         if (mode == "per") {
             return src[static_cast<size_t>(M - lf + k)];
@@ -321,7 +321,7 @@ static std::vector<T> extend1D(const std::vector<T> &xv,
         if (mode == "sp1" || mode == "spd") {
             const T slope = (N >= 2) ? (xv[static_cast<size_t>(N - 1)]
                                         - xv[static_cast<size_t>(N - 2)]) : T(0);
-            return xv[static_cast<size_t>(N - 1)] + T(k + 1) * slope;
+            return xv[static_cast<size_t>(N - 1)] + T(static_cast<double>(k + 1)) * slope;
         }
         if (mode == "per") {
             return src[static_cast<size_t>(k)];

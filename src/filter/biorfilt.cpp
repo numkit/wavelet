@@ -15,6 +15,7 @@
 // rbioNr.Nd is biorNr.Nd with the analysis/synthesis roles swapped.
 
 #include <numkit/wavelet/filter/wfilters.hpp>
+#include <numkit/value/argcheck.hpp>
 
 #include <string>
 #include <vector>
@@ -22,6 +23,11 @@
 namespace numkit::wavelet {
 
 namespace {
+
+void bior_filterbank_argcheck(const std::string &name)
+{
+    (void)name;
+}
 
 const double bior1_1_LoD[] = { 0.7071067811865476, 0.7071067811865476 };
 const double bior1_1_HiD[] = { -0.7071067811865476, 0.7071067811865476 };
@@ -219,6 +225,8 @@ const BiorSpec kBior[] = {
 
 // Returns true and fills `out` if `name` is a known bior*/rbio* family.
 bool bior_filterbank(const std::string &name, FilterBank &out) {
+    bior_filterbank_argcheck(name);
+    if (name.empty()) return false;
     for (const auto &s : kBior) {
         if (name == s.name) {
             out.Lo_D.assign(s.Lo_D, s.Lo_D + s.len);
