@@ -478,7 +478,7 @@ Value wpcoef(const Value &tree, const Value &node,
 Value wprec(const Value &tree, keel::Allocator *mr)
 {
     check_wptree(tree, "wprec");
-    const std::string wname = tree.field("wname").toString();
+    const std::string wname(tree.field("wname").toString().as_ref());
     const bool isCol = tree.hasField("isColumn") && tree.field("isColumn").toBool();
     const Value &nodes = tree.field("nodes");
     const Value &isLeaf = tree.field("isLeaf");
@@ -520,8 +520,8 @@ WpspltResult wpsplt(const Value &tree, const Value &node,
         throw Error("wpsplt: node " + std::to_string(idx) + " is not a terminal leaf node",
                     0, 0, "wpsplt", "", "numkit:wpsplt:notTerminalNode");
 
-    const std::string wname = tree.field("wname").toString();
-    const std::string entName = tree.hasField("entName") ? tree.field("entName").toString() : "shannon";
+    const std::string wname(tree.field("wname").toString().as_ref());
+    const std::string entName = tree.hasField("entName") ? std::string(tree.field("entName").toString().as_ref()) : std::string("shannon");
     const double entPar = tree.hasField("entPar") ? tree.field("entPar").toScalar() : 0.0;
     const bool isCol = tree.hasField("isColumn") && tree.field("isColumn").toBool();
 

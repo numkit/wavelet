@@ -29,7 +29,7 @@ static std::string argString(const Value &v) {
     if (!v.isChar() && !v.isString())
         throw Error("wavelet: expected string argument",
                     0, 0, "", "", "numkit:wavelet:type");
-    return v.toString();
+    return std::string(v.toString().as_ref());
 }
 
 void wavedec_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/, keel::MutArrayRef<Value> outs,
@@ -59,7 +59,8 @@ void appcoef_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/, keel::MutA
     auto *mr = ctx.engine->allocator();
 
     // Parse trailing 'mode' / Mode= N-V: only 'sym' supported.
-    auto lower = [](std::string s) {
+    auto lower = [](keel::StringRef sv) {
+        std::string s(sv.data(), sv.size());
         for (auto &c : s) c = (char)std::tolower((unsigned char)c);
         return s;
     };
@@ -95,7 +96,7 @@ void appcoef_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/, keel::MutA
             ++i;
         }
         check_mode_at(i);
-        outs[0] = appcoef(args[0], args[1], args[2].toString(), level, mr);
+        outs[0] = appcoef(args[0], args[1], std::string(args[2].toString().as_ref()), level, mr);
     } else {
         // (C, L, Lo_R, Hi_R[, level][, 'mode', extmode])
         if (args.size() < 4 || (args[3].isChar() || args[3].isString()))
@@ -139,7 +140,7 @@ void detcoef_reg(keel::ArrayRef<Value> args, keel::usize nargout, keel::MutArray
     const bool hasCellsFlag = (args.size() >= 4)
         && (args[3].isChar() || args[3].isString())
         && [&] {
-            std::string s = args[3].toString();
+            std::string s(args[3].toString().as_ref());
             for (auto &c : s) c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
             return s == "cells";
         }();
@@ -160,10 +161,10 @@ void detcoef_reg(keel::ArrayRef<Value> args, keel::usize nargout, keel::MutArray
 
     // detcoef(C, L, 'cells'): cell array of ALL levels 1..nMax.
     if (levArg.isChar() || levArg.isString()) {
-        std::string s = levArg.toString();
+        std::string s(levArg.toString().as_ref());
         for (auto &c : s) c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
         if (s != "cells")
-            throw Error("detcoef: unknown option '" + levArg.toString() + "'",
+            throw Error("detcoef: unknown option '" + std::string(levArg.toString().as_ref()) + "'",
                         0, 0, "detcoef", "", "numkit:detcoef:opt");
         Value cellOut = Value::cell(1, static_cast<keel::usize>(std::max<long long>(0, maxLev)));
         for (int lev = 1; lev <= maxLev; ++lev)
@@ -210,8 +211,8 @@ void wenergy_reg(keel::ArrayRef<Value> args, keel::usize, keel::MutArrayRef<Valu
 void upcoef_reg(keel::ArrayRef<Value> args, keel::usize, keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 3, 5, "upcoef");
-    const std::string type = args[0].toString();
-    const std::string wname = args[2].toString();
+    const std::string type(args[0].toString().as_ref());
+    const std::string wname(args[2].toString().as_ref());
     // N = 0 is the documented "derive the level count from X" form
     // (upcoef with zero levels is the identity — see UpcoefTest).
     const int n = (args.size() >= 4)

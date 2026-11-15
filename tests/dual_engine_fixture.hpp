@@ -13,6 +13,7 @@
 #pragma once
 
 #include <keel/core.h>
+#include <stdexcept>
 #include <numkit/core/engine.hpp>
 #include <numkit/core/standard_engine.hpp>
 #include <cmath>
@@ -67,7 +68,7 @@ public:
 
     bool evalBool(const std::string &code) { return eval(code).toBool(); }
 
-    std::string evalString(const std::string &code) { return eval(code).toString(); }
+    std::string evalString(const std::string &code) { return std::string(eval(code).toString().as_ref()); }
 
     double getVar(const std::string &name)
     {

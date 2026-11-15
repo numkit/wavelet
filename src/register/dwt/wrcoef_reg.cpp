@@ -31,7 +31,7 @@ void wrcoef_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
     if (!args[0].isChar() && !args[0].isString())
         throw Error("wrcoef: type must be a character vector ('a' or 'd')",
                     0, 0, "wrcoef", "", "numkit:wrcoef:type");
-    const std::string type = args[0].toString();
+    const std::string type(args[0].toString().as_ref());
 
     auto parse_level = [](const Value &v) -> int {
         if (v.isEmpty()) return -1;
@@ -44,7 +44,7 @@ void wrcoef_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
 
     if (args[3].isChar() || args[3].isString()) {
         argcheck::checkNargin(args.size(), 4, 5, "wrcoef");
-        const std::string wname = args[3].toString();
+        const std::string wname(args[3].toString().as_ref());
         const int n = (args.size() >= 5) ? parse_level(args[4]) : -1;
         outs[0] = wrcoef(type, args[1], args[2], wname, n,
                          ctx.engine->allocator());

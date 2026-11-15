@@ -27,7 +27,7 @@ std::string argName(const Value &v, const char *fn)
     if (!v.isChar() && !v.isString())
         throw Error(std::string(fn) + ": wavelet name must be a character vector",
                     0, 0, fn, "", "numkit:wavelet:type");
-    return v.toString();
+    return std::string(v.toString().as_ref());
 }
 
 } // anonymous

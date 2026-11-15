@@ -30,7 +30,7 @@ namespace detail {
 static int parseGaussOrder(const Value &arg, const char *prefix, const char *fn)
 {
     if (arg.isChar() || arg.isString()) {
-        std::string s = arg.toString();
+        std::string s(arg.toString().as_ref());
         // Lowercase the prefix portion for comparison.
         for (auto &c : s) c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
         const keel::usize plen = std::char_traits<char>::length(prefix);

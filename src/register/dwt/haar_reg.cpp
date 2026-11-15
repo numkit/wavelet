@@ -47,7 +47,7 @@ void haart_reg(keel::ArrayRef<Value> args, keel::usize nargout,
         if (!args[2].isChar() && !args[2].isString())
             throw Error("haart: integerflag must be 'noninteger' or 'integer'",
                         0, 0, "haart", "", "numkit:haart:flag");
-        std::string flag = args[2].toString();
+        std::string flag(args[2].toString().as_ref());
         for (auto &c : flag)
             c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
         if      (flag == "integer")    integer_mode = true;
@@ -74,7 +74,7 @@ void ihaart_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
     for (keel::usize i = 2; i < args.size(); ++i) {
         const Value &arg = args[i];
         if (arg.isChar() || arg.isString()) {
-            std::string flag = arg.toString();
+            std::string flag(arg.toString().as_ref());
             for (auto &c : flag)
                 c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
             if      (flag == "integer")    integer_mode = true;

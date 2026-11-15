@@ -29,7 +29,7 @@ static std::string argString(const Value &v) {
     if (!v.isChar() && !v.isString())
         throw Error("dwt/idwt: expected a string for wavelet name",
                     0, 0, "", "", "numkit:wavelet:type");
-    return v.toString();
+    return std::string(v.toString().as_ref());
 }
 
 // Read a Value (numeric vector) into a flat double buffer.
@@ -45,7 +45,8 @@ static std::vector<double> readVec(const Value &v) {
 // boundary modes (only 'sym' implemented for now).
 static bool parse_mode_nv(keel::ArrayRef<Value> args, keel::usize start,
                           const char *fn) {
-    auto lower = [](std::string s) {
+    auto lower = [](keel::StringRef sv) {
+        std::string s(sv.data(), sv.size());
         for (auto &c : s) c = (char)std::tolower((unsigned char)c);
         return s;
     };
@@ -73,7 +74,7 @@ void dwt_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/, keel::MutArray
     if (args[1].isChar() || args[1].isString()) {
         // dwt(x, wname[, 'mode', extmode])
         parse_mode_nv(args, 2, "dwt");
-        std::tie(cA, cD) = dwt(args[0], args[1].toString(), mr);
+        std::tie(cA, cD) = dwt(args[0], std::string(args[1].toString().as_ref()), mr);
     } else {
         // dwt(x, Lo_D, Hi_D[, 'mode', extmode])
         if (args.size() < 3 || (args[2].isChar() || args[2].isString()))
@@ -97,7 +98,7 @@ void idwt_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/, keel::MutArra
 
     if (args[2].isChar() || args[2].isString()) {
         // idwt(cA, cD, wname[, len][, 'mode', extmode])
-        const std::string wname = args[2].toString();
+        const std::string wname(args[2].toString().as_ref());
         keel::usize i = 3;
         // Optional positional `len` (numeric scalar) BEFORE any N-V.
         if (i < args.size() && args[i].numel() == 1

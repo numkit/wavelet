@@ -67,7 +67,7 @@ void wextend_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
         side = args[4].toString();
     else if (args.size() >= 5)
         side = "b";              // numeric LOC: the reference ignores it ('b')
-    outs[0] = wextend(args[0], args[1].toString(), args[2], args[3], side,
+    outs[0] = wextend(args[0], std::string(args[1].toString().as_ref()), args[2], args[3], side,
                       ctx.engine->allocator());
 }
 

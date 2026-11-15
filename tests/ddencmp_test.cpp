@@ -18,7 +18,7 @@ public:
     void SetUp() override {}
     Value eval(const std::string &c) { return engine.eval(c); }
     double evalScalar(const std::string &c) { return eval(c).toScalar(); }
-    std::string evalStr(const std::string &c) { return eval(c).toString(); }
+    std::string evalStr(const std::string &c) { return std::string(eval(c).toString().as_ref()); }
 };
 
 // Denoising: universal threshold sqrt(2*log(n))*sigma, soft, keep approx.

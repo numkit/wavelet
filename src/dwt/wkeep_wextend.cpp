@@ -50,8 +50,9 @@ void outShape(bool col, keel::usize outN,
     else     { outRows = 1;    outCols = outN; }
 }
 
-std::string lower(std::string s)
+std::string lower(keel::StringRef sv)
 {
+    std::string s(sv.data(), sv.size());
     for (auto &c : s)
         c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
     return s;

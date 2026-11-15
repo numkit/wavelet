@@ -31,9 +31,9 @@ void parseDyadArgs(keel::ArrayRef<Value> args, int defaultOdd, int &odd, char &t
     type = 'c';   // matrix default; harmless on the vector path (ignored).
     for (keel::usize i = 1; i < args.size(); ++i) {
         if (args[i].isChar() || args[i].isString()) {
-            const std::string s = args[i].toString();
+            const auto s = args[i].toString();
             if (s.empty()) continue;
-            type = s[0];
+            type = s.data()[0];
         } else {
             odd = (argcheck::expectedInteger(
                 argcheck::expectedReal(args[i], int(i) + 1, "odd", "dyadup"),
@@ -96,7 +96,7 @@ void wmaxlev_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
     if (!args[1].isChar() && !args[1].isString())
         throw Error("wmaxlev: wname must be a character vector",
                     0, 0, "wmaxlev", "", "numkit:wmaxlev:type");
-    outs[0] = wmaxlev(args[0], args[1].toString(), ctx.engine->allocator());
+    outs[0] = wmaxlev(args[0], std::string(args[1].toString().as_ref()), ctx.engine->allocator());
 }
 
 } // namespace detail

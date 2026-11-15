@@ -18,6 +18,7 @@
 #include <cmath>
 #include <string>
 #include <utility>
+#include <vector>
 
 namespace numkit::wavelet {
 namespace detail {
@@ -26,7 +27,7 @@ static std::string argString(const Value &v) {
     if (!v.isChar() && !v.isString())
         throw Error("wavelet: expected string argument",
                     0, 0, "", "", "numkit:wavelet:type");
-    return v.toString();
+    return std::string(v.toString().as_ref());
 }
 
 static std::vector<double> extractFilterVec(const Value &v, const char *fn) {

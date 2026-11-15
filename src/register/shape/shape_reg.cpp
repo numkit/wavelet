@@ -117,7 +117,7 @@ void centfrq_reg(keel::ArrayRef<Value> args, keel::usize nargout,
     if (!args[0].isChar() && !args[0].isString())
         throw Error("centfrq: WNAME must be a string or char vector",
                     0, 0, "centfrq", "", "numkit:centfrq:invalidWavelet");
-    const std::string wname = args[0].toString();
+    const std::string wname(args[0].toString().as_ref());
     int iter = 8;
     if (args.size() >= 2 && !args[1].isEmpty()) {
         iter = argcheck::expectedPositiveInteger(
@@ -144,7 +144,7 @@ void scal2frq_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
     if (!args[1].isChar() && !args[1].isString())
         throw Error("scal2frq: WNAME must be a string or char vector",
                     0, 0, "scal2frq", "", "numkit:scal2frq:invalidWavelet");
-    const std::string wname = args[1].toString();
+    const std::string wname(args[1].toString().as_ref());
     double delta = 1.0;
     if (args.size() >= 3 && !args[2].isEmpty()) {
         delta = argcheck::expectedReal(args[2], 3, "DELTA", "scal2frq");
@@ -164,7 +164,8 @@ void cwt_reg(keel::ArrayRef<Value> args, keel::usize nargout,
     bool extendSignal = true;
     Value freqLimits;
 
-    auto lowerStr = [](std::string s) {
+    auto lowerStr = [](keel::StringRef sv) {
+        std::string s(sv.data(), sv.size());
         for (char &c : s)
             c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
         return s;
@@ -189,7 +190,7 @@ void cwt_reg(keel::ArrayRef<Value> args, keel::usize nargout,
             throw Error("cwt: expected option name at argument " + std::to_string(idx + 1),
                         0, 0, "cwt", "", "numkit:cwt:invalidOption");
         if (idx + 1 >= args.size())
-            throw Error("cwt: missing value for option '" + args[idx].toString() + "'",
+            throw Error("cwt: missing value for option '" + std::string(args[idx].toString().as_ref()) + "'",
                         0, 0, "cwt", "", "numkit:cwt:missingOptionValue");
         const std::string key = lowerStr(args[idx].toString());
         const Value &val = args[idx + 1];
@@ -215,7 +216,7 @@ void cwt_reg(keel::ArrayRef<Value> args, keel::usize nargout,
         } else if (key == "frequencylimits") {
             freqLimits = val;
         } else {
-            throw Error("cwt: unrecognized option '" + args[idx].toString() + "'",
+            throw Error("cwt: unrecognized option '" + std::string(args[idx].toString().as_ref()) + "'",
                         0, 0, "cwt", "", "numkit:cwt:unknownOption");
         }
         idx += 2;
