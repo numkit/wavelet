@@ -13,6 +13,7 @@
 // Sign convention and numerical parity are checked against MATLAB
 // R2025b in the parity harness.
 
+#include <keel/memory.h>
 #include <numkit/wavelet/filter/wfilters.hpp>
 
 // Compute-only TU: Value substrate + Error, no engine. The wfilters
@@ -472,7 +473,7 @@ const Spec *findSpec(const std::string &name) {
     return nullptr;
 }
 
-Value vecToRow(const std::vector<double> &v, std::pmr::memory_resource *mr) {
+Value vecToRow(const std::vector<double> &v, keel::Allocator *mr) {
     Value r = Value::matrix(1, v.size(), ValueType::DOUBLE, mr);
     if (!v.empty()) std::copy(v.begin(), v.end(), r.doubleDataMut());
     return r;
@@ -541,7 +542,7 @@ FilterBank wavelet_filters(const std::string &name) {
 }
 
 WFiltersResult wfilters(const std::string &name, const std::string &kind,
-                        std::pmr::memory_resource *mr)
+                        keel::Allocator *mr)
 {
     wfilters_argcheck(kind);
     auto fb = wavelet_filters(name);

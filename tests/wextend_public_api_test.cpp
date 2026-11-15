@@ -32,12 +32,12 @@ TEST(WextendPublicApi, OneD)
     EXPECT_DOUBLE_EQ(ys.doubleData()[2], 1.0); // original starts here
     EXPECT_DOUBLE_EQ(ys.doubleData()[8], 4.0);
     // 'zpd' -> [0 0 | 1 2 3 4 5 | 0 0]
-    Value yz = wavelet::wextend(t1, "zpd", x, wv(e, "2", "lf2"), "b", e.resource());
+    Value yz = wavelet::wextend(t1, "zpd", x, wv(e, "2", "lf2"), "b", e.allocator());
     EXPECT_DOUBLE_EQ(yz.doubleData()[0], 0.0);
     EXPECT_DOUBLE_EQ(yz.doubleData()[2], 1.0);
     EXPECT_DOUBLE_EQ(yz.doubleData()[8], 0.0);
     // side 'l' -> left-pad only: [0 0 1 2 3 4 5] (numel 7)
-    Value yl = wavelet::wextend(t1, "zpd", x, wv(e, "2", "lf2"), "l", e.resource());
+    Value yl = wavelet::wextend(t1, "zpd", x, wv(e, "2", "lf2"), "l", e.allocator());
     ASSERT_EQ(yl.numel(), 7u);
     EXPECT_DOUBLE_EQ(yl.doubleData()[0], 0.0);
     EXPECT_DOUBLE_EQ(yl.doubleData()[6], 5.0);
@@ -51,12 +51,12 @@ TEST(WextendPublicApi, TwoD)
     StandardEngine e;
     Value M = wv(e, "[1 2; 3 4]", "M");
     // type 2, zpd, lf=1 both axes -> 4x4
-    Value y2 = wavelet::wextend(wv(e, "2", "t2"), "zpd", M, wv(e, "1", "lf1"), "b", e.resource());
+    Value y2 = wavelet::wextend(wv(e, "2", "t2"), "zpd", M, wv(e, "1", "lf1"), "b", e.allocator());
     EXPECT_EQ(y2.dims().rows(), 4u);
     EXPECT_EQ(y2.dims().cols(), 4u);
     // 'ac' = add columns only -> rows unchanged (2), cols 2+2=4
     Value yac =
-        wavelet::wextend(wv(e, "'ac'", "tac"), "zpd", M, wv(e, "1", "lf1"), "b", e.resource());
+        wavelet::wextend(wv(e, "'ac'", "tac"), "zpd", M, wv(e, "1", "lf1"), "b", e.allocator());
     EXPECT_EQ(yac.dims().rows(), 2u);
     EXPECT_EQ(yac.dims().cols(), 4u);
 }

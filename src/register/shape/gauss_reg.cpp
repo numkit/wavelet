@@ -8,6 +8,8 @@
 //
 // Phase 2b compute/register split — see project_layering_refactor memory.
 
+#include <keel/core.h>
+#include <keel/ref.h>
 #include <numkit/wavelet/shape/shape.hpp>
 
 #include <numkit/sys/plugin.hpp>   // CallContext, ctx.engine->resource()
@@ -31,7 +33,7 @@ static int parseGaussOrder(const Value &arg, const char *prefix, const char *fn)
         std::string s = arg.toString();
         // Lowercase the prefix portion for comparison.
         for (auto &c : s) c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
-        const size_t plen = std::char_traits<char>::length(prefix);
+        const keel::usize plen = std::char_traits<char>::length(prefix);
         if (s.size() <= plen || s.compare(0, plen, prefix) != 0)
             throw Error(std::string(fn) + ": bad wname '" + s +
                         "' (expected " + prefix + "N)",
@@ -47,32 +49,32 @@ static int parseGaussOrder(const Value &arg, const char *prefix, const char *fn)
         argcheck::expectedReal(arg, 1, "order", "gauswavf"), 1, "order", "gauswavf");
 }
 
-void gauswavf_reg(Span<const Value> args, size_t nargout,
-                  Span<Value> outs, CallContext &ctx)
+void gauswavf_reg(keel::ArrayRef<Value> args, keel::usize nargout,
+                  keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 3, 4, "gauswavf");
     const double lb = args[0].toScalar();
     const double ub = args[1].toScalar();
-    const size_t N  = static_cast<size_t>(argcheck::expectedPositiveInteger(
+    const keel::usize N  = static_cast<keel::usize>(argcheck::expectedPositiveInteger(
         argcheck::expectedReal(args[2], 3, "N", "gauswavf"), 3, "N", "gauswavf"));
     int p = 1;
     if (args.size() >= 4) p = parseGaussOrder(args[3], "gaus", "gauswavf");
-    auto [psi, x] = gauswavf(lb, ub, N, p, ctx.engine->resource());
+    auto [psi, x] = gauswavf(lb, ub, N, p, ctx.engine->allocator());
     outs[0] = std::move(psi);
     if (nargout > 1) outs[1] = std::move(x);
 }
 
-void cgauwavf_reg(Span<const Value> args, size_t nargout,
-                  Span<Value> outs, CallContext &ctx)
+void cgauwavf_reg(keel::ArrayRef<Value> args, keel::usize nargout,
+                  keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 3, 4, "cgauwavf");
     const double lb = args[0].toScalar();
     const double ub = args[1].toScalar();
-    const size_t N  = static_cast<size_t>(argcheck::expectedPositiveInteger(
+    const keel::usize N  = static_cast<keel::usize>(argcheck::expectedPositiveInteger(
         argcheck::expectedReal(args[2], 3, "N", "cgauwavf"), 3, "N", "cgauwavf"));
     int p = 1;
     if (args.size() >= 4) p = parseGaussOrder(args[3], "cgau", "cgauwavf");
-    auto [psi, x] = cgauwavf(lb, ub, N, p, ctx.engine->resource());
+    auto [psi, x] = cgauwavf(lb, ub, N, p, ctx.engine->allocator());
     outs[0] = std::move(psi);
     if (nargout > 1) outs[1] = std::move(x);
 }

@@ -7,6 +7,8 @@
 //
 // Phase 2b compute/register split — see project_layering_refactor memory.
 
+#include <keel/core.h>
+#include <keel/ref.h>
 #include <numkit/wavelet/filter/wfilters.hpp>
 
 #include <numkit/sys/plugin.hpp>   // CallContext, ctx.engine->resource()
@@ -26,7 +28,7 @@ static std::string argString(const Value &v) {
     return v.toString();
 }
 
-void wfilters_reg(Span<const Value> args, size_t nargout, Span<Value> outs,
+void wfilters_reg(keel::ArrayRef<Value> args, keel::usize nargout, keel::MutArrayRef<Value> outs,
                   CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 1, 2, "wfilters");
@@ -34,7 +36,7 @@ void wfilters_reg(Span<const Value> args, size_t nargout, Span<Value> outs,
     std::string kind;
     if (args.size() >= 2) kind = argString(args[1]);
 
-    auto *mr = ctx.engine->resource();
+    auto *mr = ctx.engine->allocator();
     auto r = wfilters(name, kind, mr);
 
     if (kind.empty()) {
@@ -56,12 +58,12 @@ void wfilters_reg(Span<const Value> args, size_t nargout, Span<Value> outs,
                        : (kind == "r") ? r.Hi_R
                        : (kind == "l") ? r.Lo_R
                                        : r.Hi_R;     // 'h'
-        const size_t Lf = (size_t)a.numel();
+        const keel::usize Lf = (keel::usize)a.numel();
         Value M = Value::matrix(2, Lf, ValueType::DOUBLE, mr);
         double *mp = M.doubleDataMut();
         const double *ap = a.doubleData();
         const double *bp = b.doubleData();
-        for (size_t k = 0; k < Lf; ++k) {
+        for (keel::usize k = 0; k < Lf; ++k) {
             mp[k * 2 + 0] = ap[k];
             mp[k * 2 + 1] = bp[k];
         }

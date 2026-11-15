@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include <memory_resource>
+#include <keel/memory.h>
 #include <numkit/value/value.hpp>
 #include <string>
 
@@ -47,7 +47,7 @@ struct Dwt2Result {
 ///
 /// @see idwt2, dwt
 Dwt2Result dwt2(const Value &X, const std::string &wname,
-                std::pmr::memory_resource *mr = nullptr);
+                keel::Allocator *mr = nullptr);
 
 /// 2-D inverse single-level wavelet transform.
 ///
@@ -71,7 +71,7 @@ Value idwt2(const Value &cA, const Value &cH,
             const Value &cV, const Value &cD,
             const std::string &wname,
             long long outRows /* = -1 */, long long outCols /* = -1 */,
-            std::pmr::memory_resource *mr = nullptr);
+            keel::Allocator *mr = nullptr);
 
 
 /// @}

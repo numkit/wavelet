@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include <memory_resource>
+#include <keel/memory.h>
 #include <numkit/value/value.hpp>
 
 namespace numkit::wavelet {
@@ -25,7 +25,7 @@ namespace numkit::wavelet {
 /// @param mr  Memory resource (nullptr → process default).
 /// @return    Reversed array, same shape as `x`.
 /// @see qmf
-Value wrev(const Value &x, std::pmr::memory_resource *mr = nullptr);
+Value wrev(const Value &x, keel::Allocator *mr = nullptr);
 
 /// @brief Quadrature mirror filter — `y = qmf(x, p)`.
 ///
@@ -38,7 +38,7 @@ Value wrev(const Value &x, std::pmr::memory_resource *mr = nullptr);
 /// @param mr  Memory resource (nullptr → process default).
 /// @return    Quadrature mirror filter, same shape as `x`.
 /// @see wrev
-Value qmf(const Value &x, int p = 0, std::pmr::memory_resource *mr = nullptr);
+Value qmf(const Value &x, int p = 0, keel::Allocator *mr = nullptr);
 
 
 /// @}

@@ -29,15 +29,15 @@ TEST(WkeepPublicApi, OneD)
     EXPECT_DOUBLE_EQ(c.doubleData()[0], 4.0);
     EXPECT_DOUBLE_EQ(c.doubleData()[3], 7.0);
     // 'l' -> first n
-    Value l = wavelet::wkeep(x, wv(e, "4", "n4b"), wv(e, "'l'", "ol"), e.resource());
+    Value l = wavelet::wkeep(x, wv(e, "4", "n4b"), wv(e, "'l'", "ol"), e.allocator());
     EXPECT_DOUBLE_EQ(l.doubleData()[0], 1.0);
     EXPECT_DOUBLE_EQ(l.doubleData()[3], 4.0);
     // 'r' -> last n
-    Value r = wavelet::wkeep(x, wv(e, "4", "n4c"), wv(e, "'r'", "orr"), e.resource());
+    Value r = wavelet::wkeep(x, wv(e, "4", "n4c"), wv(e, "'r'", "orr"), e.allocator());
     EXPECT_DOUBLE_EQ(r.doubleData()[0], 7.0);
     EXPECT_DOUBLE_EQ(r.doubleData()[3], 10.0);
     // numeric 1-based start = 2 -> x(2:5)
-    Value s = wavelet::wkeep(x, wv(e, "4", "n4d"), wv(e, "2", "st2"), e.resource());
+    Value s = wavelet::wkeep(x, wv(e, "4", "n4d"), wv(e, "2", "st2"), e.allocator());
     EXPECT_DOUBLE_EQ(s.doubleData()[0], 2.0);
     EXPECT_DOUBLE_EQ(s.doubleData()[3], 5.0);
     // out-of-range n returns x unchanged (probed R2025b)
@@ -52,7 +52,7 @@ TEST(WkeepPublicApi, TwoD)
     Value M = wv(e, "reshape(1:25,5,5)", "M");
     // top-left 3x3 (corner [1 1])
     Value tl = wavelet::wkeep(M, wv(e, "[3 3]", "sz"), wv(e, "[1 1]", "cn"),
-                              e.resource());
+                              e.allocator());
     EXPECT_EQ(tl.dims().rows(), 3u);
     EXPECT_EQ(tl.dims().cols(), 3u);
     EXPECT_DOUBLE_EQ(tl.doubleData()[0], 1.0);  // (1,1)

@@ -12,6 +12,9 @@
 // Internally we slice rows/columns as length-K Value vectors, hand
 // them to dwt / idwt, and stitch the results back into MxN matrices.
 
+#include <keel/core.h>
+#include <keel/memory.h>
+#include <keel/complex.h>
 #include <numkit/wavelet/dwt/dwt2.hpp>
 #include <numkit/wavelet/dwt/dwt.hpp>
 #include <numkit/wavelet/internal/type_gates.hpp>
@@ -33,10 +36,10 @@ namespace {
 // Apply 1-D dwt to every row of X. Returns (Lo, Hi), each M × outCols.
 std::pair<Value, Value>
 dwt_rows(const Value &X, const std::string &wname,
-         std::pmr::memory_resource *mr)
+         keel::Allocator *mr)
 {
-    const size_t M = X.dims().rows();
-    const size_t N = X.dims().cols();
+    const keel::usize M = X.dims().rows();
+    const keel::usize N = X.dims().cols();
     if (M == 0 || N == 0)
         return {Value::matrix(M, 0, ValueType::DOUBLE, mr),
                 Value::matrix(M, 0, ValueType::DOUBLE, mr)};
@@ -44,9 +47,9 @@ dwt_rows(const Value &X, const std::string &wname,
     // Determine the per-row output length by running one row first.
     auto row = Value::matrix(1, N, ValueType::DOUBLE, mr);
     double *rd = row.doubleDataMut();
-    for (size_t c = 0; c < N; ++c) rd[c] = X.elemAsDouble(c * M + 0);
+    for (keel::usize c = 0; c < N; ++c) rd[c] = X.elemAsDouble(c * M + 0);
     auto [cA0, cD0] = dwt(row, wname, mr);
-    const size_t outN = cA0.numel();
+    const keel::usize outN = cA0.numel();
 
     Value loM = Value::matrix(M, outN, ValueType::DOUBLE, mr);
     Value hiM = Value::matrix(M, outN, ValueType::DOUBLE, mr);
@@ -56,17 +59,17 @@ dwt_rows(const Value &X, const std::string &wname,
     {
         const double *aL = cA0.doubleData();
         const double *aH = cD0.doubleData();
-        for (size_t c = 0; c < outN; ++c) {
+        for (keel::usize c = 0; c < outN; ++c) {
             ld[c * M + 0] = aL[c];
             hd[c * M + 0] = aH[c];
         }
     }
-    for (size_t r = 1; r < M; ++r) {
-        for (size_t c = 0; c < N; ++c) rd[c] = X.elemAsDouble(c * M + r);
+    for (keel::usize r = 1; r < M; ++r) {
+        for (keel::usize c = 0; c < N; ++c) rd[c] = X.elemAsDouble(c * M + r);
         auto [cA, cD] = dwt(row, wname, mr);
         const double *aL = cA.doubleData();
         const double *aH = cD.doubleData();
-        for (size_t c = 0; c < outN; ++c) {
+        for (keel::usize c = 0; c < outN; ++c) {
             ld[c * M + r] = aL[c];
             hd[c * M + r] = aH[c];
         }
@@ -77,19 +80,19 @@ dwt_rows(const Value &X, const std::string &wname,
 // Apply 1-D dwt to every column of X. Returns (Lo, Hi), each outRows × N.
 std::pair<Value, Value>
 dwt_cols(const Value &X, const std::string &wname,
-         std::pmr::memory_resource *mr)
+         keel::Allocator *mr)
 {
-    const size_t M = X.dims().rows();
-    const size_t N = X.dims().cols();
+    const keel::usize M = X.dims().rows();
+    const keel::usize N = X.dims().cols();
     if (M == 0 || N == 0)
         return {Value::matrix(0, N, ValueType::DOUBLE, mr),
                 Value::matrix(0, N, ValueType::DOUBLE, mr)};
 
     auto col = Value::matrix(M, 1, ValueType::DOUBLE, mr);
     double *cd = col.doubleDataMut();
-    for (size_t r = 0; r < M; ++r) cd[r] = X.elemAsDouble(0 * M + r);
+    for (keel::usize r = 0; r < M; ++r) cd[r] = X.elemAsDouble(0 * M + r);
     auto [cA0, cD0] = dwt(col, wname, mr);
-    const size_t outM = cA0.numel();
+    const keel::usize outM = cA0.numel();
 
     Value loM = Value::matrix(outM, N, ValueType::DOUBLE, mr);
     Value hiM = Value::matrix(outM, N, ValueType::DOUBLE, mr);
@@ -98,17 +101,17 @@ dwt_cols(const Value &X, const std::string &wname,
     {
         const double *aL = cA0.doubleData();
         const double *aH = cD0.doubleData();
-        for (size_t r = 0; r < outM; ++r) {
+        for (keel::usize r = 0; r < outM; ++r) {
             ld[0 * outM + r] = aL[r];
             hd[0 * outM + r] = aH[r];
         }
     }
-    for (size_t c = 1; c < N; ++c) {
-        for (size_t r = 0; r < M; ++r) cd[r] = X.elemAsDouble(c * M + r);
+    for (keel::usize c = 1; c < N; ++c) {
+        for (keel::usize r = 0; r < M; ++r) cd[r] = X.elemAsDouble(c * M + r);
         auto [cA, cD] = dwt(col, wname, mr);
         const double *aL = cA.doubleData();
         const double *aH = cD.doubleData();
-        for (size_t r = 0; r < outM; ++r) {
+        for (keel::usize r = 0; r < outM; ++r) {
             ld[c * outM + r] = aL[r];
             hd[c * outM + r] = aH[r];
         }
@@ -120,11 +123,11 @@ dwt_cols(const Value &X, const std::string &wname,
 // 1-D idwt along each column, with target length outRows.
 Value idwt_cols(const Value &Lo, const Value &Hi,
                 const std::string &wname,
-                size_t outRows,
-                std::pmr::memory_resource *mr)
+                keel::usize outRows,
+                keel::Allocator *mr)
 {
-    const size_t M = Lo.dims().rows();
-    const size_t N = Lo.dims().cols();
+    const keel::usize M = Lo.dims().rows();
+    const keel::usize N = Lo.dims().cols();
     Value out = Value::matrix(outRows, N, ValueType::DOUBLE, mr);
     if (M == 0 || N == 0 || outRows == 0) return out;
     double *od = out.doubleDataMut();
@@ -133,15 +136,15 @@ Value idwt_cols(const Value &Lo, const Value &Hi,
     auto colD = Value::matrix(M, 1, ValueType::DOUBLE, mr);
     double *ad = colA.doubleDataMut();
     double *dd = colD.doubleDataMut();
-    for (size_t c = 0; c < N; ++c) {
-        for (size_t r = 0; r < M; ++r) {
+    for (keel::usize c = 0; c < N; ++c) {
+        for (keel::usize r = 0; r < M; ++r) {
             ad[r] = Lo.elemAsDouble(c * M + r);
             dd[r] = Hi.elemAsDouble(c * M + r);
         }
         Value y = idwt(colA, colD, wname,
                        static_cast<long long>(outRows), mr);
         const double *yd = y.doubleData();
-        for (size_t r = 0; r < outRows; ++r)
+        for (keel::usize r = 0; r < outRows; ++r)
             od[c * outRows + r] = yd[r];
     }
     return out;
@@ -150,11 +153,11 @@ Value idwt_cols(const Value &Lo, const Value &Hi,
 // Inverse along rows, target length outCols.
 Value idwt_rows(const Value &Lo, const Value &Hi,
                 const std::string &wname,
-                size_t outCols,
-                std::pmr::memory_resource *mr)
+                keel::usize outCols,
+                keel::Allocator *mr)
 {
-    const size_t M = Lo.dims().rows();
-    const size_t N = Lo.dims().cols();
+    const keel::usize M = Lo.dims().rows();
+    const keel::usize N = Lo.dims().cols();
     Value out = Value::matrix(M, outCols, ValueType::DOUBLE, mr);
     if (M == 0 || N == 0 || outCols == 0) return out;
     double *od = out.doubleDataMut();
@@ -163,15 +166,15 @@ Value idwt_rows(const Value &Lo, const Value &Hi,
     auto rowD = Value::matrix(N, 1, ValueType::DOUBLE, mr);
     double *ad = rowA.doubleDataMut();
     double *dd = rowD.doubleDataMut();
-    for (size_t r = 0; r < M; ++r) {
-        for (size_t c = 0; c < N; ++c) {
+    for (keel::usize r = 0; r < M; ++r) {
+        for (keel::usize c = 0; c < N; ++c) {
             ad[c] = Lo.elemAsDouble(c * M + r);
             dd[c] = Hi.elemAsDouble(c * M + r);
         }
         Value y = idwt(rowA, rowD, wname,
                        static_cast<long long>(outCols), mr);
         const double *yd = y.doubleData();
-        for (size_t c = 0; c < outCols; ++c)
+        for (keel::usize c = 0; c < outCols; ++c)
             od[c * M + r] = yd[c];
     }
     return out;
@@ -199,7 +202,7 @@ void idwt2_argcheck(const Value &cA, const Value &cH,
 } // anonymous
 
 Dwt2Result dwt2(const Value &X, const std::string &wname,
-                std::pmr::memory_resource *mr)
+                keel::Allocator *mr)
 {
     // Pass 1: rows (each row → Lo + Hi halves, each M × outN).
     auto [LoR, HiR] = dwt_rows(X, wname, mr);
@@ -218,7 +221,7 @@ Value idwt2(const Value &cA, const Value &cH,
             const Value &cV, const Value &cD,
             const std::string &wname,
             long long outRows, long long outCols,
-            std::pmr::memory_resource *mr)
+            keel::Allocator *mr)
 {
     idwt2_argcheck(cA, cH, cV, cD);
     const Value *coefs[4] = {&cA, &cH, &cV, &cD};
@@ -236,18 +239,18 @@ Value idwt2(const Value &cA, const Value &cH,
 
     // Real / imaginary double views of the four coefficients (the
     // imaginary view of a REAL coefficient is zero, of course).
-    auto viewOf = [&](bool imag, std::pmr::memory_resource *m) {
+    auto viewOf = [&](bool imag, keel::Allocator *m) {
         Value v[4];
         for (int k = 0; k < 4; ++k) {
             const Value &src = *coefs[k];
-            const size_t R = src.dims().rows(), C = src.dims().cols();
+            const keel::usize R = src.dims().rows(), C = src.dims().cols();
             v[k] = Value::matrix(R, C, ValueType::DOUBLE, m);
             double *d = v[k].doubleDataMut();
             if (!imag) {
-                for (size_t i = 0; i < src.numel(); ++i)
+                for (keel::usize i = 0; i < src.numel(); ++i)
                     d[i] = src.elemAsDouble(i);
             } else if (src.type() == ValueType::COMPLEX) {
-                for (size_t i = 0; i < src.numel(); ++i)
+                for (keel::usize i = 0; i < src.numel(); ++i)
                     d[i] = src.complexElem(i).imag();
             }
             // else: imag view of a real coefficient stays zero-filled.
@@ -257,10 +260,10 @@ Value idwt2(const Value &cA, const Value &cH,
     };
 
     auto runPipeline = [&](const std::array<Value, 4> &v,
-                           std::pmr::memory_resource *m) {
-        size_t la_rows = v[0].dims().rows();
-        size_t la_cols = v[0].dims().cols();
-        size_t natRows = 0, natCols = 0;
+                           keel::Allocator *m) {
+        keel::usize la_rows = v[0].dims().rows();
+        keel::usize la_cols = v[0].dims().cols();
+        keel::usize natRows = 0, natCols = 0;
         {
             auto a = Value::matrix(la_rows, 1, ValueType::DOUBLE, m);
             auto d = Value::matrix(la_rows, 1, ValueType::DOUBLE, m);
@@ -290,23 +293,23 @@ Value idwt2(const Value &cA, const Value &cH,
     // CENTRAL sub-matrix kept (idwt2(...,[2 3]) of a 4x4 natural yields
     // rows 2..3 x cols 1..3) — not a reconstruction target length.
     if (outRows >= 0 || outCols >= 0) {
-        const std::size_t natR = outR.dims().rows();
-        const std::size_t natC = outR.dims().cols();
-        const std::size_t keepR = outRows >= 0
-            ? static_cast<std::size_t>(outRows) : natR;
-        const std::size_t keepC = outCols >= 0
-            ? static_cast<std::size_t>(outCols) : natC;
+        const keel::usize natR = outR.dims().rows();
+        const keel::usize natC = outR.dims().cols();
+        const keel::usize keepR = outRows >= 0
+            ? static_cast<keel::usize>(outRows) : natR;
+        const keel::usize keepC = outCols >= 0
+            ? static_cast<keel::usize>(outCols) : natC;
         if (keepR > natR || keepC > natC)
             throw Error("idwt2: input 6 (SIZ) exceeds the natural "
                         "reconstruction size " + std::to_string(natR)
                         + "x" + std::to_string(natC) + ".",
                         0, 0, "idwt2", "", "numkit:idwt2:size");
-        const std::size_t r0 = (natR - keepR) / 2;
-        const std::size_t c0 = (natC - keepC) / 2;
+        const keel::usize r0 = (natR - keepR) / 2;
+        const keel::usize c0 = (natC - keepC) / 2;
         auto crop = [&](const Value &src) {
             Value dst = Value::matrix(keepR, keepC, ValueType::DOUBLE, mr);
-            for (std::size_t c = 0; c < keepC; ++c)
-                for (std::size_t r = 0; r < keepR; ++r)
+            for (keel::usize c = 0; c < keepC; ++c)
+                for (keel::usize r = 0; r < keepR; ++r)
                     dst.doubleDataMut()[c * keepR + r]
                         = src.elemAsDouble((c0 + c) * natR + r0 + r);
             return dst;
@@ -318,16 +321,16 @@ Value idwt2(const Value &cA, const Value &cH,
     if (!anyCplx) {
         if (anySngl) {
             Value s = internal::allocLike(outR, ValueType::SINGLE, mr);
-            for (std::size_t i = 0; i < outR.numel(); ++i)
+            for (keel::usize i = 0; i < outR.numel(); ++i)
                 internal::storeElem(s, i, outR.elemAsDouble(i));
             return s;
         }
         return outR;
     }
     Value y = Value::complexMatrix(outR.dims().rows(), outR.dims().cols(), mr);
-    Complex *yd = y.complexDataMut();
-    for (std::size_t i = 0; i < outR.numel(); ++i)
-        yd[i] = Complex(outR.elemAsDouble(i), outI.elemAsDouble(i));
+    keel::c64 *yd = y.complexDataMut();
+    for (keel::usize i = 0; i < outR.numel(); ++i)
+        yd[i] = keel::c64(outR.elemAsDouble(i), outI.elemAsDouble(i));
     return y;
 }
 

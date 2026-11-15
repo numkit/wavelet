@@ -7,6 +7,8 @@
 //
 // Phase 2b compute/register split — see project_layering_refactor memory.
 
+#include <keel/core.h>
+#include <keel/ref.h>
 #include <numkit/wavelet/dwt/multilevel.hpp>
 
 #include <numkit/sys/plugin.hpp>   // CallContext, ctx.engine->resource()
@@ -21,8 +23,8 @@
 namespace numkit::wavelet {
 namespace detail {
 
-void wrcoef_reg(Span<const Value> args, size_t /*nargout*/,
-                Span<Value> outs, CallContext &ctx)
+void wrcoef_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
+                keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 4, 6, "wrcoef");
 
@@ -45,7 +47,7 @@ void wrcoef_reg(Span<const Value> args, size_t /*nargout*/,
         const std::string wname = args[3].toString();
         const int n = (args.size() >= 5) ? parse_level(args[4]) : -1;
         outs[0] = wrcoef(type, args[1], args[2], wname, n,
-                         ctx.engine->resource());
+                         ctx.engine->allocator());
     } else {
         argcheck::checkNargin(args.size(), 5, 6, "wrcoef");
         if (!args[3].isNumeric() || args[3].isComplex() ||
@@ -55,13 +57,13 @@ void wrcoef_reg(Span<const Value> args, size_t /*nargout*/,
         }
         auto read_vec = [](const Value &v) {
             std::vector<double> out(v.numel());
-            for (size_t i = 0; i < v.numel(); ++i) out[i] = v.elemAsDouble(i);
+            for (keel::usize i = 0; i < v.numel(); ++i) out[i] = v.elemAsDouble(i);
             return out;
         };
         const int n = (args.size() >= 6) ? parse_level(args[5]) : -1;
         outs[0] = wrcoef(type, args[1], args[2],
                          read_vec(args[3]), read_vec(args[4]), n,
-                         ctx.engine->resource());
+                         ctx.engine->allocator());
     }
 }
 

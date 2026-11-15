@@ -30,19 +30,19 @@ TEST(DyadPublicApi, Dyaddown)
     EXPECT_DOUBLE_EQ(y.doubleData()[0], 20.0);
     EXPECT_DOUBLE_EQ(y.doubleData()[2], 60.0);
     // odd = 1 keeps odd-indexed -> [10 30 50 70]
-    Value yo = wavelet::dyaddown(x, 1, 'c', e.resource());
+    Value yo = wavelet::dyaddown(x, 1, 'c', e.allocator());
     ASSERT_EQ(yo.numel(), 4u);
     EXPECT_DOUBLE_EQ(yo.doubleData()[0], 10.0);
     EXPECT_DOUBLE_EQ(yo.doubleData()[3], 70.0);
     // matrix, type 'c' keeps even columns of [1 2 3 4; 5 6 7 8] -> cols 2,4
     Value m = dvar(e, "[1 2 3 4; 5 6 7 8]", "m");
-    Value ym = wavelet::dyaddown(m, 0, 'c', e.resource());
+    Value ym = wavelet::dyaddown(m, 0, 'c', e.allocator());
     EXPECT_EQ(ym.dims().rows(), 2u);
     EXPECT_EQ(ym.dims().cols(), 2u);
     EXPECT_DOUBLE_EQ(ym.doubleData()[0], 2.0); // (1,1) = col 2, row 1
     // invalid type rejected by dyad_argcheck on direct C++ call
-    EXPECT_THROW(wavelet::dyaddown(m, 0, 'z', e.resource()), numkit::Error);
-    EXPECT_THROW(wavelet::dyadup(m, 1, 'z', e.resource()), numkit::Error);
+    EXPECT_THROW(wavelet::dyaddown(m, 0, 'z', e.allocator()), numkit::Error);
+    EXPECT_THROW(wavelet::dyadup(m, 1, 'z', e.allocator()), numkit::Error);
 }
 
 TEST(DyadPublicApi, Dyadup)
@@ -56,7 +56,7 @@ TEST(DyadPublicApi, Dyadup)
     EXPECT_DOUBLE_EQ(y.doubleData()[1], 1.0);
     EXPECT_DOUBLE_EQ(y.doubleData()[6], 0.0);
     // odd = 0 -> [1 0 2 0 3]
-    Value y0 = wavelet::dyadup(x, 0, 'c', e.resource());
+    Value y0 = wavelet::dyadup(x, 0, 'c', e.allocator());
     ASSERT_EQ(y0.numel(), 5u);
     EXPECT_DOUBLE_EQ(y0.doubleData()[0], 1.0);
     EXPECT_DOUBLE_EQ(y0.doubleData()[1], 0.0);
@@ -68,7 +68,7 @@ TEST(DyadPublicApi, Wmaxlev)
     StandardEngine e;
     EXPECT_DOUBLE_EQ(wavelet::wmaxlev(dvar(e, "64", "n64"), "db2").toScalar(), 4.0);
     EXPECT_DOUBLE_EQ(
-        wavelet::wmaxlev(dvar(e, "[8 8]", "n88"), "db1", e.resource()).toScalar(),
+        wavelet::wmaxlev(dvar(e, "[8 8]", "n88"), "db1", e.allocator()).toScalar(),
         3.0);
     EXPECT_DOUBLE_EQ(wavelet::wmaxlev(dvar(e, "2", "n2"), "db1").toScalar(), 1.0);
     EXPECT_DOUBLE_EQ(wavelet::wmaxlev(dvar(e, "1", "n1"), "db1").toScalar(), 0.0);

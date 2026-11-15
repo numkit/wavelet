@@ -11,6 +11,8 @@
 // fragile but very small — `appcoef` / `detcoef` just slice C using
 // the cumulative offsets implied by L.
 
+#include <keel/core.h>
+#include <keel/memory.h>
 #include <numkit/wavelet/dwt/multilevel.hpp>
 #include <numkit/wavelet/dwt/dwt.hpp>
 #include <numkit/wavelet/denoise/denoise.hpp>
@@ -33,7 +35,7 @@ namespace numkit::wavelet {
 namespace {
 
 Value rowFromVec(const std::vector<double> &v,
-                 std::pmr::memory_resource *mr) {
+                 keel::Allocator *mr) {
     Value r = Value::matrix(1, v.size(), ValueType::DOUBLE, mr);
     if (!v.empty()) std::copy(v.begin(), v.end(), r.doubleDataMut());
     return r;
@@ -41,7 +43,7 @@ Value rowFromVec(const std::vector<double> &v,
 
 std::vector<double> vecFromValue(const Value &v) {
     std::vector<double> out(v.numel());
-    for (size_t i = 0; i < v.numel(); ++i) out[i] = v.elemAsDouble(i);
+    for (keel::usize i = 0; i < v.numel(); ++i) out[i] = v.elemAsDouble(i);
     return out;
 }
 
@@ -61,7 +63,7 @@ void waverec_argcheck(const Value &L)
 
 void detcoef_argcheck(const Value &L, int level)
 {
-    const size_t Lcount = L.numel();
+    const keel::usize Lcount = L.numel();
     if (Lcount < 3)
         throw Error("detcoef: L too short",
                     0, 0, "detcoef", "", "numkit:detcoef:size");
@@ -104,7 +106,7 @@ void wpdec_argcheck(const Value &x, int n)
 
 std::pair<Value, Value>
 wavedec(const Value &x, int n, const std::string &wname,
-        std::pmr::memory_resource *mr)
+        keel::Allocator *mr)
 {
     wavedec_argcheck(n);
 
@@ -115,7 +117,7 @@ wavedec(const Value &x, int n, const std::string &wname,
     Value running = Value::matrix(1, x.numel(), ValueType::DOUBLE, mr);
     {
         double *rd = running.doubleDataMut();
-        for (size_t i = 0; i < x.numel(); ++i) rd[i] = x.elemAsDouble(i);
+        for (keel::usize i = 0; i < x.numel(); ++i) rd[i] = x.elemAsDouble(i);
     }
 
     Value finalApprox;
@@ -136,7 +138,7 @@ wavedec(const Value &x, int n, const std::string &wname,
     L.push_back(static_cast<double>(x.numel()));
 
     // C = [cA_n, cD_n, cD_{n-1}, ..., cD_1]
-    size_t total = approx.size();
+    keel::usize total = approx.size();
     for (auto &d : details) total += d.size();
     std::vector<double> C;
     C.reserve(total);
@@ -148,19 +150,19 @@ wavedec(const Value &x, int n, const std::string &wname,
 }
 
 Value waverec(const Value &C, const Value &L, const std::string &wname,
-              std::pmr::memory_resource *mr)
+              keel::Allocator *mr)
 {
     waverec_argcheck(L);
-    const size_t Lcount = L.numel();
+    const keel::usize Lcount = L.numel();
     const int n = static_cast<int>(Lcount) - 2; // number of decomposition levels
-    auto sliceLen = [&](size_t idx) -> size_t {
-        return static_cast<size_t>(L.elemAsDouble(idx));
+    auto sliceLen = [&](keel::usize idx) -> keel::usize {
+        return static_cast<keel::usize>(L.elemAsDouble(idx));
     };
     auto Cv = vecFromValue(C);
 
     // Approximation cA_n is the first L[0] entries of C.
-    size_t off = 0;
-    const size_t aLen = sliceLen(0);
+    keel::usize off = 0;
+    const keel::usize aLen = sliceLen(0);
     if (off + aLen > Cv.size())
         throw Error("waverec: C/L mismatch (approx)",
                     0, 0, "waverec", "", "numkit:waverec:bounds");
@@ -169,7 +171,7 @@ Value waverec(const Value &C, const Value &L, const std::string &wname,
 
     // Walk through details from coarsest (L[1]) to finest (L[n]).
     for (int k = 0; k < n; ++k) {
-        const size_t dLen = sliceLen(1 + k);
+        const keel::usize dLen = sliceLen(1 + k);
         if (off + dLen > Cv.size())
             throw Error("waverec: C/L mismatch (detail)",
                         0, 0, "waverec", "", "numkit:waverec:bounds");
@@ -179,7 +181,7 @@ Value waverec(const Value &C, const Value &L, const std::string &wname,
         // Target reconstruction length: L[2+k] (the next coarser
         // approximation length, or the original signal length at the
         // last step).
-        const size_t recLen = sliceLen(2 + k);
+        const keel::usize recLen = sliceLen(2 + k);
 
         // Pack as Value rows for the idwt API.
         Value cA = rowFromVec(running, mr);
@@ -195,9 +197,9 @@ static Value appcoef_with_filters(const Value &C, const Value &L,
                                   const std::vector<double> &Lo_R,
                                   const std::vector<double> &Hi_R,
                                   int level,
-                                  std::pmr::memory_resource *mr)
+                                  keel::Allocator *mr)
 {
-    const size_t Lcount = L.numel();
+    const keel::usize Lcount = L.numel();
     if (Lcount < 3)
         throw Error("appcoef: L too short",
                     0, 0, "appcoef", "", "numkit:appcoef:size");
@@ -208,19 +210,19 @@ static Value appcoef_with_filters(const Value &C, const Value &L,
                     0, 0, "appcoef", "", "numkit:appcoef:level");
 
     auto Cv = vecFromValue(C);
-    auto sliceLen = [&](size_t idx) -> size_t {
-        return static_cast<size_t>(L.elemAsDouble(idx));
+    auto sliceLen = [&](keel::usize idx) -> keel::usize {
+        return static_cast<keel::usize>(L.elemAsDouble(idx));
     };
 
     std::vector<double> running(Cv.begin(), Cv.begin() + sliceLen(0));
     if (level == nMax) return rowFromVec(running, mr);
 
-    size_t off = sliceLen(0);
+    keel::usize off = sliceLen(0);
     for (int k = 0; k < nMax - level; ++k) {
-        const size_t dLen = sliceLen(1 + k);
+        const keel::usize dLen = sliceLen(1 + k);
         std::vector<double> detail(Cv.begin() + off, Cv.begin() + off + dLen);
         off += dLen;
-        const size_t recLen = sliceLen(2 + k);
+        const keel::usize recLen = sliceLen(2 + k);
         Value cA = rowFromVec(running, mr);
         Value cD = rowFromVec(detail, mr);
         Value next = idwt_with_filters_pub(cA, cD, Lo_R, Hi_R,
@@ -232,7 +234,7 @@ static Value appcoef_with_filters(const Value &C, const Value &L,
 
 Value appcoef(const Value &C, const Value &L, const std::string &wname,
               int level,
-              std::pmr::memory_resource *mr)
+              keel::Allocator *mr)
 {
     auto fb = wavelet_filters(wname);
     return appcoef_with_filters(C, L, fb.Lo_R, fb.Hi_R, level, mr);
@@ -244,16 +246,16 @@ Value appcoef_with_filters_pub(const Value &C, const Value &L,
                                const std::vector<double> &Lo_R,
                                const std::vector<double> &Hi_R,
                                int level,
-                               std::pmr::memory_resource *mr)
+                               keel::Allocator *mr)
 {
     return appcoef_with_filters(C, L, Lo_R, Hi_R, level, mr);
 }
 
 Value detcoef(const Value &C, const Value &L, int level,
-              std::pmr::memory_resource *mr)
+              keel::Allocator *mr)
 {
     detcoef_argcheck(L, level);
-    const size_t Lcount = L.numel();
+    const keel::usize Lcount = L.numel();
     const int nMax = static_cast<int>(Lcount) - 2;
 
     // C layout: [cA_n, cD_n, cD_{n-1}, ..., cD_1].
@@ -262,12 +264,12 @@ Value detcoef(const Value &C, const Value &L, int level,
     //   skip cA_n  : L[0]
     //   skip cD_n, cD_{n-1}, ..., cD_{level+1}  : sum L[1..nMax-level]
     //   then dLen = L[nMax - level + 1]
-    auto sliceLen = [&](size_t idx) -> size_t {
-        return static_cast<size_t>(L.elemAsDouble(idx));
+    auto sliceLen = [&](keel::usize idx) -> keel::usize {
+        return static_cast<keel::usize>(L.elemAsDouble(idx));
     };
-    size_t off = sliceLen(0);
+    keel::usize off = sliceLen(0);
     for (int k = 0; k < nMax - level; ++k) off += sliceLen(1 + k);
-    const size_t dLen = sliceLen(static_cast<size_t>(nMax - level + 1));
+    const keel::usize dLen = sliceLen(static_cast<keel::usize>(nMax - level + 1));
 
     auto Cv = vecFromValue(C);
     if (off + dLen > Cv.size())
@@ -278,16 +280,16 @@ Value detcoef(const Value &C, const Value &L, int level,
 }
 
 WenergyResult wenergy(const Value &C, const Value &L,
-                      std::pmr::memory_resource *mr)
+                      keel::Allocator *mr)
 {
     wenergy_argcheck(L);
     auto Cv = vecFromValue(C);
     auto Lv = vecFromValue(L);
-    const size_t nLev = Lv.size() - 2;   // number of detail levels
+    const keel::usize nLev = Lv.size() - 2;   // number of detail levels
 
-    auto energy = [&](size_t off, size_t len) {
+    auto energy = [&](keel::usize off, keel::usize len) {
         double s = 0.0;
-        for (size_t i = off; i < off + len && i < Cv.size(); ++i) s += Cv[i] * Cv[i];
+        for (keel::usize i = off; i < off + len && i < Cv.size(); ++i) s += Cv[i] * Cv[i];
         return s;
     };
 
@@ -296,15 +298,15 @@ WenergyResult wenergy(const Value &C, const Value &L,
     const double scale = (total > 0.0) ? 100.0 / total : 0.0;
 
     // Approximation band = first L(0) coefficients.
-    const size_t aLen = static_cast<size_t>(Lv[0]);
+    const keel::usize aLen = static_cast<keel::usize>(Lv[0]);
     Value Ea = Value::scalar(energy(0, aLen) * scale, mr);
 
     // C packs details coarsest-first (cD_N … cD_1 at L(1) … L(nLev)); MATLAB's
     // Ed is ordered finest-first (level 1 … level N), so store reversed.
     std::vector<double> Ed(nLev, 0.0);
-    size_t off = aLen;
-    for (size_t k = 0; k < nLev; ++k) {
-        const size_t len = static_cast<size_t>(Lv[1 + k]);   // band cD_{N-k} = level (N-k)
+    keel::usize off = aLen;
+    for (keel::usize k = 0; k < nLev; ++k) {
+        const keel::usize len = static_cast<keel::usize>(Lv[1 + k]);   // band cD_{N-k} = level (N-k)
         Ed[nLev - 1 - k] = energy(off, len) * scale;
         off += len;
     }
@@ -321,15 +323,15 @@ std::vector<double> convFull(const std::vector<double> &a,
                              const std::vector<double> &b) {
     if (a.empty() || b.empty()) return {};
     std::vector<double> c(a.size() + b.size() - 1, 0.0);
-    for (size_t i = 0; i < a.size(); ++i)
-        for (size_t j = 0; j < b.size(); ++j)
+    for (keel::usize i = 0; i < a.size(); ++i)
+        for (keel::usize j = 0; j < b.size(); ++j)
             c[i + j] += a[i] * b[j];
     return c;
 }
 } // anonymous
 
 Value upcoef(const std::string &type, const Value &X, const std::string &wname,
-             int n, long long len, std::pmr::memory_resource *mr)
+             int n, long long len, keel::Allocator *mr)
 {
     upcoef_argcheck(type, n);
 
@@ -343,16 +345,16 @@ Value upcoef(const std::string &type, const Value &X, const std::string &wname,
         std::vector<double> up;
         if (!y.empty()) {
             up.assign(2 * y.size() - 1, 0.0);          // [y0, 0, y1, 0, …, y_{n-1}]
-            for (size_t k = 0; k < y.size(); ++k) up[2 * k] = y[k];
+            for (keel::usize k = 0; k < y.size(); ++k) up[2 * k] = y[k];
         }
         y = convFull(up, F);
     }
 
     // Optional: keep the central `len` samples (MATLAB wkeep convention).
-    if (len >= 0 && static_cast<size_t>(len) < y.size()) {
-        const size_t start = (y.size() - static_cast<size_t>(len)) / 2;
+    if (len >= 0 && static_cast<keel::usize>(len) < y.size()) {
+        const keel::usize start = (y.size() - static_cast<keel::usize>(len)) / 2;
         y = std::vector<double>(y.begin() + start,
-                                y.begin() + start + static_cast<size_t>(len));
+                                y.begin() + start + static_cast<keel::usize>(len));
     }
     return rowFromVec(y, mr);
 }
@@ -368,7 +370,7 @@ void check_wptree(const Value &tree, const char *fn)
     }
 }
 
-size_t parse_wp_node(const Value &node, const char *fn)
+keel::usize parse_wp_node(const Value &node, const char *fn)
 {
     if (!node.isNumeric() || node.isComplex() || node.isEmpty())
         throw Error(std::string(fn) + ": NODE must be a non-negative integer or [depth, pos] pair",
@@ -378,7 +380,7 @@ size_t parse_wp_node(const Value &node, const char *fn)
         if (!std::isfinite(v) || v < 0.0 || std::floor(v) != v)
             throw Error(std::string(fn) + ": NODE index must be a non-negative integer",
                         0, 0, fn, "", std::string("numkit:") + fn + ":invalidNode");
-        return static_cast<size_t>(v);
+        return static_cast<keel::usize>(v);
     }
     if (node.numel() == 2) {
         const double d = node.elemAsDouble(0);
@@ -388,9 +390,9 @@ size_t parse_wp_node(const Value &node, const char *fn)
             throw Error(std::string(fn) + ": [depth, pos] must be non-negative integers",
                         0, 0, fn, "", std::string("numkit:") + fn + ":invalidNode");
         }
-        const size_t depth = static_cast<size_t>(d);
-        const size_t pos = static_cast<size_t>(p);
-        const size_t levelStart = (1ULL << depth) - 1;
+        const keel::usize depth = static_cast<keel::usize>(d);
+        const keel::usize pos = static_cast<keel::usize>(p);
+        const keel::usize levelStart = (1ULL << depth) - 1;
         if (pos >= (1ULL << depth))
             throw Error(std::string(fn) + ": position out of range for depth",
                         0, 0, fn, "", std::string("numkit:") + fn + ":invalidNode");
@@ -404,15 +406,15 @@ size_t parse_wp_node(const Value &node, const char *fn)
 
 Value wpdec(const Value &x, int n, const std::string &wname,
             const std::string &entName, double entPar,
-            std::pmr::memory_resource *mr)
+            keel::Allocator *mr)
 {
     wpdec_argcheck(x, n);
 
     // Validate wavelet filters up front.
     (void)wavelet_filters(wname);
 
-    const size_t totalNodes = (1ULL << (n + 1)) - 1;
-    const size_t firstLeaf = (1ULL << n) - 1;
+    const keel::usize totalNodes = (1ULL << (n + 1)) - 1;
+    const keel::usize firstLeaf = (1ULL << n) - 1;
     const bool isCol = (x.dims().rows() > 1 && x.dims().cols() == 1);
 
     Value nodes = Value::cell(1, totalNodes, mr);
@@ -435,16 +437,16 @@ Value wpdec(const Value &x, int n, const std::string &wname,
     nodes.cellAt(0) = orientLikeX(x);
     entData[0] = wentropy(nodes.cellAt(0), entName, entPar, mr).toScalar();
 
-    for (size_t k = 0; k < firstLeaf; ++k) {
+    for (keel::usize k = 0; k < firstLeaf; ++k) {
         auto [cA, cD] = dwt(nodes.cellAt(k), wname, mr);
-        const size_t left = 2 * k + 1;
-        const size_t right = 2 * k + 2;
+        const keel::usize left = 2 * k + 1;
+        const keel::usize right = 2 * k + 2;
         nodes.cellAt(left) = orientLikeX(cA);
         nodes.cellAt(right) = orientLikeX(cD);
         entData[left] = wentropy(nodes.cellAt(left), entName, entPar, mr).toScalar();
         entData[right] = wentropy(nodes.cellAt(right), entName, entPar, mr).toScalar();
     }
-    for (size_t k = firstLeaf; k < totalNodes; ++k)
+    for (keel::usize k = firstLeaf; k < totalNodes; ++k)
         leafData[k] = 1.0;
 
     Value t = Value::structure(mr);
@@ -461,10 +463,10 @@ Value wpdec(const Value &x, int n, const std::string &wname,
 }
 
 Value wpcoef(const Value &tree, const Value &node,
-             std::pmr::memory_resource *mr)
+             keel::Allocator *mr)
 {
     check_wptree(tree, "wpcoef");
-    const size_t idx = parse_wp_node(node, "wpcoef");
+    const keel::usize idx = parse_wp_node(node, "wpcoef");
     const Value &nodes = tree.field("nodes");
     if (idx >= nodes.numel() || nodes.cellAt(idx).isEmpty())
         throw Error("wpcoef: node " + std::to_string(idx) + " does not exist in tree",
@@ -473,24 +475,24 @@ Value wpcoef(const Value &tree, const Value &node,
     return nodes.cellAt(idx);
 }
 
-Value wprec(const Value &tree, std::pmr::memory_resource *mr)
+Value wprec(const Value &tree, keel::Allocator *mr)
 {
     check_wptree(tree, "wprec");
     const std::string wname = tree.field("wname").toString();
     const bool isCol = tree.hasField("isColumn") && tree.field("isColumn").toBool();
     const Value &nodes = tree.field("nodes");
     const Value &isLeaf = tree.field("isLeaf");
-    const size_t numNodes = nodes.numel();
+    const keel::usize numNodes = nodes.numel();
 
     std::vector<Value> rec(numNodes);
-    for (size_t k = 0; k < numNodes; ++k)
+    for (keel::usize k = 0; k < numNodes; ++k)
         rec[k] = nodes.cellAt(k);
 
-    for (size_t k = numNodes; k-- > 0;) {
+    for (keel::usize k = numNodes; k-- > 0;) {
         if (rec[k].isEmpty()) continue;
         if (isLeaf.elemAsDouble(k) != 0.0) continue;
-        const size_t left = 2 * k + 1;
-        const size_t right = 2 * k + 2;
+        const keel::usize left = 2 * k + 1;
+        const keel::usize right = 2 * k + 2;
         if (left < numNodes && right < numNodes &&
             !rec[left].isEmpty() && !rec[right].isEmpty()) {
             const long long targetLen = static_cast<long long>(rec[k].numel());
@@ -504,10 +506,10 @@ Value wprec(const Value &tree, std::pmr::memory_resource *mr)
 }
 
 WpspltResult wpsplt(const Value &tree, const Value &node,
-                    std::pmr::memory_resource *mr)
+                    keel::Allocator *mr)
 {
     check_wptree(tree, "wpsplt");
-    const size_t idx = parse_wp_node(node, "wpsplt");
+    const keel::usize idx = parse_wp_node(node, "wpsplt");
     const Value &oldNodes = tree.field("nodes");
     const Value &oldLeaf = tree.field("isLeaf");
     const Value &oldEnt = tree.field("entropy");
@@ -523,10 +525,10 @@ WpspltResult wpsplt(const Value &tree, const Value &node,
     const double entPar = tree.hasField("entPar") ? tree.field("entPar").toScalar() : 0.0;
     const bool isCol = tree.hasField("isColumn") && tree.field("isColumn").toBool();
 
-    const size_t left = 2 * idx + 1;
-    const size_t right = 2 * idx + 2;
+    const keel::usize left = 2 * idx + 1;
+    const keel::usize right = 2 * idx + 2;
     int depth = static_cast<int>(tree.field("depth").toScalar());
-    size_t newTotal = oldNodes.numel();
+    keel::usize newTotal = oldNodes.numel();
     while (right >= newTotal) {
         ++depth;
         newTotal = (1ULL << (depth + 1)) - 1;
@@ -540,7 +542,7 @@ WpspltResult wpsplt(const Value &tree, const Value &node,
     std::fill(leafData, leafData + newTotal, 0.0);
     std::fill(entData, entData + newTotal, 0.0);
 
-    for (size_t k = 0; k < oldNodes.numel(); ++k) {
+    for (keel::usize k = 0; k < oldNodes.numel(); ++k) {
         nodes.cellAt(k) = oldNodes.cellAt(k);
         leafData[k] = oldLeaf.elemAsDouble(k);
         entData[k] = oldEnt.elemAsDouble(k);
@@ -573,26 +575,26 @@ WpspltResult wpsplt(const Value &tree, const Value &node,
     return {std::move(outTree), std::move(cA), std::move(cD)};
 }
 
-BesttreeResult besttree(const Value &tree, std::pmr::memory_resource *mr)
+BesttreeResult besttree(const Value &tree, keel::Allocator *mr)
 {
     check_wptree(tree, "besttree");
     const Value &oldNodes = tree.field("nodes");
     const Value &oldLeaf = tree.field("isLeaf");
     const Value &oldEnt = tree.field("entropy");
-    const size_t numNodes = oldNodes.numel();
+    const keel::usize numNodes = oldNodes.numel();
 
     std::vector<Value> nodesVec(numNodes);
     std::vector<double> leafVec(numNodes, 0.0);
     std::vector<double> optEnt(numNodes, 0.0);
-    for (size_t k = 0; k < numNodes; ++k) {
+    for (keel::usize k = 0; k < numNodes; ++k) {
         nodesVec[k] = oldNodes.cellAt(k);
         leafVec[k] = oldLeaf.elemAsDouble(k);
         optEnt[k] = oldEnt.elemAsDouble(k);
     }
 
-    auto clearSubtree = [&](auto &self, size_t u) -> void {
-        const size_t l = 2 * u + 1;
-        const size_t r = 2 * u + 2;
+    auto clearSubtree = [&](auto &self, keel::usize u) -> void {
+        const keel::usize l = 2 * u + 1;
+        const keel::usize r = 2 * u + 2;
         if (l < numNodes && !nodesVec[l].isEmpty()) {
             nodesVec[l] = Value();
             leafVec[l] = 0.0;
@@ -605,10 +607,10 @@ BesttreeResult besttree(const Value &tree, std::pmr::memory_resource *mr)
         }
     };
 
-    for (size_t k = numNodes; k-- > 0;) {
+    for (keel::usize k = numNodes; k-- > 0;) {
         if (nodesVec[k].isEmpty() || leafVec[k] != 0.0) continue;
-        const size_t left = 2 * k + 1;
-        const size_t right = 2 * k + 2;
+        const keel::usize left = 2 * k + 1;
+        const keel::usize right = 2 * k + 2;
         if (left < numNodes && right < numNodes &&
             !nodesVec[left].isEmpty() && !nodesVec[right].isEmpty()) {
             const double childEnt = optEnt[left] + optEnt[right];
@@ -629,7 +631,7 @@ BesttreeResult besttree(const Value &tree, std::pmr::memory_resource *mr)
     double *entData = entropy.doubleDataMut();
 
     std::vector<double> activeEnts;
-    for (size_t k = 0; k < numNodes; ++k) {
+    for (keel::usize k = 0; k < numNodes; ++k) {
         nodes.cellAt(k) = nodesVec[k];
         leafData[k] = leafVec[k];
         entData[k] = optEnt[k];

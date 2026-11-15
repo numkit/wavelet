@@ -8,6 +8,8 @@
 //
 // Phase 2b compute/register split — see project_layering_refactor memory.
 
+#include <keel/core.h>
+#include <keel/ref.h>
 #include <numkit/wavelet/dwt/multilevel.hpp>
 
 #include <numkit/sys/plugin.hpp>   // CallContext, ctx.engine->resource()
@@ -30,11 +32,11 @@ static std::string argString(const Value &v) {
     return v.toString();
 }
 
-void wavedec_reg(Span<const Value> args, size_t /*nargout*/, Span<Value> outs,
+void wavedec_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/, keel::MutArrayRef<Value> outs,
                  CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 3, 3, "wavedec");
-    auto *mr = ctx.engine->resource();
+    auto *mr = ctx.engine->allocator();
     auto [C, L] = wavedec(args[0], argcheck::expectedPositiveInteger(
         argcheck::expectedReal(args[1], 2, "level", "wavedec"), 2, "level", "wavedec"),
                           argString(args[2]), mr);
@@ -42,27 +44,27 @@ void wavedec_reg(Span<const Value> args, size_t /*nargout*/, Span<Value> outs,
     if (outs.size() >= 2) outs[1] = std::move(L);
 }
 
-void waverec_reg(Span<const Value> args, size_t /*nargout*/, Span<Value> outs,
+void waverec_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/, keel::MutArrayRef<Value> outs,
                  CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 3, 3, "waverec");
     outs[0] = waverec(args[0], args[1], argString(args[2]),
-                      ctx.engine->resource());
+                      ctx.engine->allocator());
 }
 
-void appcoef_reg(Span<const Value> args, size_t /*nargout*/, Span<Value> outs,
+void appcoef_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/, keel::MutArrayRef<Value> outs,
                  CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 3, 7, "appcoef");
-    auto *mr = ctx.engine->resource();
+    auto *mr = ctx.engine->allocator();
 
     // Parse trailing 'mode' / Mode= N-V: only 'sym' supported.
     auto lower = [](std::string s) {
         for (auto &c : s) c = (char)std::tolower((unsigned char)c);
         return s;
     };
-    auto check_mode_at = [&](size_t start) {
-        for (size_t i = start; i + 1 < args.size(); i += 2) {
+    auto check_mode_at = [&](keel::usize start) {
+        for (keel::usize i = start; i + 1 < args.size(); i += 2) {
             if (!(args[i].isChar() || args[i].isString())) break;
             const std::string key = lower(args[i].toString());
             if (key == "mode") {
@@ -77,15 +79,15 @@ void appcoef_reg(Span<const Value> args, size_t /*nargout*/, Span<Value> outs,
 
     int level = -1;
     auto readVec = [](const Value &v) {
-        const size_t n = v.numel();
+        const keel::usize n = v.numel();
         std::vector<double> out(n);
-        for (size_t i = 0; i < n; ++i) out[i] = v.elemAsDouble(i);
+        for (keel::usize i = 0; i < n; ++i) out[i] = v.elemAsDouble(i);
         return out;
     };
 
     if (args[2].isChar() || args[2].isString()) {
         // (C, L, wname[, level][, 'mode', extmode])
-        size_t i = 3;
+        keel::usize i = 3;
         if (i < args.size() && !args[i].isEmpty()
             && args[i].numel() == 1
             && !(args[i].isChar() || args[i].isString())) {
@@ -100,7 +102,7 @@ void appcoef_reg(Span<const Value> args, size_t /*nargout*/, Span<Value> outs,
             throw Error("appcoef: custom-filter form requires "
                         "(C, L, Lo_R, Hi_R)",
                         0, 0, "appcoef", "", "numkit:appcoef:nargin");
-        size_t i = 4;
+        keel::usize i = 4;
         if (i < args.size() && !args[i].isEmpty()
             && args[i].numel() == 1
             && !(args[i].isChar() || args[i].isString())) {
@@ -114,11 +116,11 @@ void appcoef_reg(Span<const Value> args, size_t /*nargout*/, Span<Value> outs,
     }
 }
 
-void detcoef_reg(Span<const Value> args, size_t nargout, Span<Value> outs,
+void detcoef_reg(keel::ArrayRef<Value> args, keel::usize nargout, keel::MutArrayRef<Value> outs,
                  CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 2, 4, "detcoef");
-    auto *mr = ctx.engine->resource();
+    auto *mr = ctx.engine->allocator();
     // Default level = max (deepest decomposition level) when not supplied.
     // MATLAB R2025b: detcoef(c, l) returns the level numel(L) - 2 detail.
     // Bug fix 2026-05-08: was throwing on the 2-arg form.
@@ -144,9 +146,9 @@ void detcoef_reg(Span<const Value> args, size_t nargout, Span<Value> outs,
 
     if (hasCellsFlag) {
         // 'cells' form: build a cell array, one detail per requested level.
-        const size_t k = levArg.numel();
+        const keel::usize k = levArg.numel();
         Value cellOut = Value::cell(1, k);
-        for (size_t i = 0; i < k; ++i) {
+        for (keel::usize i = 0; i < k; ++i) {
             const int lev = static_cast<int>(levArg.elemAsDouble(i));
             cellOut.cellAt(i) = detcoef(args[0], args[1], lev, mr);
         }
@@ -163,9 +165,9 @@ void detcoef_reg(Span<const Value> args, size_t nargout, Span<Value> outs,
         if (s != "cells")
             throw Error("detcoef: unknown option '" + levArg.toString() + "'",
                         0, 0, "detcoef", "", "numkit:detcoef:opt");
-        Value cellOut = Value::cell(1, static_cast<size_t>(std::max<long long>(0, maxLev)));
+        Value cellOut = Value::cell(1, static_cast<keel::usize>(std::max<long long>(0, maxLev)));
         for (int lev = 1; lev <= maxLev; ++lev)
-            cellOut.cellAt(static_cast<size_t>(lev - 1)) =
+            cellOut.cellAt(static_cast<keel::usize>(lev - 1)) =
                 detcoef(args[0], args[1], lev, mr);
         outs[0] = std::move(cellOut);
         return;
@@ -182,14 +184,14 @@ void detcoef_reg(Span<const Value> args, size_t nargout, Span<Value> outs,
     // Vector of levels: detcoef(C, L, [n1 n2 ...]). With a single (or no)
     // output, return a cell array of the per-level details; with multiple
     // outputs, deal one detail per output ([d1, d2, ...] = detcoef(...)).
-    const size_t k = levArg.numel();
+    const keel::usize k = levArg.numel();
     if (nargout >= 2) {
-        for (size_t i = 0; i < k && i < outs.size(); ++i)
+        for (keel::usize i = 0; i < k && i < outs.size(); ++i)
             outs[i] = detcoef(args[0], args[1],
                               static_cast<int>(levArg.elemAsDouble(i)), mr);
     } else {
         Value cellOut = Value::cell(1, k);
-        for (size_t i = 0; i < k; ++i)
+        for (keel::usize i = 0; i < k; ++i)
             cellOut.cellAt(i) =
                 detcoef(args[0], args[1],
                         static_cast<int>(levArg.elemAsDouble(i)), mr);
@@ -197,15 +199,15 @@ void detcoef_reg(Span<const Value> args, size_t nargout, Span<Value> outs,
     }
 }
 
-void wenergy_reg(Span<const Value> args, size_t, Span<Value> outs, CallContext &ctx)
+void wenergy_reg(keel::ArrayRef<Value> args, keel::usize, keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 2, 2, "wenergy");
-    auto r = wenergy(args[0], args[1], ctx.engine->resource());
+    auto r = wenergy(args[0], args[1], ctx.engine->allocator());
     if (outs.size() >= 1) outs[0] = std::move(r.Ea);
     if (outs.size() >= 2) outs[1] = std::move(r.Ed);
 }
 
-void upcoef_reg(Span<const Value> args, size_t, Span<Value> outs, CallContext &ctx)
+void upcoef_reg(keel::ArrayRef<Value> args, keel::usize, keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 3, 5, "upcoef");
     const std::string type = args[0].toString();
@@ -219,10 +221,10 @@ void upcoef_reg(Span<const Value> args, size_t, Span<Value> outs, CallContext &c
         argcheck::expectedNonNegative(double(n), 4, "n", "upcoef");
     const long long len =
         (args.size() >= 5) ? static_cast<long long>(args[4].toScalar()) : -1;
-    outs[0] = upcoef(type, args[1], wname, n, len, ctx.engine->resource());
+    outs[0] = upcoef(type, args[1], wname, n, len, ctx.engine->allocator());
 }
 
-void wpdec_reg(Span<const Value> args, size_t /*nargout*/, Span<Value> outs,
+void wpdec_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/, keel::MutArrayRef<Value> outs,
                CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 3, 5, "wpdec");
@@ -233,39 +235,39 @@ void wpdec_reg(Span<const Value> args, size_t /*nargout*/, Span<Value> outs,
     const double entPar = (args.size() >= 5 && !args[4].isEmpty())
                               ? argcheck::expectedReal(args[4], 5, "P", "wpdec")
                               : 0.0;
-    outs[0] = wpdec(args[0], n, wname, entName, entPar, ctx.engine->resource());
+    outs[0] = wpdec(args[0], n, wname, entName, entPar, ctx.engine->allocator());
 }
 
-void wpcoef_reg(Span<const Value> args, size_t /*nargout*/, Span<Value> outs,
+void wpcoef_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/, keel::MutArrayRef<Value> outs,
                 CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 1, 2, "wpcoef");
     const Value node = (args.size() >= 2) ? args[1] : Value::scalar(0.0);
-    outs[0] = wpcoef(args[0], node, ctx.engine->resource());
+    outs[0] = wpcoef(args[0], node, ctx.engine->allocator());
 }
 
-void wprec_reg(Span<const Value> args, size_t /*nargout*/, Span<Value> outs,
+void wprec_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/, keel::MutArrayRef<Value> outs,
                CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 1, 1, "wprec");
-    outs[0] = wprec(args[0], ctx.engine->resource());
+    outs[0] = wprec(args[0], ctx.engine->allocator());
 }
 
-void wpsplt_reg(Span<const Value> args, size_t nargout, Span<Value> outs,
+void wpsplt_reg(keel::ArrayRef<Value> args, keel::usize nargout, keel::MutArrayRef<Value> outs,
                 CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 2, 2, "wpsplt");
-    auto res = wpsplt(args[0], args[1], ctx.engine->resource());
+    auto res = wpsplt(args[0], args[1], ctx.engine->allocator());
     outs[0] = std::move(res.tree);
     if (nargout > 1) outs[1] = std::move(res.cA);
     if (nargout > 2) outs[2] = std::move(res.cD);
 }
 
-void besttree_reg(Span<const Value> args, size_t nargout, Span<Value> outs,
+void besttree_reg(keel::ArrayRef<Value> args, keel::usize nargout, keel::MutArrayRef<Value> outs,
                   CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 1, 1, "besttree");
-    auto res = besttree(args[0], ctx.engine->resource());
+    auto res = besttree(args[0], ctx.engine->allocator());
     outs[0] = std::move(res.tree);
     if (nargout > 1) outs[1] = std::move(res.entropy);
 }

@@ -2,6 +2,9 @@
 //
 // Wavelet filter helpers: qmf, wrev.
 
+#include <keel/core.h>
+#include <keel/memory.h>
+#include <keel/complex.h>
 #include <numkit/wavelet/filter/qmf.hpp>
 #include <numkit/wavelet/internal/type_gates.hpp>
 
@@ -15,15 +18,15 @@ namespace numkit::wavelet {
 namespace {
 
 // Read shape (rows, cols). For non-2D arrays we treat them as flat row.
-void readShape(const Value &x, size_t &rows, size_t &cols)
+void readShape(const Value &x, keel::usize &rows, keel::usize &cols)
 {
     rows = x.dims().rows();
     cols = x.dims().cols();
     if (rows == 0 && cols == 0) { rows = 1; cols = 0; }
 }
 
-Value sameShape(std::pmr::memory_resource *mr,
-                size_t rows, size_t cols)
+Value sameShape(keel::Allocator *mr,
+                keel::usize rows, keel::usize cols)
 {
     return Value::matrix(rows, cols, ValueType::DOUBLE, mr);
 }
@@ -44,12 +47,12 @@ void wrev_argcheck(const Value &x)
 // R2025b: the reference takes EVERY array class — single, logical, uint8,
 // int16, char, complex — and the result keeps the input's class (the old
 // kernel returned double for every real input, silently losing the class).
-Value wrev(const Value &x, std::pmr::memory_resource *mr)
+Value wrev(const Value &x, keel::Allocator *mr)
 {
     wrev_argcheck(x);
-    size_t rows, cols;
+    keel::usize rows, cols;
     readShape(x, rows, cols);
-    const size_t N = rows * cols;
+    const keel::usize N = rows * cols;
     const bool cplx = x.type() == ValueType::COMPLEX;
     Value y = cplx ? Value::complexMatrix(rows, cols, mr)
                    : internal::allocLike(x, x.type(), mr);
@@ -58,27 +61,27 @@ Value wrev(const Value &x, std::pmr::memory_resource *mr)
     const bool isRowVec = (rows == 1);
     if (isRowVec) {
         if (cplx) {
-            const Complex *src = x.complexData();
-            Complex *dst = y.complexDataMut();
-            for (size_t i = 0; i < N; ++i) dst[i] = src[N - 1 - i];
+            const keel::c64 *src = x.complexData();
+            keel::c64 *dst = y.complexDataMut();
+            for (keel::usize i = 0; i < N; ++i) dst[i] = src[N - 1 - i];
         } else {
-            for (size_t i = 0; i < N; ++i)
+            for (keel::usize i = 0; i < N; ++i)
                 internal::storeElem(y, i, x.elemAsDouble(N - 1 - i));
         }
     } else {
         // Column-major: column c starts at offset c*rows; reverse each.
         if (cplx) {
-            const Complex *src = x.complexData();
-            Complex *dst = y.complexDataMut();
-            for (size_t c = 0; c < cols; ++c) {
-                const size_t base = c * rows;
-                for (size_t r = 0; r < rows; ++r)
+            const keel::c64 *src = x.complexData();
+            keel::c64 *dst = y.complexDataMut();
+            for (keel::usize c = 0; c < cols; ++c) {
+                const keel::usize base = c * rows;
+                for (keel::usize r = 0; r < rows; ++r)
                     dst[base + r] = src[base + (rows - 1 - r)];
             }
         } else {
-            for (size_t c = 0; c < cols; ++c) {
-                const size_t base = c * rows;
-                for (size_t r = 0; r < rows; ++r)
+            for (keel::usize c = 0; c < cols; ++c) {
+                const keel::usize base = c * rows;
+                for (keel::usize r = 0; r < rows; ++r)
                     internal::storeElem(y, base + r,
                                         x.elemAsDouble(base + (rows - 1 - r)));
             }
@@ -90,16 +93,16 @@ Value wrev(const Value &x, std::pmr::memory_resource *mr)
 // qmf: quadrature mirror filter. y(k) = (-1)^(k-1) * x(N-k+1) for p == 0
 // (default); the whole result is negated for p == 1.
 //   qmf([1 2 3 4]) -> [4 -3 2 -1]; qmf([1 2 3 4], 1) -> [-4 3 -2 1].
-Value qmf(const Value &x, int p, std::pmr::memory_resource *mr)
+Value qmf(const Value &x, int p, keel::Allocator *mr)
 {
     p = ((p % 2) + 2) % 2;          // collapse to {0,1}
-    size_t rows, cols;
+    keel::usize rows, cols;
     readShape(x, rows, cols);
-    const size_t N = rows * cols;
+    const keel::usize N = rows * cols;
     Value y = sameShape(mr, rows, cols);
     if (N == 0) return y;
     double *yd = y.doubleDataMut();
-    for (size_t k = 0; k < N; ++k) {
+    for (keel::usize k = 0; k < N; ++k) {
         const double v = x.elemAsDouble(N - 1 - k);
         const bool neg = (k % 2 == 1);
         const double s = (neg ^ (p == 1)) ? -v : v;

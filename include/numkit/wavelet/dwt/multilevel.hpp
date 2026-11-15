@@ -8,7 +8,8 @@
 
 #pragma once
 
-#include <memory_resource>
+#include <keel/core.h>
+#include <keel/memory.h>
 #include <numkit/value/value.hpp>
 #include <string>
 #include <utility>
@@ -45,7 +46,7 @@ namespace numkit::wavelet {
 /// @see waverec, appcoef, detcoef, wrcoef
 std::pair<Value, Value>
 wavedec(const Value &x, int n, const std::string &wname,
-        std::pmr::memory_resource *mr = nullptr);
+        keel::Allocator *mr = nullptr);
 
 /// Inverse of @ref wavedec.
 ///
@@ -61,7 +62,7 @@ wavedec(const Value &x, int n, const std::string &wname,
 ///
 /// @see wavedec
 Value waverec(const Value &C, const Value &L, const std::string &wname,
-              std::pmr::memory_resource *mr = nullptr);
+              keel::Allocator *mr = nullptr);
 
 /// Extract approximation coefficients at a given level (`appcoef`).
 ///
@@ -82,7 +83,7 @@ Value waverec(const Value &C, const Value &L, const std::string &wname,
 /// @see detcoef, wrcoef
 Value appcoef(const Value &C, const Value &L, const std::string &wname,
               int level,
-              std::pmr::memory_resource *mr = nullptr);
+              keel::Allocator *mr = nullptr);
 
 /// Internal entry: appcoef with explicit synthesis filters.
 ///
@@ -101,10 +102,10 @@ Value appcoef(const Value &C, const Value &L, const std::string &wname,
 ///
 /// @see appcoef
 Value appcoef_with_filters_pub(const Value &C, const Value &L,
-                               const std::vector<double> &Lo_R,
-                               const std::vector<double> &Hi_R,
+                               const std::vector<keel::f64> &Lo_R,
+                               const std::vector<keel::f64> &Hi_R,
                                int level,
-                               std::pmr::memory_resource *mr = nullptr);
+                               keel::Allocator *mr = nullptr);
 
 /// Extract detail coefficients at a given level (`detcoef(C, L, level)`).
 ///
@@ -124,7 +125,7 @@ Value appcoef_with_filters_pub(const Value &C, const Value &L,
 ///
 /// @see appcoef, wrcoef
 Value detcoef(const Value &C, const Value &L, int level,
-              std::pmr::memory_resource *mr = nullptr);
+              keel::Allocator *mr = nullptr);
 
 /// Single-band reconstruction (`wrcoef(type, c, l, wname, n)`).
 ///
@@ -153,15 +154,15 @@ Value detcoef(const Value &C, const Value &L, int level,
 /// @see appcoef, detcoef, waverec
 Value wrcoef(const std::string &type, const Value &c, const Value &l,
              const std::string &wname, int n = -1,
-             std::pmr::memory_resource *mr = nullptr);
+             keel::Allocator *mr = nullptr);
 
 /// Single-band reconstruction with explicit synthesis filters
 /// (`wrcoef(type, c, l, Lo_R, Hi_R[, n])`).
 Value wrcoef(const std::string &type, const Value &c, const Value &l,
-             const std::vector<double> &Lo_R,
-             const std::vector<double> &Hi_R,
+             const std::vector<keel::f64> &Lo_R,
+             const std::vector<keel::f64> &Hi_R,
              int n = -1,
-             std::pmr::memory_resource *mr = nullptr);
+             keel::Allocator *mr = nullptr);
 
 /// Energy distribution of a wavelet decomposition.
 struct WenergyResult {
@@ -185,7 +186,7 @@ struct WenergyResult {
 /// @throws    Error if `C` / `L` are inconsistent.
 /// @see wavedec, detcoef, appcoef
 WenergyResult wenergy(const Value &C, const Value &L,
-                      std::pmr::memory_resource *mr = nullptr);
+                      keel::Allocator *mr = nullptr);
 
 /// Direct reconstruction of a single coefficient branch (`Y = upcoef(O, X,
 /// wname, N[, L])`).
@@ -208,7 +209,7 @@ WenergyResult wenergy(const Value &C, const Value &L,
 /// @throws       Error on a bad `type`, negative `n`, or unknown wavelet.
 /// @see wrcoef, waverec, detcoef
 Value upcoef(const std::string &type, const Value &X, const std::string &wname,
-             int n, long long len = -1, std::pmr::memory_resource *mr = nullptr);
+             int n, long long len = -1, keel::Allocator *mr = nullptr);
 
 /// Result of @ref wpsplt (`[T, cA, cD] = wpsplt(T, node)`).
 struct WpspltResult {
@@ -238,8 +239,8 @@ struct BesttreeResult {
 /// @param mr       Memory resource (nullptr -> process default).
 /// @return         Wavelet packet tree struct.
 Value wpdec(const Value &x, int n, const std::string &wname,
-            const std::string &entName = "shannon", double entPar = 0.0,
-            std::pmr::memory_resource *mr = nullptr);
+            const std::string &entName = "shannon", keel::f64 entPar = 0.0,
+            keel::Allocator *mr = nullptr);
 
 /// Extract wavelet packet node coefficients (`X = wpcoef(T[, node])`).
 ///
@@ -248,14 +249,14 @@ Value wpdec(const Value &x, int n, const std::string &wname,
 /// @param mr    Memory resource (nullptr -> process default).
 /// @return      Coefficient vector at @p node.
 Value wpcoef(const Value &tree, const Value &node = Value::scalar(0.0),
-             std::pmr::memory_resource *mr = nullptr);
+             keel::Allocator *mr = nullptr);
 
 /// Reconstruct 1-D signal from a wavelet packet tree (`X = wprec(T)`).
 ///
 /// @param tree  Wavelet packet tree from @ref wpdec / @ref wpsplt / @ref besttree.
 /// @param mr    Memory resource (nullptr -> process default).
 /// @return      Reconstructed 1-D signal matching the root signal orientation.
-Value wprec(const Value &tree, std::pmr::memory_resource *mr = nullptr);
+Value wprec(const Value &tree, keel::Allocator *mr = nullptr);
 
 /// Split (decompose) a terminal wavelet packet node (`[T, cA, cD] = wpsplt(T, node)`).
 ///
@@ -264,14 +265,14 @@ Value wprec(const Value &tree, std::pmr::memory_resource *mr = nullptr);
 /// @param mr    Memory resource (nullptr -> process default).
 /// @return      @ref WpspltResult `(tree, cA, cD)`.
 WpspltResult wpsplt(const Value &tree, const Value &node,
-                    std::pmr::memory_resource *mr = nullptr);
+                    keel::Allocator *mr = nullptr);
 
 /// Optimal wavelet packet tree pruning by minimum additive entropy (`[T, E] = besttree(T)`).
 ///
 /// @param tree  Wavelet packet tree.
 /// @param mr    Memory resource (nullptr -> process default).
 /// @return      @ref BesttreeResult `(tree, entropy)`.
-BesttreeResult besttree(const Value &tree, std::pmr::memory_resource *mr = nullptr);
+BesttreeResult besttree(const Value &tree, keel::Allocator *mr = nullptr);
 
 
 /// @}

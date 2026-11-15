@@ -2,6 +2,7 @@
 //
 // Backfill gtest for toolboxes/wavelet/src/dwt/wkeep_wextend.cpp::wkeep.
 
+#include <keel/core.h>
 #include <numkit/core/standard_engine.hpp>
 #include <numkit/core/standard_engine.hpp>
 #include <gtest/gtest.h>
@@ -65,8 +66,8 @@ TEST_F(WkeepTest, EvenNOddKeep)
 TEST_F(WkeepTest, ColumnPreservesShape)
 {
     eval("y = wkeep([1:10]', 4);");
-    EXPECT_EQ(static_cast<size_t>(evalScalar("size(y, 1)")), 4u);
-    EXPECT_EQ(static_cast<size_t>(evalScalar("size(y, 2)")), 1u);
+    EXPECT_EQ(static_cast<keel::usize>(evalScalar("size(y, 1)")), 4u);
+    EXPECT_EQ(static_cast<keel::usize>(evalScalar("size(y, 2)")), 1u);
 }
 
 // Bug fix 2026-05-08 — 2-D matrix form was throwing "Cannot convert
@@ -77,8 +78,8 @@ TEST_F(WkeepTest, MatrixCentral)
     // magic(5) hardcoded:
     eval("M = [17 24 1 8 15; 23 5 7 14 16; 4 6 13 20 22; 10 12 19 21 3; 11 18 25 2 9];");
     eval("y = wkeep(M, [3 3]);");
-    EXPECT_EQ(static_cast<size_t>(evalScalar("size(y, 1)")), 3u);
-    EXPECT_EQ(static_cast<size_t>(evalScalar("size(y, 2)")), 3u);
+    EXPECT_EQ(static_cast<keel::usize>(evalScalar("size(y, 1)")), 3u);
+    EXPECT_EQ(static_cast<keel::usize>(evalScalar("size(y, 2)")), 3u);
     EXPECT_DOUBLE_EQ(evalScalar("y(1,1)"),  5.0);
     EXPECT_DOUBLE_EQ(evalScalar("y(1,2)"),  7.0);
     EXPECT_DOUBLE_EQ(evalScalar("y(1,3)"), 14.0);

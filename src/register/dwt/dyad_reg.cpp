@@ -8,6 +8,8 @@
 //
 // Phase 2b compute/register split — see project_layering_refactor memory.
 
+#include <keel/core.h>
+#include <keel/ref.h>
 #include <numkit/wavelet/dwt/dyad.hpp>
 
 #include <numkit/sys/plugin.hpp>   // CallContext, ctx.engine->resource()
@@ -23,11 +25,11 @@ namespace {
 
 // Parse trailing args of dyaddown / dyadup — accepts (X, evenodd[, type])
 // in any positional order (MATLAB's lax parsing). `type` is 'c' / 'r' / 'm'.
-void parseDyadArgs(Span<const Value> args, int defaultOdd, int &odd, char &type)
+void parseDyadArgs(keel::ArrayRef<Value> args, int defaultOdd, int &odd, char &type)
 {
     odd = defaultOdd;
     type = 'c';   // matrix default; harmless on the vector path (ignored).
-    for (size_t i = 1; i < args.size(); ++i) {
+    for (keel::usize i = 1; i < args.size(); ++i) {
         if (args[i].isChar() || args[i].isString()) {
             const std::string s = args[i].toString();
             if (s.empty()) continue;
@@ -51,13 +53,13 @@ namespace detail {
 //   type 'r':                  downsample rows
 //   type 'm':                  downsample both
 // Vector input: type is ignored.
-void dyaddown_reg(Span<const Value> args, size_t /*nargout*/,
-                  Span<Value> outs, CallContext &ctx)
+void dyaddown_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
+                  keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 1, 3, "dyaddown");
     int odd; char type;
     parseDyadArgs(args, /*defaultOdd=*/0, odd, type);
-    outs[0] = dyaddown(args[0], odd, type, ctx.engine->resource());
+    outs[0] = dyaddown(args[0], odd, type, ctx.engine->allocator());
 }
 
 // y = dyadup(x[, ODD][, type])
@@ -68,13 +70,13 @@ void dyaddown_reg(Span<const Value> args, size_t /*nargout*/,
 //
 // Verified vs MATLAB R2025b: dyadup([1 2 3], 0) → [1 0 2 0 3];
 //   dyadup([1 2 3], 1) → [0 1 0 2 0 3 0]; dyadup([1 2 3]) → same as ODD=1.
-void dyadup_reg(Span<const Value> args, size_t /*nargout*/,
-                Span<Value> outs, CallContext &ctx)
+void dyadup_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
+                keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 1, 3, "dyadup");
     int odd; char type;
     parseDyadArgs(args, /*defaultOdd=*/1, odd, type);
-    outs[0] = dyadup(args[0], odd, type, ctx.engine->resource());
+    outs[0] = dyadup(args[0], odd, type, ctx.engine->allocator());
 }
 
 // L = wmaxlev(N, wname)
@@ -87,14 +89,14 @@ void dyadup_reg(Span<const Value> args, size_t /*nargout*/,
 // Verified vs MATLAB R2025b:
 //   wmaxlev(64, 'db2')     → 4   (Lf = 4 → log2(64/3) ≈ 4.41 → 4)
 //   wmaxlev([8 8], 'db1')  → 3   (Lf = 2 → log2(8/1) = 3)
-void wmaxlev_reg(Span<const Value> args, size_t /*nargout*/,
-                 Span<Value> outs, CallContext &ctx)
+void wmaxlev_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
+                 keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 2, 2, "wmaxlev");
     if (!args[1].isChar() && !args[1].isString())
         throw Error("wmaxlev: wname must be a character vector",
                     0, 0, "wmaxlev", "", "numkit:wmaxlev:type");
-    outs[0] = wmaxlev(args[0], args[1].toString(), ctx.engine->resource());
+    outs[0] = wmaxlev(args[0], args[1].toString(), ctx.engine->allocator());
 }
 
 } // namespace detail

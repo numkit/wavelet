@@ -8,6 +8,8 @@
 //
 // Phase 2b compute/register split — see project_layering_refactor memory.
 
+#include <keel/core.h>
+#include <keel/ref.h>
 #include <numkit/wavelet/dwt/wkeep_wextend.hpp>
 
 #include <numkit/sys/plugin.hpp>   // CallContext, ctx.engine->resource()
@@ -37,13 +39,13 @@ namespace detail {
 //
 // Bug fix 2026-05-08: 2-D form was throwing "Cannot convert double to scalar"
 // because adapter did args[1].toScalar() unconditionally.
-void wkeep_reg(Span<const Value> args, size_t /*nargout*/,
-               Span<Value> outs, CallContext &ctx)
+void wkeep_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
+               keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 2, 3, "wkeep");
     outs[0] = wkeep(args[0], args[1],
                     args.size() >= 3 ? args[2] : Value::Empty,
-                    ctx.engine->resource());
+                    ctx.engine->allocator());
 }
 
 // y = wextend(type, mode, x, lf[, side])
@@ -53,8 +55,8 @@ void wkeep_reg(Span<const Value> args, size_t /*nargout*/,
 //   type = 'ac' (along col)  — extend rows only
 // Bug fix 2026-05-08: added 'symw' / 'asym' / 'asymw' / 'sp0' / 'sp1'
 // modes and the type=2 / 'ar' / 'ac' forms.
-void wextend_reg(Span<const Value> args, size_t /*nargout*/,
-                 Span<Value> outs, CallContext &ctx)
+void wextend_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
+                 keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 4, 5, "wextend");
     if (!args[1].isChar() && !args[1].isString())
@@ -66,7 +68,7 @@ void wextend_reg(Span<const Value> args, size_t /*nargout*/,
     else if (args.size() >= 5)
         side = "b";              // numeric LOC: the reference ignores it ('b')
     outs[0] = wextend(args[0], args[1].toString(), args[2], args[3], side,
-                      ctx.engine->resource());
+                      ctx.engine->allocator());
 }
 
 } // namespace detail

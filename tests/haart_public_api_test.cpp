@@ -4,6 +4,7 @@
 // to numkit::wavelet::haart (HaartResult {a, d}) and ihaart (Value). The
 // forward/inverse pair is exercised via round-trip reconstruction.
 
+#include <keel/core.h>
 #include <numkit/wavelet/dwt/haart.hpp>
 #include <numkit/wavelet/dwt/ihaart.hpp>
 #include <numkit/core/standard_engine.hpp>
@@ -32,9 +33,9 @@ TEST(HaartPublicApi, Level1)
     ASSERT_EQ(r.d.numel(), 4u);
     EXPECT_NEAR(r.d.doubleData()[0], (2.0 - 1.0) / std::sqrt(2.0), 1e-12);
     // round-trip: ihaart(a, d) recovers x
-    Value xr = wavelet::ihaart(r.a, r.d, 0, false, e.resource());
+    Value xr = wavelet::ihaart(r.a, r.d, 0, false, e.allocator());
     ASSERT_EQ(xr.numel(), 8u);
-    for (size_t i = 0; i < 8; ++i)
+    for (keel::usize i = 0; i < 8; ++i)
         EXPECT_NEAR(xr.doubleData()[i], x.doubleData()[i], 1e-12);
 }
 
@@ -48,18 +49,18 @@ TEST(HaartPublicApi, MultiLevelAndInteger)
     EXPECT_EQ(r.a.numel(), 1u);
     EXPECT_TRUE(r.d.isCell());
     EXPECT_EQ(r.d.numel(), 3u);
-    Value xr = wavelet::ihaart(r.a, r.d, 0, false, e.resource());
+    Value xr = wavelet::ihaart(r.a, r.d, 0, false, e.allocator());
     ASSERT_EQ(xr.numel(), 8u);
-    for (size_t i = 0; i < 8; ++i)
+    for (keel::usize i = 0; i < 8; ++i)
         EXPECT_NEAR(xr.doubleData()[i], x.doubleData()[i], 1e-12);
     // integer lifting round-trips exactly too
-    wavelet::HaartResult ri = wavelet::haart(x, 0, true, e.resource());
-    Value xri = wavelet::ihaart(ri.a, ri.d, 0, true, e.resource());
-    for (size_t i = 0; i < 8; ++i)
+    wavelet::HaartResult ri = wavelet::haart(x, 0, true, e.allocator());
+    Value xri = wavelet::ihaart(ri.a, ri.d, 0, true, e.allocator());
+    for (keel::usize i = 0; i < 8; ++i)
         EXPECT_NEAR(xri.doubleData()[i], x.doubleData()[i], 1e-9);
     // errors: odd-length haart; negative haart level; out-of-range ihaart level
     EXPECT_ANY_THROW(wavelet::haart(hv(e, "[1 2 3]", "xo")));
     EXPECT_ANY_THROW(wavelet::haart(x, -1));
-    EXPECT_ANY_THROW(wavelet::ihaart(r.a, r.d, -1, false, e.resource()));
-    EXPECT_ANY_THROW(wavelet::ihaart(r.a, r.d, 99, false, e.resource()));
+    EXPECT_ANY_THROW(wavelet::ihaart(r.a, r.d, -1, false, e.allocator()));
+    EXPECT_ANY_THROW(wavelet::ihaart(r.a, r.d, 99, false, e.allocator()));
 }

@@ -2,6 +2,7 @@
 //
 // Backfill gtest for toolboxes/wavelet/src/shape/gauss.cpp::cgauwavf.
 
+#include <keel/core.h>
 #include <numkit/core/standard_engine.hpp>
 #include <numkit/core/standard_engine.hpp>
 #include <gtest/gtest.h>
@@ -38,7 +39,7 @@ TEST_F(CgauwavfTest, P2RealAtZero)
 TEST_F(CgauwavfTest, GridLength)
 {
     eval("[psi, x] = cgauwavf(-5, 5, 11);");
-    EXPECT_EQ(static_cast<size_t>(evalScalar("numel(psi)")), 11u);
+    EXPECT_EQ(static_cast<keel::usize>(evalScalar("numel(psi)")), 11u);
     EXPECT_DOUBLE_EQ(evalScalar("x(1)"), -5);
     EXPECT_DOUBLE_EQ(evalScalar("x(11)"), 5);
 }

@@ -3,80 +3,82 @@
 // Registration hub for the Wavelet Toolbox builtins.
 // Namespace: wavelet.<sub>.<name>
 
+#include <keel/core.h>
+#include <keel/ref.h>
 #include <numkit/wavelet/library.hpp>
 
 #include <numkit/sys/plugin.hpp>
 
 namespace numkit::wavelet::detail {
 // filter/wfilters.cpp
-void wfilters_reg (Span<const Value>, size_t, Span<Value>, CallContext &);
+void wfilters_reg (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
 // filter/qmf.cpp
-void qmf_reg      (Span<const Value>, size_t, Span<Value>, CallContext &);
-void wrev_reg     (Span<const Value>, size_t, Span<Value>, CallContext &);
+void qmf_reg      (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
+void wrev_reg     (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
 // filter/families.cpp
-void dbwavf_reg   (Span<const Value>, size_t, Span<Value>, CallContext &);
-void coifwavf_reg (Span<const Value>, size_t, Span<Value>, CallContext &);
-void symwavf_reg  (Span<const Value>, size_t, Span<Value>, CallContext &);
-void orthfilt_reg (Span<const Value>, size_t, Span<Value>, CallContext &);
+void dbwavf_reg   (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
+void coifwavf_reg (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
+void symwavf_reg  (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
+void orthfilt_reg (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
 // dwt/dwt.cpp
-void dwt_reg      (Span<const Value>, size_t, Span<Value>, CallContext &);
-void idwt_reg     (Span<const Value>, size_t, Span<Value>, CallContext &);
+void dwt_reg      (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
+void idwt_reg     (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
 // dwt/multilevel.cpp
-void wavedec_reg  (Span<const Value>, size_t, Span<Value>, CallContext &);
-void waverec_reg  (Span<const Value>, size_t, Span<Value>, CallContext &);
-void appcoef_reg  (Span<const Value>, size_t, Span<Value>, CallContext &);
-void detcoef_reg  (Span<const Value>, size_t, Span<Value>, CallContext &);
-void wenergy_reg  (Span<const Value>, size_t, Span<Value>, CallContext &);
-void upcoef_reg   (Span<const Value>, size_t, Span<Value>, CallContext &);
-void wpdec_reg    (Span<const Value>, size_t, Span<Value>, CallContext &);
-void wpcoef_reg   (Span<const Value>, size_t, Span<Value>, CallContext &);
-void wprec_reg    (Span<const Value>, size_t, Span<Value>, CallContext &);
-void wpsplt_reg   (Span<const Value>, size_t, Span<Value>, CallContext &);
-void besttree_reg (Span<const Value>, size_t, Span<Value>, CallContext &);
+void wavedec_reg  (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
+void waverec_reg  (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
+void appcoef_reg  (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
+void detcoef_reg  (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
+void wenergy_reg  (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
+void upcoef_reg   (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
+void wpdec_reg    (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
+void wpcoef_reg   (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
+void wprec_reg    (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
+void wpsplt_reg   (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
+void besttree_reg (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
 // dwt/dwt2.cpp
-void dwt2_reg     (Span<const Value>, size_t, Span<Value>, CallContext &);
-void idwt2_reg    (Span<const Value>, size_t, Span<Value>, CallContext &);
+void dwt2_reg     (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
+void idwt2_reg    (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
 // dwt/multilevel2.cpp
-void wavedec2_reg (Span<const Value>, size_t, Span<Value>, CallContext &);
-void waverec2_reg (Span<const Value>, size_t, Span<Value>, CallContext &);
-void appcoef2_reg (Span<const Value>, size_t, Span<Value>, CallContext &);
-void detcoef2_reg (Span<const Value>, size_t, Span<Value>, CallContext &);
+void wavedec2_reg (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
+void waverec2_reg (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
+void appcoef2_reg (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
+void detcoef2_reg (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
 // dwt/dyad.cpp
-void dyaddown_reg (Span<const Value>, size_t, Span<Value>, CallContext &);
-void dyadup_reg   (Span<const Value>, size_t, Span<Value>, CallContext &);
-void wmaxlev_reg  (Span<const Value>, size_t, Span<Value>, CallContext &);
+void dyaddown_reg (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
+void dyadup_reg   (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
+void wmaxlev_reg  (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
 // dwt/wkeep_wextend.cpp
-void wkeep_reg    (Span<const Value>, size_t, Span<Value>, CallContext &);
-void wextend_reg  (Span<const Value>, size_t, Span<Value>, CallContext &);
+void wkeep_reg    (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
+void wextend_reg  (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
 // dwt/haart.cpp
-void haart_reg    (Span<const Value>, size_t, Span<Value>, CallContext &);
+void haart_reg    (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
 // dwt/ihaart.cpp
-void ihaart_reg   (Span<const Value>, size_t, Span<Value>, CallContext &);
+void ihaart_reg   (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
 // dwt/wrcoef.cpp
-void wrcoef_reg   (Span<const Value>, size_t, Span<Value>, CallContext &);
+void wrcoef_reg   (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
 // denoise/denoise.cpp
-void wthresh_reg  (Span<const Value>, size_t, Span<Value>, CallContext &);
-void wentropy_reg (Span<const Value>, size_t, Span<Value>, CallContext &);
-void ddencmp_reg  (Span<const Value>, size_t, Span<Value>, CallContext &);
-void wnoisest_reg (Span<const Value>, size_t, Span<Value>, CallContext &);
-void wdenoise_reg (Span<const Value>, size_t, Span<Value>, CallContext &);
+void wthresh_reg  (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
+void wentropy_reg (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
+void ddencmp_reg  (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
+void wnoisest_reg (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
+void wdenoise_reg (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
 // swt/swt.cpp
-void swt_reg      (Span<const Value>, size_t, Span<Value>, CallContext &);
-void iswt_reg     (Span<const Value>, size_t, Span<Value>, CallContext &);
-void modwt_reg    (Span<const Value>, size_t, Span<Value>, CallContext &);
-void imodwt_reg   (Span<const Value>, size_t, Span<Value>, CallContext &);
+void swt_reg      (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
+void iswt_reg     (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
+void modwt_reg    (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
+void imodwt_reg   (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
 // shape/shape.cpp
-void mexihat_reg  (Span<const Value>, size_t, Span<Value>, CallContext &);
-void morlet_reg   (Span<const Value>, size_t, Span<Value>, CallContext &);
-void meyeraux_reg (Span<const Value>, size_t, Span<Value>, CallContext &);
-void shanwavf_reg (Span<const Value>, size_t, Span<Value>, CallContext &);
-void cmorwavf_reg (Span<const Value>, size_t, Span<Value>, CallContext &);
-void fbspwavf_reg (Span<const Value>, size_t, Span<Value>, CallContext &);
-void gauswavf_reg (Span<const Value>, size_t, Span<Value>, CallContext &);
-void cgauwavf_reg (Span<const Value>, size_t, Span<Value>, CallContext &);
-void centfrq_reg  (Span<const Value>, size_t, Span<Value>, CallContext &);
-void scal2frq_reg (Span<const Value>, size_t, Span<Value>, CallContext &);
-void cwt_reg      (Span<const Value>, size_t, Span<Value>, CallContext &);
+void mexihat_reg  (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
+void morlet_reg   (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
+void meyeraux_reg (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
+void shanwavf_reg (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
+void cmorwavf_reg (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
+void fbspwavf_reg (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
+void gauswavf_reg (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
+void cgauwavf_reg (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
+void centfrq_reg  (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
+void scal2frq_reg (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
+void cwt_reg      (keel::ArrayRef<Value>, keel::usize, keel::MutArrayRef<Value>, CallContext &);
 } // namespace numkit::wavelet::detail
 
 namespace numkit {

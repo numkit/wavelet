@@ -6,6 +6,8 @@
 //
 // Phase 2b compute/register split — see project_layering_refactor memory.
 
+#include <keel/core.h>
+#include <keel/ref.h>
 #include <numkit/wavelet/filter/qmf.hpp>
 
 #include <numkit/sys/plugin.hpp>   // CallContext, ctx.engine->resource()
@@ -27,11 +29,11 @@ namespace detail {
 // that gave a full reversal (rows AND cols flipped) instead of MATLAB's
 // per-column reverse. Also dropped imaginary parts on complex input
 // (used elemAsDouble + doubleDataMut).
-void wrev_reg(Span<const Value> args, size_t /*nargout*/,
-              Span<Value> outs, CallContext &ctx)
+void wrev_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
+              keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 1, 1, "wrev");
-    outs[0] = wrev(args[0], ctx.engine->resource());
+    outs[0] = wrev(args[0], ctx.engine->allocator());
 }
 
 // y = qmf(x[, p]): quadrature mirror filter.
@@ -41,15 +43,15 @@ void wrev_reg(Span<const Value> args, size_t /*nargout*/,
 // Verified vs MATLAB R2025b:
 //   qmf([1 2 3 4])    → [4 -3 2 -1]
 //   qmf([1 2 3 4], 1) → [-4 3 -2 1]
-void qmf_reg(Span<const Value> args, size_t /*nargout*/,
-             Span<Value> outs, CallContext &ctx)
+void qmf_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
+             keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 1, 2, "qmf");
     int p = 0;
     if (args.size() >= 2)
         p = argcheck::expectedInteger(
         argcheck::expectedReal(args[1], 2, "p", "qmf"), 2, "p", "qmf");
-    outs[0] = qmf(args[0], p, ctx.engine->resource());
+    outs[0] = qmf(args[0], p, ctx.engine->allocator());
 }
 
 } // namespace detail

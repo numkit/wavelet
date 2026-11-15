@@ -30,16 +30,16 @@ TEST(QmfWrevPublicApi, Wrev)
     EXPECT_DOUBLE_EQ(y.doubleData()[0], 5.0);
     EXPECT_DOUBLE_EQ(y.doubleData()[4], 1.0);
     // column preserves shape
-    Value yc = wavelet::wrev(qvar(e, "[1;2;3]", "xc"), e.resource());
+    Value yc = wavelet::wrev(qvar(e, "[1;2;3]", "xc"), e.allocator());
     EXPECT_EQ(yc.dims().rows(), 3u);
     EXPECT_EQ(yc.dims().cols(), 1u);
     EXPECT_DOUBLE_EQ(yc.doubleData()[0], 3.0);
     // matrix -> per-column reverse (flipud): [1 2;3 4] -> [3 4;1 2]
-    Value ym = wavelet::wrev(qvar(e, "[1 2; 3 4]", "m"), e.resource());
+    Value ym = wavelet::wrev(qvar(e, "[1 2; 3 4]", "m"), e.allocator());
     EXPECT_DOUBLE_EQ(ym.doubleData()[0], 3.0); // (1,1)
     EXPECT_DOUBLE_EQ(ym.doubleData()[1], 1.0); // (2,1)
     // complex preserved
-    Value ycx = wavelet::wrev(qvar(e, "[1+2i, 3-4i]", "xx"), e.resource());
+    Value ycx = wavelet::wrev(qvar(e, "[1+2i, 3-4i]", "xx"), e.allocator());
     ASSERT_TRUE(ycx.isComplex());
     EXPECT_DOUBLE_EQ(ycx.complexData()[0].real(), 3.0);
     EXPECT_DOUBLE_EQ(ycx.complexData()[0].imag(), -4.0);
@@ -55,11 +55,11 @@ TEST(QmfWrevPublicApi, Qmf)
     EXPECT_DOUBLE_EQ(y.doubleData()[1], -4.0);
     EXPECT_DOUBLE_EQ(y.doubleData()[4], 1.0);
     // parity p = 1 negates the whole result
-    Value y1 = wavelet::qmf(qvar(e, "[1 2 3 4 5]", "x1"), 1, e.resource());
+    Value y1 = wavelet::qmf(qvar(e, "[1 2 3 4 5]", "x1"), 1, e.allocator());
     EXPECT_DOUBLE_EQ(y1.doubleData()[0], -5.0);
     EXPECT_DOUBLE_EQ(y1.doubleData()[1], 4.0);
     // column preserves shape
-    Value yc = wavelet::qmf(qvar(e, "[1;2;3]", "xc"), 0, e.resource());
+    Value yc = wavelet::qmf(qvar(e, "[1;2;3]", "xc"), 0, e.allocator());
     EXPECT_EQ(yc.dims().rows(), 3u);
     EXPECT_EQ(yc.dims().cols(), 1u);
     EXPECT_DOUBLE_EQ(yc.doubleData()[0], 3.0);

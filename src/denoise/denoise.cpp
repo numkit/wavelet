@@ -5,6 +5,10 @@
 // existing wavedec / waverec / detcoef plumbing — no extra DSP
 // machinery here, just thresholding and a robust σ estimate.
 
+#include <keel/core.h>
+#include <keel/memory.h>
+#include <keel/complex.h>
+#include <keel/math.h>
 #include <numkit/wavelet/denoise/denoise.hpp>
 #include <numkit/wavelet/dwt/multilevel.hpp>
 #include <numkit/wavelet/dwt/dwt.hpp>     // ddencmp: 1-level dwt noise estimate
@@ -28,9 +32,9 @@ namespace {
 
 double median_abs(std::vector<double> v) {
     if (v.empty()) return 0.0;
-    for (auto &x : v) x = std::abs(x);
+    for (auto &x : v) x = keel::abs(x);
     std::sort(v.begin(), v.end());
-    const size_t n = v.size();
+    const keel::usize n = v.size();
     return (n % 2 == 1)
                ? v[n / 2]
                : 0.5 * (v[n / 2 - 1] + v[n / 2]);
@@ -38,7 +42,7 @@ double median_abs(std::vector<double> v) {
 
 std::vector<double> vecFromValue(const Value &v) {
     std::vector<double> out(v.numel());
-    for (size_t i = 0; i < v.numel(); ++i) out[i] = v.elemAsDouble(i);
+    for (keel::usize i = 0; i < v.numel(); ++i) out[i] = v.elemAsDouble(i);
     return out;
 }
 
@@ -110,13 +114,13 @@ std::string ddencmp_argcheck(const std::string &opt, const std::string &type)
 } // anonymous
 
 Value wthresh(const Value &X, const std::string &sorh, const Value &T,
-              std::pmr::memory_resource *mr)
+              keel::Allocator *mr)
 {
     wthresh_argcheck(X, sorh, T);
     const bool hard = (sorh == "h" || sorh == "H");
     const bool elemT = T.numel() != 1;
 
-    const size_t N = X.numel();
+    const keel::usize N = X.numel();
     const bool wantSingle =
         (X.type() == ValueType::SINGLE || X.isSingleComplex() ||
          T.type() == ValueType::SINGLE || T.isSingleComplex());
@@ -128,23 +132,23 @@ Value wthresh(const Value &X, const std::string &sorh, const Value &T,
         Y.setSingleComplex(true);
     if (N == 0) return Y;
 
-    auto tOf = [&](size_t i) {
+    auto tOf = [&](keel::usize i) {
         return elemT ? T.elemAsDouble(i) : T.elemAsDouble(0);
     };
 
     if (cplx) {
-        Complex *yd = Y.complexDataMut();
-        for (size_t i = 0; i < N; ++i) {
-            const Complex z = X.complexElem(i);
-            const double az = std::abs(z);
+        keel::c64 *yd = Y.complexDataMut();
+        for (keel::usize i = 0; i < N; ++i) {
+            const keel::c64 z = X.complexElem(i);
+            const double az = keel::abs(z);
             const double T_i = tOf(i);
             if (hard) {
-                yd[i] = (az > T_i) ? z : Complex(0.0, 0.0);
+                yd[i] = (az > T_i) ? z : keel::c64(0.0, 0.0);
             } else {
                 const double mag = az - T_i;
                 yd[i] = (mag > 0.0 && az > 0.0)
                             ? z * (mag / az)
-                            : Complex(0.0, 0.0);
+                            : keel::c64(0.0, 0.0);
             }
         }
         return Y;
@@ -154,9 +158,9 @@ Value wthresh(const Value &X, const std::string &sorh, const Value &T,
         ? nullptr
         : Y.doubleDataMut();
     float *yf = outT == ValueType::SINGLE ? Y.singleDataMut() : nullptr;
-    for (size_t i = 0; i < N; ++i) {
+    for (keel::usize i = 0; i < N; ++i) {
         const double x = X.elemAsDouble(i);
-        const double ax = std::abs(x);
+        const double ax = keel::abs(x);
         const double T_i = tOf(i);
         double r;
         if (hard) {
@@ -172,14 +176,14 @@ Value wthresh(const Value &X, const std::string &sorh, const Value &T,
     return Y;
 }
 
-Value wnoisest(const Value &C, const Value &L, const Value &S, std::pmr::memory_resource *mr)
+Value wnoisest(const Value &C, const Value &L, const Value &S, keel::Allocator *mr)
 {
-    const size_t k = S.numel();
+    const keel::usize k = S.numel();
     Value out = Value::matrix(1, k, ValueType::DOUBLE, mr);
     if (k == 0) return out;
     double *od = out.doubleDataMut();
 
-    for (size_t i = 0; i < k; ++i) {
+    for (keel::usize i = 0; i < k; ++i) {
         const int level = static_cast<int>(S.elemAsDouble(i));
         Value cD = detcoef(C, L, level, mr);
         auto v = vecFromValue(cD);
@@ -189,15 +193,15 @@ Value wnoisest(const Value &C, const Value &L, const Value &S, std::pmr::memory_
     return out;
 }
 
-Value wdenoise(const Value &x, int level, const std::string &wname, std::pmr::memory_resource *mr)
+Value wdenoise(const Value &x, int level, const std::string &wname, keel::Allocator *mr)
 {
-    const size_t N = x.numel();
+    const keel::usize N = x.numel();
     if (N < 2) {
         // Nothing to denoise — return a copy as a row.
         Value y = Value::matrix(x.dims().rows(), x.dims().cols(),
                                 ValueType::DOUBLE, mr);
         double *yd = y.doubleDataMut();
-        for (size_t i = 0; i < N; ++i) yd[i] = x.elemAsDouble(i);
+        for (keel::usize i = 0; i < N; ++i) yd[i] = x.elemAsDouble(i);
         return y;
     }
     if (level <= 0) {
@@ -226,16 +230,16 @@ Value wdenoise(const Value &x, int level, const std::string &wname, std::pmr::me
         // Layout of C: [cA_level | cD_level | cD_{level-1} | ... | cD_1].
         const Value &Lref = L;   // plain reference: capturing a structured
                                  // binding directly in a lambda is C++20.
-        auto sliceLen = [&](size_t idx) -> size_t {
-            return static_cast<size_t>(Lref.elemAsDouble(idx));
+        auto sliceLen = [&](keel::usize idx) -> keel::usize {
+            return static_cast<keel::usize>(Lref.elemAsDouble(idx));
         };
-        size_t off = sliceLen(0); // skip cA
+        keel::usize off = sliceLen(0); // skip cA
         double *Cd = C.doubleDataMut();
         for (int k = 0; k < level; ++k) {
-            const size_t dLen = sliceLen(1 + k);
-            for (size_t i = 0; i < dLen; ++i) {
+            const keel::usize dLen = sliceLen(1 + k);
+            for (keel::usize i = 0; i < dLen; ++i) {
                 const double xv = Cd[off + i];
-                const double ax = std::abs(xv);
+                const double ax = keel::abs(xv);
                 const double mag = ax - T;
                 Cd[off + i] = (mag > 0.0) ? std::copysign(mag, xv) : 0.0;
             }
@@ -248,12 +252,12 @@ Value wdenoise(const Value &x, int level, const std::string &wname, std::pmr::me
 }
 
 Value wentropy(const Value &X, const std::string &type, double param,
-               std::pmr::memory_resource *mr)
+               keel::Allocator *mr)
 {
     const std::string t = wentropy_argcheck(type, param);
 
     auto x = vecFromValue(X);
-    const std::size_t n = x.size();
+    const keel::usize n = x.size();
     double e = 0.0;
 
     if (t == "shannon") {
@@ -276,7 +280,7 @@ Value wentropy(const Value &X, const std::string &type, double param,
 }
 
 DdencmpResult ddencmp(const std::string &opt, const std::string &type,
-                      const Value &x, std::pmr::memory_resource *mr)
+                      const Value &x, keel::Allocator *mr)
 {
     const std::string o = ddencmp_argcheck(opt, type);
 

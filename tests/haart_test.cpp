@@ -2,6 +2,7 @@
 //
 // Backfill gtest for toolboxes/wavelet/src/dwt/haart.cpp::haart.
 
+#include <keel/core.h>
 #include <numkit/core/standard_engine.hpp>
 #include <numkit/core/standard_engine.hpp>
 #include <gtest/gtest.h>
@@ -31,7 +32,7 @@ TEST_F(HaartTest, DefaultLevelMaxK)
     // N=8 → max-level k = 3
     EXPECT_NEAR(evalScalar("a"), 12.727922061357855, 1e-12);
     EXPECT_TRUE(eval("iscell(d)").toBool());
-    EXPECT_EQ(static_cast<size_t>(evalScalar("length(d)")), 3u);
+    EXPECT_EQ(static_cast<keel::usize>(evalScalar("length(d)")), 3u);
 }
 
 TEST_F(HaartTest, IntegerLifting)
@@ -53,15 +54,15 @@ TEST_F(HaartTest, IntegerOnDoubles)
 TEST_F(HaartTest, MatrixColumnwise)
 {
     eval("M = [1 2 3 4; 5 6 7 8; 9 10 11 12; 13 14 15 16]; [a, d] = haart(M, 1);");
-    EXPECT_EQ(static_cast<size_t>(evalScalar("size(a, 1)")), 2u);
-    EXPECT_EQ(static_cast<size_t>(evalScalar("size(a, 2)")), 4u);
+    EXPECT_EQ(static_cast<keel::usize>(evalScalar("size(a, 1)")), 2u);
+    EXPECT_EQ(static_cast<keel::usize>(evalScalar("size(a, 2)")), 4u);
 }
 
 TEST_F(HaartTest, RowInputColumnOutput)
 {
     eval("[a, ~] = haart([1 2 3 4]);");
-    EXPECT_EQ(static_cast<size_t>(evalScalar("size(a, 1)")), 1u);
-    EXPECT_EQ(static_cast<size_t>(evalScalar("size(a, 2)")), 1u);
+    EXPECT_EQ(static_cast<keel::usize>(evalScalar("size(a, 1)")), 1u);
+    EXPECT_EQ(static_cast<keel::usize>(evalScalar("size(a, 2)")), 1u);
 }
 
 TEST_F(HaartTest, OddLengthErrors)

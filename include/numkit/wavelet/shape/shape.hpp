@@ -8,7 +8,8 @@
 
 #pragma once
 
-#include <memory_resource>
+#include <keel/core.h>
+#include <keel/memory.h>
 #include <numkit/value/value.hpp>
 #include <tuple>
 
@@ -30,8 +31,8 @@ namespace numkit::wavelet {
 ///
 /// @see morlet, meyeraux
 std::tuple<Value, Value>
-mexihat(double lb, double ub, size_t N,
-        std::pmr::memory_resource *mr = nullptr);
+mexihat(keel::f64 lb, keel::f64 ub, keel::usize N,
+        keel::Allocator *mr = nullptr);
 
 /// Real Morlet wavelet (`[psi, x] = morlet(LB, UB, N)`).
 ///
@@ -44,8 +45,8 @@ mexihat(double lb, double ub, size_t N,
 ///
 /// @see mexihat, cmorwavf
 std::tuple<Value, Value>
-morlet(double lb, double ub, size_t N,
-       std::pmr::memory_resource *mr = nullptr);
+morlet(keel::f64 lb, keel::f64 ub, keel::usize N,
+       keel::Allocator *mr = nullptr);
 
 /// Meyer auxiliary function (`y = meyeraux(x)`).
 ///
@@ -56,7 +57,7 @@ morlet(double lb, double ub, size_t N,
 /// @param x   Element-wise input.
 /// @param mr  Memory resource (nullptr → process default).
 /// @return    `y` of the same shape as `x`.
-Value meyeraux(const Value &x, std::pmr::memory_resource *mr = nullptr);
+Value meyeraux(const Value &x, keel::Allocator *mr = nullptr);
 
 /// Shannon wavelet (`[psi, x] = shanwavf(LB, UB, N, fb, fc)`).
 ///
@@ -72,8 +73,8 @@ Value meyeraux(const Value &x, std::pmr::memory_resource *mr = nullptr);
 ///
 /// @see cmorwavf, fbspwavf
 std::tuple<Value, Value>
-shanwavf(double lb, double ub, size_t N, double fb, double fc,
-         std::pmr::memory_resource *mr = nullptr);
+shanwavf(keel::f64 lb, keel::f64 ub, keel::usize N, keel::f64 fb, keel::f64 fc,
+         keel::Allocator *mr = nullptr);
 
 /// Complex Morlet wavelet (`[psi, x] = cmorwavf(LB, UB, N, fb, fc)`).
 ///
@@ -81,8 +82,8 @@ shanwavf(double lb, double ub, size_t N, double fb, double fc,
 ///
 /// @see morlet, shanwavf
 std::tuple<Value, Value>
-cmorwavf(double lb, double ub, size_t N, double fb, double fc,
-         std::pmr::memory_resource *mr = nullptr);
+cmorwavf(keel::f64 lb, keel::f64 ub, keel::usize N, keel::f64 fb, keel::f64 fc,
+         keel::Allocator *mr = nullptr);
 
 /// Frequency B-spline wavelet (`[psi, x] = fbspwavf(LB, UB, N, m, fb, fc)`).
 ///
@@ -93,8 +94,8 @@ cmorwavf(double lb, double ub, size_t N, double fb, double fc,
 ///
 /// @see cmorwavf, shanwavf
 std::tuple<Value, Value>
-fbspwavf(double lb, double ub, size_t N, int m, double fb, double fc,
-         std::pmr::memory_resource *mr = nullptr);
+fbspwavf(keel::f64 lb, keel::f64 ub, keel::usize N, int m, keel::f64 fb, keel::f64 fc,
+         keel::Allocator *mr = nullptr);
 
 /// Real Gaussian wavelet of order p (`[psi, x] = gauswavf(LB, UB, N, p)`).
 ///
@@ -105,8 +106,8 @@ fbspwavf(double lb, double ub, size_t N, int m, double fb, double fc,
 ///
 /// @see cgauwavf
 std::tuple<Value, Value>
-gauswavf(double lb, double ub, size_t N, int p,
-         std::pmr::memory_resource *mr = nullptr);
+gauswavf(keel::f64 lb, keel::f64 ub, keel::usize N, int p,
+         keel::Allocator *mr = nullptr);
 
 /// Complex Gaussian wavelet of order p (`[psi, x] = cgauwavf(LB, UB, N, p)`).
 ///
@@ -116,12 +117,12 @@ gauswavf(double lb, double ub, size_t N, int p,
 ///
 /// @see gauswavf
 std::tuple<Value, Value>
-cgauwavf(double lb, double ub, size_t N, int p,
-         std::pmr::memory_resource *mr = nullptr);
+cgauwavf(keel::f64 lb, keel::f64 ub, keel::usize N, int p,
+         keel::Allocator *mr = nullptr);
 
 /// Result of @ref centfrqGrid (`[freq, xval, recfreq] = centfrq(wname, iter[, 'plot'])`).
 struct CentfrqResult {
-    double freq;
+    keel::f64 freq;
     Value xval;
     Value recfreq;
 };
@@ -140,7 +141,7 @@ struct CentfrqResult {
 /// @return       Center frequency in Hz.
 ///
 /// @see centfrqGrid, scal2frq
-double centfrq(const std::string &wname, int iter = 8);
+keel::f64 centfrq(const std::string &wname, int iter = 8);
 
 /// Wavelet center frequency with grid and single-bin sinusoidal approximation.
 ///
@@ -153,7 +154,7 @@ double centfrq(const std::string &wname, int iter = 8);
 /// @return             @ref CentfrqResult `(freq, xval, recfreq)`.
 CentfrqResult centfrqGrid(const std::string &wname, int iter = 8,
                           bool withRecfreq = false,
-                          std::pmr::memory_resource *mr = nullptr);
+                          keel::Allocator *mr = nullptr);
 
 /// Convert scales to pseudo-frequencies (`frq = scal2frq(a, wname[, delta])`).
 ///
@@ -167,8 +168,8 @@ CentfrqResult centfrqGrid(const std::string &wname, int iter = 8,
 ///
 /// @see centfrq
 Value scal2frq(const Value &a, const std::string &wname,
-               double delta = 1.0,
-               std::pmr::memory_resource *mr = nullptr);
+               keel::f64 delta = 1.0,
+               keel::Allocator *mr = nullptr);
 
 /// Result of @ref cwt (`[cfs, f, coi] = cwt(x, ...)`).
 struct CwtResult {
@@ -199,13 +200,13 @@ struct CwtResult {
 /// @return                 @ref CwtResult `(cfs, f, coi)`.
 CwtResult cwt(const Value &x,
               const std::string &wname = "morse",
-              double fs = 1.0,
+              keel::f64 fs = 1.0,
               int voicesPerOctave = 10,
-              double timeBandwidth = 60.0,
-              double gamma = 3.0,
+              keel::f64 timeBandwidth = 60.0,
+              keel::f64 gamma = 3.0,
               bool extendSignal = true,
               const Value &freqLimits = Value(),
-              std::pmr::memory_resource *mr = nullptr);
+              keel::Allocator *mr = nullptr);
 
 
 /// @}

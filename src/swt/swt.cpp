@@ -23,6 +23,9 @@
 //   row 1..n : details   (level 1 = finest, level n = coarsest)
 //   row n+1  : approximation at level n
 
+#include <keel/core.h>
+#include <keel/memory.h>
+#include <keel/complex.h>
 #include <numkit/wavelet/swt/swt.hpp>
 #include <numkit/wavelet/filter/wfilters.hpp>
 #include <numkit/wavelet/internal/type_gates.hpp>
@@ -43,15 +46,15 @@ namespace {
 // y[i] = sum_j h[j] · x[(i + j·step) mod N]  (forward / analysis)
 std::vector<double> circ_corr_fwd(const std::vector<double> &x,
                                   const std::vector<double> &h,
-                                  size_t step)
+                                  keel::usize step)
 {
-    const size_t N = x.size();
+    const keel::usize N = x.size();
     std::vector<double> y(N, 0.0);
     if (N == 0 || h.empty()) return y;
-    for (size_t i = 0; i < N; ++i) {
+    for (keel::usize i = 0; i < N; ++i) {
         double acc = 0.0;
-        for (size_t j = 0; j < h.size(); ++j) {
-            const size_t idx = (i + j * step) % N;
+        for (keel::usize j = 0; j < h.size(); ++j) {
+            const keel::usize idx = (i + j * step) % N;
             acc += h[j] * x[idx];
         }
         y[i] = acc;
@@ -62,17 +65,17 @@ std::vector<double> circ_corr_fwd(const std::vector<double> &x,
 // y[i] = sum_j h[j] · x[(i − j·step) mod N]  (transpose of fwd)
 std::vector<double> circ_corr_back(const std::vector<double> &x,
                                    const std::vector<double> &h,
-                                   size_t step)
+                                   keel::usize step)
 {
-    const size_t N = x.size();
+    const keel::usize N = x.size();
     std::vector<double> y(N, 0.0);
     if (N == 0 || h.empty()) return y;
-    for (size_t i = 0; i < N; ++i) {
+    for (keel::usize i = 0; i < N; ++i) {
         double acc = 0.0;
-        for (size_t j = 0; j < h.size(); ++j) {
+        for (keel::usize j = 0; j < h.size(); ++j) {
             // Modular subtract: ((i − j·step) mod N) ≡ ((i + N − (j·step mod N)) mod N).
-            const size_t shift = (j * step) % N;
-            const size_t idx = (i + N - shift) % N;
+            const keel::usize shift = (j * step) % N;
+            const keel::usize idx = (i + N - shift) % N;
             acc += h[j] * x[idx];
         }
         y[i] = acc;
@@ -90,9 +93,9 @@ void swtAD_argcheck(const Value &x, int n,
     if (Lo_D.size() < 2 || Lo_D.size() % 2 != 0 || Lo_D.size() != Hi_D.size())
         throw Error("swt: filter vectors must have matching even length >= 2",
                     0, 0, "swt", "", "numkit:swt:filter");
-    const size_t N = x.numel();
+    const keel::usize N = x.numel();
     if (N > 0) {
-        const size_t needed = static_cast<size_t>(1) << n;
+        const keel::usize needed = static_cast<keel::usize>(1) << n;
         if (N % needed != 0)
             throw Error("swt: signal length must be divisible by 2^n",
                         0, 0, "swt", "", "numkit:swt:size");
@@ -111,8 +114,8 @@ void imodwt_argcheck(const Value &swc)
     internal::requireWaveClass(swc, "imodwt", "W", 1,
                                internal::WvClasses::FloatOnly,
                                /*allowComplex=*/true);
-    const size_t H = swc.dims().rows();
-    const size_t N = swc.dims().cols();
+    const keel::usize H = swc.dims().rows();
+    const keel::usize N = swc.dims().cols();
     if (H < 2 || N < 2)
         throw Error("imodwt: W must be at least 2-by-2 (got a "
                         + internal::shapeOf(swc) + " array).",
@@ -124,58 +127,58 @@ void imodwt_argcheck(const Value &swc)
 std::pair<Value, Value> swtAD(const Value &x, int n,
                               const std::vector<double> &Lo_D,
                               const std::vector<double> &Hi_D,
-                              std::pmr::memory_resource *mr)
+                              keel::Allocator *mr)
 {
     swtAD_argcheck(x, n, Lo_D, Hi_D);
-    const size_t N = x.numel();
+    const keel::usize N = x.numel();
     if (N == 0) {
-        return {Value::matrix(static_cast<size_t>(n), 0, ValueType::DOUBLE, mr),
-                Value::matrix(static_cast<size_t>(n), 0, ValueType::DOUBLE, mr)};
+        return {Value::matrix(static_cast<keel::usize>(n), 0, ValueType::DOUBLE, mr),
+                Value::matrix(static_cast<keel::usize>(n), 0, ValueType::DOUBLE, mr)};
     }
 
     std::vector<double> xv(N);
-    for (size_t i = 0; i < N; ++i) xv[i] = x.elemAsDouble(i);
+    for (keel::usize i = 0; i < N; ++i) xv[i] = x.elemAsDouble(i);
     std::vector<double> tempLo = Lo_D, tempHi = Hi_D;
 
-    Value swa = Value::matrix(static_cast<size_t>(n), N,
+    Value swa = Value::matrix(static_cast<keel::usize>(n), N,
                               ValueType::DOUBLE, mr);
-    Value swd = Value::matrix(static_cast<size_t>(n), N,
+    Value swd = Value::matrix(static_cast<keel::usize>(n), N,
                               ValueType::DOUBLE, mr);
     double *ad = swa.doubleDataMut();
     double *dd = swd.doubleDataMut();
-    const size_t H = static_cast<size_t>(n);
+    const keel::usize H = static_cast<keel::usize>(n);
 
     auto convKeep = [&](const std::vector<double> &xe,
-                        const std::vector<double> &h, size_t lf) {
+                        const std::vector<double> &h, keel::usize lf) {
         std::vector<double> out(N, 0.0);
-        for (size_t j = 0; j < lf; ++j) {
+        for (keel::usize j = 0; j < lf; ++j) {
             const double hj = h[j];
             if (hj == 0.0) continue;     // dyadup'd zero taps
-            for (size_t m = 0; m < N; ++m)
+            for (keel::usize m = 0; m < N; ++m)
                 out[m] += hj * xe[lf + m - j];
         }
         return out;
     };
 
     for (int k = 0; k < n; ++k) {
-        const size_t lf = tempLo.size();
-        const size_t ext = lf / 2;
+        const keel::usize lf = tempLo.size();
+        const keel::usize ext = lf / 2;
         std::vector<double> xe(N + 2 * ext);
-        for (size_t i = 0; i < ext; ++i) {
+        for (keel::usize i = 0; i < ext; ++i) {
             xe[i] = xv[(N + i - ext) % N];
             xe[ext + N + i] = xv[i % N];
         }
         std::copy(xv.begin(), xv.end(), xe.begin() + ext);
         auto dRow = convKeep(xe, tempHi, lf);
         auto aRow = convKeep(xe, tempLo, lf);
-        for (size_t c = 0; c < N; ++c) {
+        for (keel::usize c = 0; c < N; ++c) {
             ad[c * H + k] = aRow[c];    // approximation at level k+1
             dd[c * H + k] = dRow[c];    // detail at level k+1
         }
         xv = std::move(aRow);
         auto up = [](const std::vector<double> &h) {
             std::vector<double> u(2 * h.size(), 0.0);
-            for (size_t t = 0; t < h.size(); ++t) u[2 * t] = h[t];
+            for (keel::usize t = 0; t < h.size(); ++t) u[2 * t] = h[t];
             return u;
         };
         tempLo = up(tempLo);
@@ -185,37 +188,37 @@ std::pair<Value, Value> swtAD(const Value &x, int n,
 }
 
 std::pair<Value, Value> swtAD(const Value &x, int n, const std::string &wname,
-                              std::pmr::memory_resource *mr)
+                              keel::Allocator *mr)
 {
     auto fb = wavelet_filters(wname);
     return swtAD(x, n, fb.Lo_D, fb.Hi_D, mr);
 }
 
 Value swt(const Value &x, int n, const std::vector<double> &Lo_D,
-          const std::vector<double> &Hi_D, std::pmr::memory_resource *mr)
+          const std::vector<double> &Hi_D, keel::Allocator *mr)
 {
     if (n < 1)
         throw Error("swt: level must be ≥ 1",
                     0, 0, "swt", "", "numkit:swt:level");
-    const size_t N = x.numel();
+    const keel::usize N = x.numel();
     if (N == 0)
-        return Value::matrix(static_cast<size_t>(n + 1), 0,
+        return Value::matrix(static_cast<keel::usize>(n + 1), 0,
                              ValueType::DOUBLE, mr);
 
     auto [swa, swd] = swtAD(x, n, Lo_D, Hi_D, mr);
-    const size_t H = static_cast<size_t>(n);
-    Value out = Value::matrix(static_cast<size_t>(n + 1), N,
+    const keel::usize H = static_cast<keel::usize>(n);
+    Value out = Value::matrix(static_cast<keel::usize>(n + 1), N,
                               ValueType::DOUBLE, mr);
     double *od = out.doubleDataMut();
-    for (size_t r = 0; r < H; ++r)
-        for (size_t c = 0; c < N; ++c)
+    for (keel::usize r = 0; r < H; ++r)
+        for (keel::usize c = 0; c < N; ++c)
             od[c * (H + 1) + r] = swd.elemAsDouble(c * H + r);
-    for (size_t c = 0; c < N; ++c)
+    for (keel::usize c = 0; c < N; ++c)
         od[c * (H + 1) + H] = swa.elemAsDouble(c * H + H - 1);
     return out;
 }
 
-Value swt(const Value &x, int n, const std::string &wname, std::pmr::memory_resource *mr)
+Value swt(const Value &x, int n, const std::string &wname, keel::Allocator *mr)
 {
     auto fb = wavelet_filters(wname);
     return swt(x, n, fb.Lo_D, fb.Hi_D, mr);
@@ -237,17 +240,17 @@ namespace {
 // aRow: 1×N last-approximation row; its class drives the per-phase
 // store rounding and the result class. dSrc: matrix whose rows
 // 0..n-1 are the detail coefficients (level 1 = finest).
-Value iswtPhase(Value aRow, const Value &dSrc, size_t n,
+Value iswtPhase(Value aRow, const Value &dSrc, keel::usize n,
                 const std::vector<double> &LoR,
                 const std::vector<double> &HiR,
-                std::pmr::memory_resource *mr)
+                keel::Allocator *mr)
 {
-    const size_t H = dSrc.dims().rows();
-    const size_t N = aRow.numel();
+    const keel::usize H = dSrc.dims().rows();
+    const keel::usize N = aRow.numel();
     // N >= 2^n: the deepest level works on N/2^n samples per phase.
     {
-        size_t need = 1;
-        for (size_t k = 0; k < n; ++k) {
+        keel::usize need = 1;
+        for (keel::usize k = 0; k < n; ++k) {
             need <<= 1;
             if (need > N) {
                 throw Error("iswt: the coefficients must have at least "
@@ -261,16 +264,16 @@ Value iswtPhase(Value aRow, const Value &dSrc, size_t n,
     if (N == 0)
         return Value::matrix(1, 0, ValueType::DOUBLE, mr);
 
-    const size_t lf = LoR.size();
-    const size_t ext = lf / 2;
+    const keel::usize lf = LoR.size();
+    const keel::usize ext = lf / 2;
     Value a = std::move(aRow);
 
     // upconvLOC: dyadup(x,0,1) → 'per' extend by lf/2 → full conv →
     // keep l samples from 0-based index lf-1 (wkeep1(y,l,lf)).
     auto upconvv = [&](const std::vector<double> &x,
-                       const std::vector<double> &f, size_t l) {
-        const size_t m = x.size();
-        const size_t un = 2 * m;             // always even → no odd-dup
+                       const std::vector<double> &f, keel::usize l) {
+        const keel::usize m = x.size();
+        const keel::usize un = 2 * m;             // always even → no odd-dup
         if (ext > un)
             throw Error("iswt: the 'per' extension of a length-"
                             + std::to_string(un)
@@ -279,21 +282,21 @@ Value iswtPhase(Value aRow, const Value &dSrc, size_t n,
                             + "too long for " + std::to_string(N)
                             + " columns at " + std::to_string(H) + " rows).",
                         0, 0, "iswt", "", "numkit:iswt:badsubscript");
-        const size_t en = un + 2 * ext;
+        const keel::usize en = un + 2 * ext;
         std::vector<double> e(en, 0.0);
-        for (size_t i = 0; i < m; ++i) e[ext + 2 * i] = x[i];
-        for (size_t i = 0; i < ext; ++i) {
+        for (keel::usize i = 0; i < m; ++i) e[ext + 2 * i] = x[i];
+        for (keel::usize i = 0; i < ext; ++i) {
             e[i] = e[ext + ((i + un) - (ext % un)) % un];  // wrap back
             e[ext + un + i] = e[ext + (i % un)];           // wrap fwd
         }
         std::vector<double> c(en + lf - 1, 0.0);
-        for (size_t i = 0; i < en; ++i) {
+        for (keel::usize i = 0; i < en; ++i) {
             const double v = e[i];
             if (v == 0.0) continue;         // dyadup zeros contribute 0
-            for (size_t j = 0; j < lf; ++j) c[i + j] += v * f[j];
+            for (keel::usize j = 0; j < lf; ++j) c[i + j] += v * f[j];
         }
         std::vector<double> out(l, 0.0);
-        for (size_t i = 0; i < l; ++i) out[i] = c[lf - 1 + i];
+        for (keel::usize i = 0; i < l; ++i) out[i] = c[lf - 1 + i];
         return out;
     };
 
@@ -301,35 +304,35 @@ Value iswtPhase(Value aRow, const Value &dSrc, size_t n,
     // right by one ([y(end), y(1:end-1)]).
     auto idwtLOCv = [&](const std::vector<double> &xa,
                         const std::vector<double> &xd,
-                        size_t l, bool shift) {
+                        keel::usize l, bool shift) {
         auto y1 = upconvv(xa, LoR, l);
         auto y2 = upconvv(xd, HiR, l);
         if (shift) {
             const double last = y1[l - 1] + y2[l - 1];
-            for (size_t i = l; i > 1; --i) y1[i - 1] = y1[i - 2] + y2[i - 2];
+            for (keel::usize i = l; i > 1; --i) y1[i - 1] = y1[i - 2] + y2[i - 2];
             y1[0] = last;
         } else {
-            for (size_t i = 0; i < l; ++i) y1[i] += y2[i];
+            for (keel::usize i = 0; i < l; ++i) y1[i] += y2[i];
         }
         return y1;
     };
 
-    for (size_t k = n; k >= 1; --k) {
-        const size_t step = static_cast<size_t>(1) << (k - 1);
-        for (size_t first = 1; first <= step; ++first) {
-            const size_t lon = (N - first) / step + 1;
-            const size_t mE = (lon + 1) / 2, mO = lon / 2;
+    for (keel::usize k = n; k >= 1; --k) {
+        const keel::usize step = static_cast<keel::usize>(1) << (k - 1);
+        for (keel::usize first = 1; first <= step; ++first) {
+            const keel::usize lon = (N - first) / step + 1;
+            const keel::usize mE = (lon + 1) / 2, mO = lon / 2;
             std::vector<double> ae(mE), de(mE), ao(mO), doo(mO);
-            for (size_t j = 0; j < lon; ++j) {
-                const size_t col = first - 1 + j * step;
+            for (keel::usize j = 0; j < lon; ++j) {
+                const keel::usize col = first - 1 + j * step;
                 const double dv = dSrc.elemAsDouble(col * H + (k - 1));
                 if (j % 2 == 0) { ae[j / 2] = a.elemAsDouble(col); de[j / 2] = dv; }
                 else            { ao[j / 2] = a.elemAsDouble(col); doo[j / 2] = dv; }
             }
             auto x1 = idwtLOCv(ae, de, lon, false);
             auto x2 = idwtLOCv(ao, doo, lon, true);
-            for (size_t j = 0; j < lon; ++j) {
-                const size_t col = first - 1 + j * step;
+            for (keel::usize j = 0; j < lon; ++j) {
+                const keel::usize col = first - 1 + j * step;
                 internal::storeElem(a, col, 0.5 * (x1[j] + x2[j]));
             }
         }
@@ -340,7 +343,7 @@ Value iswtPhase(Value aRow, const Value &dSrc, size_t n,
 } // anonymous
 
 Value iswt(const Value &swc, const std::vector<double> &Lo_R,
-           const std::vector<double> &Hi_R, std::pmr::memory_resource *mr)
+           const std::vector<double> &Hi_R, keel::Allocator *mr)
 {
     if (Lo_R.size() < 2 || Lo_R.size() % 2 != 0 || Lo_R.size() != Hi_R.size())
         throw Error("iswt: filter vectors must have matching even length >= 2",
@@ -348,19 +351,19 @@ Value iswt(const Value &swc, const std::vector<double> &Lo_R,
     internal::requireNonempty(swc, "iswt", "SWC", 1);
     internal::requireWaveClass(swc, "iswt", "SWC", 1,
                                internal::WvClasses::IntWavelet);
-    const size_t H = swc.dims().rows();
-    const size_t N = swc.dims().cols();
+    const keel::usize H = swc.dims().rows();
+    const keel::usize N = swc.dims().cols();
     if (H < 2)
         return internal::copyInClass(swc, mr);      // identity (0 levels)
-    const size_t n = H - 1;
+    const keel::usize n = H - 1;
 
     Value aRow = Value::matrix(1, N, swc.type(), mr);
-    for (size_t c = 0; c < N; ++c)
+    for (keel::usize c = 0; c < N; ++c)
         internal::storeElem(aRow, c, swc.elemAsDouble(c * H + n));
     return iswtPhase(std::move(aRow), swc, n, Lo_R, Hi_R, mr);
 }
 
-Value iswt(const Value &swc, const std::string &wname, std::pmr::memory_resource *mr)
+Value iswt(const Value &swc, const std::string &wname, keel::Allocator *mr)
 {
     auto fb = wavelet_filters(wname);
     return iswt(swc, fb.Lo_R, fb.Hi_R, mr);
@@ -369,7 +372,7 @@ Value iswt(const Value &swc, const std::string &wname, std::pmr::memory_resource
 Value iswt(const Value &swa, const Value &swd,
            const std::vector<double> &Lo_R,
            const std::vector<double> &Hi_R,
-           std::pmr::memory_resource *mr)
+           keel::Allocator *mr)
 {
     if (Lo_R.size() < 2 || Lo_R.size() % 2 != 0 || Lo_R.size() != Hi_R.size())
         throw Error("iswt: filter vectors must have matching even length >= 2",
@@ -386,12 +389,12 @@ Value iswt(const Value &swa, const Value &swd,
                         + ") and SWD (" + std::to_string(swd.dims().cols())
                         + ") must be the same.",
                     0, 0, "iswt", "", "numkit:iswt:InvSWTCSize");
-    const size_t n = swd.dims().rows();
-    const size_t N = swd.dims().cols();
+    const keel::usize n = swd.dims().rows();
+    const keel::usize N = swd.dims().cols();
 
     Value aRow = Value::matrix(1, N, swa.type(), mr);
-    const size_t aH = swa.dims().rows();
-    for (size_t c = 0; c < N; ++c)
+    const keel::usize aH = swa.dims().rows();
+    for (keel::usize c = 0; c < N; ++c)
         internal::storeElem(aRow, c, swa.elemAsDouble(c * aH + aH - 1));
     if (n == 0)
         return aRow;
@@ -399,7 +402,7 @@ Value iswt(const Value &swa, const Value &swd,
 }
 
 Value iswt(const Value &swa, const Value &swd, const std::string &wname,
-           std::pmr::memory_resource *mr)
+           keel::Allocator *mr)
 {
     auto fb = wavelet_filters(wname);
     return iswt(swa, swd, fb.Lo_R, fb.Hi_R, mr);
@@ -422,12 +425,12 @@ Value iswt(const Value &swa, const Value &swd, const std::string &wname,
 // Unlike SWT, MODWT does NOT require N to divide 2ⁿ — the transform
 // is shift-invariant and works for any N.
 
-Value modwt(const Value &x, int n, const std::string &wname, std::pmr::memory_resource *mr)
+Value modwt(const Value &x, int n, const std::string &wname, keel::Allocator *mr)
 {
     modwt_argcheck(n);
-    const size_t N = x.numel();
+    const keel::usize N = x.numel();
     if (N == 0)
-        return Value::matrix(static_cast<size_t>(n + 1), 0,
+        return Value::matrix(static_cast<keel::usize>(n + 1), 0,
                              ValueType::DOUBLE, mr);
 
     auto fb = wavelet_filters(wname);
@@ -446,29 +449,29 @@ Value modwt(const Value &x, int n, const std::string &wname, std::pmr::memory_re
     for (auto &v : hHi) v *= inv_sqrt2;
 
     std::vector<double> a(N);
-    for (size_t i = 0; i < N; ++i) a[i] = x.elemAsDouble(i);
+    for (keel::usize i = 0; i < N; ++i) a[i] = x.elemAsDouble(i);
 
-    Value out = Value::matrix(static_cast<size_t>(n + 1), N,
+    Value out = Value::matrix(static_cast<keel::usize>(n + 1), N,
                               ValueType::DOUBLE, mr);
     double *od = out.doubleDataMut();
-    const size_t H = static_cast<size_t>(n + 1);
+    const keel::usize H = static_cast<keel::usize>(n + 1);
 
     for (int k = 0; k < n; ++k) {
-        const size_t step = static_cast<size_t>(1) << k;
+        const keel::usize step = static_cast<keel::usize>(1) << k;
         auto a_next = circ_corr_back(a, hLo, step);
         auto d_next = circ_corr_back(a, hHi, step);
-        for (size_t c = 0; c < N; ++c) od[c * H + k] = d_next[c];
+        for (keel::usize c = 0; c < N; ++c) od[c * H + k] = d_next[c];
         a = std::move(a_next);
     }
-    for (size_t c = 0; c < N; ++c) od[c * H + n] = a[c];
+    for (keel::usize c = 0; c < N; ++c) od[c * H + n] = a[c];
     return out;
 }
 
-Value imodwt(const Value &swc, const std::string &wname, std::pmr::memory_resource *mr)
+Value imodwt(const Value &swc, const std::string &wname, keel::Allocator *mr)
 {
     imodwt_argcheck(swc);
-    const size_t H = swc.dims().rows();
-    const size_t N = swc.dims().cols();
+    const keel::usize H = swc.dims().rows();
+    const keel::usize N = swc.dims().cols();
     const int n = static_cast<int>(H) - 1;
 
     auto fb = wavelet_filters(wname);
@@ -485,8 +488,8 @@ Value imodwt(const Value &swc, const std::string &wname, std::pmr::memory_resour
     const bool cplx = swc.type() == ValueType::COMPLEX;
     // The inverse is linear in the coefficients: run the real and
     // imaginary components through the same double kernel.
-    auto readCoef = [&](std::size_t row, std::size_t col, bool imag) -> double {
-        const std::size_t flat = col * H + row;
+    auto readCoef = [&](keel::usize row, keel::usize col, bool imag) -> double {
+        const keel::usize flat = col * H + row;
         if (!cplx)
             return swc.elemAsDouble(flat);
         return imag ? swc.complexElem(flat).imag()
@@ -494,35 +497,35 @@ Value imodwt(const Value &swc, const std::string &wname, std::pmr::memory_resour
     };
     auto modwtPass = [&](std::vector<double> a, bool imag) {
         for (int k = n - 1; k >= 0; --k) {
-            const size_t step = static_cast<size_t>(1) << k;
+            const keel::usize step = static_cast<keel::usize>(1) << k;
             std::vector<double> d(N);
-            for (size_t i = 0; i < N; ++i)
-                d[i] = readCoef(static_cast<size_t>(k), i, imag);
+            for (keel::usize i = 0; i < N; ++i)
+                d[i] = readCoef(static_cast<keel::usize>(k), i, imag);
             auto lo = circ_corr_fwd(a, hLo, step);
             auto hi = circ_corr_fwd(d, hHi, step);
-            for (size_t i = 0; i < N; ++i) a[i] = lo[i] + hi[i];
+            for (keel::usize i = 0; i < N; ++i) a[i] = lo[i] + hi[i];
         }
         return a;
     };
 
     std::vector<double> aR(N);
-    for (size_t i = 0; i < N; ++i)
-        aR[i] = readCoef(static_cast<size_t>(n), i, /*imag=*/false);
+    for (keel::usize i = 0; i < N; ++i)
+        aR[i] = readCoef(static_cast<keel::usize>(n), i, /*imag=*/false);
     aR = modwtPass(std::move(aR), /*imag=*/false);
 
     if (!cplx) {
         Value y = Value::matrix(1, N, swc.type(), mr);
-        for (size_t i = 0; i < N; ++i)
+        for (keel::usize i = 0; i < N; ++i)
             internal::storeElem(y, i, aR[i]);
         return y;
     }
     std::vector<double> aI(N);
-    for (size_t i = 0; i < N; ++i)
-        aI[i] = readCoef(static_cast<size_t>(n), i, /*imag=*/true);
+    for (keel::usize i = 0; i < N; ++i)
+        aI[i] = readCoef(static_cast<keel::usize>(n), i, /*imag=*/true);
     aI = modwtPass(std::move(aI), /*imag=*/true);
     Value y = Value::complexMatrix(1, N, mr);
-    for (size_t i = 0; i < N; ++i)
-        y.complexDataMut()[i] = Complex(aR[i], aI[i]);
+    for (keel::usize i = 0; i < N; ++i)
+        y.complexDataMut()[i] = keel::c64(aR[i], aI[i]);
     return y;
 }
 

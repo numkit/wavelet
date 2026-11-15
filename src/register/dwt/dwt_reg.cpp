@@ -9,6 +9,8 @@
 //
 // Phase 2b compute/register split — see project_layering_refactor memory.
 
+#include <keel/core.h>
+#include <keel/ref.h>
 #include <numkit/wavelet/dwt/dwt.hpp>
 
 #include <numkit/sys/plugin.hpp>   // CallContext, ctx.engine->resource()
@@ -32,22 +34,22 @@ static std::string argString(const Value &v) {
 
 // Read a Value (numeric vector) into a flat double buffer.
 static std::vector<double> readVec(const Value &v) {
-    const size_t n = v.numel();
+    const keel::usize n = v.numel();
     std::vector<double> out(n);
-    for (size_t i = 0; i < n; ++i) out[i] = v.elemAsDouble(i);
+    for (keel::usize i = 0; i < n; ++i) out[i] = v.elemAsDouble(i);
     return out;
 }
 
 // Walk trailing N-V pairs starting at args[start]; returns true if a
 // 'mode' arg specifies anything other than 'sym'. Throws on unsupported
 // boundary modes (only 'sym' implemented for now).
-static bool parse_mode_nv(Span<const Value> args, size_t start,
+static bool parse_mode_nv(keel::ArrayRef<Value> args, keel::usize start,
                           const char *fn) {
     auto lower = [](std::string s) {
         for (auto &c : s) c = (char)std::tolower((unsigned char)c);
         return s;
     };
-    for (size_t i = start; i + 1 < args.size(); i += 2) {
+    for (keel::usize i = start; i + 1 < args.size(); i += 2) {
         if (!(args[i].isChar() || args[i].isString())) break;
         const std::string key = lower(args[i].toString());
         if (key == "mode") {
@@ -62,11 +64,11 @@ static bool parse_mode_nv(Span<const Value> args, size_t start,
     return false;
 }
 
-void dwt_reg(Span<const Value> args, size_t /*nargout*/, Span<Value> outs,
+void dwt_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/, keel::MutArrayRef<Value> outs,
              CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 2, 5, "dwt");
-    auto *mr = ctx.engine->resource();
+    auto *mr = ctx.engine->allocator();
     Value cA, cD;
     if (args[1].isChar() || args[1].isString()) {
         // dwt(x, wname[, 'mode', extmode])
@@ -86,17 +88,17 @@ void dwt_reg(Span<const Value> args, size_t /*nargout*/, Span<Value> outs,
     if (outs.size() >= 2) outs[1] = cD;
 }
 
-void idwt_reg(Span<const Value> args, size_t /*nargout*/, Span<Value> outs,
+void idwt_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/, keel::MutArrayRef<Value> outs,
               CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 3, 7, "idwt");
-    auto *mr = ctx.engine->resource();
+    auto *mr = ctx.engine->allocator();
     long long len = -1;
 
     if (args[2].isChar() || args[2].isString()) {
         // idwt(cA, cD, wname[, len][, 'mode', extmode])
         const std::string wname = args[2].toString();
-        size_t i = 3;
+        keel::usize i = 3;
         // Optional positional `len` (numeric scalar) BEFORE any N-V.
         if (i < args.size() && args[i].numel() == 1
             && !(args[i].isChar() || args[i].isString())) {
@@ -111,7 +113,7 @@ void idwt_reg(Span<const Value> args, size_t /*nargout*/, Span<Value> outs,
             throw Error("idwt: custom-filter form requires "
                         "(cA, cD, Lo_R, Hi_R)",
                         0, 0, "idwt", "", "numkit:idwt:nargin");
-        size_t i = 4;
+        keel::usize i = 4;
         if (i < args.size() && args[i].numel() == 1
             && !(args[i].isChar() || args[i].isString())) {
             len = (long long)args[i].toScalar();

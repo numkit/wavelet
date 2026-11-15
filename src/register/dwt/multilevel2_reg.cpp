@@ -6,6 +6,8 @@
 // the engine-free compute in multilevel2.cpp. library.cpp forward-declares
 // + registers these by name.
 
+#include <keel/core.h>
+#include <keel/ref.h>
 #include <numkit/wavelet/dwt/multilevel2.hpp>
 
 #include <numkit/sys/plugin.hpp>   // CallContext, ctx.engine->resource()
@@ -26,11 +28,11 @@ static std::string argString(const Value &v) {
     return v.toString();
 }
 
-void wavedec2_reg(Span<const Value> args, size_t /*nargout*/, Span<Value> outs,
+void wavedec2_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/, keel::MutArrayRef<Value> outs,
                   CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 3, 3, "wavedec2");
-    auto *mr = ctx.engine->resource();
+    auto *mr = ctx.engine->allocator();
     auto r = wavedec2(args[0], argcheck::expectedPositiveInteger(
         argcheck::expectedReal(args[1], 2, "level", "wavedec2"), 2, "level", "wavedec2"),
                       argString(args[2]), mr);
@@ -38,19 +40,19 @@ void wavedec2_reg(Span<const Value> args, size_t /*nargout*/, Span<Value> outs,
     if (outs.size() >= 2) outs[1] = std::move(r.s);
 }
 
-void waverec2_reg(Span<const Value> args, size_t /*nargout*/, Span<Value> outs,
+void waverec2_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/, keel::MutArrayRef<Value> outs,
                   CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 3, 3, "waverec2");
     outs[0] = waverec2(args[0], args[1], argString(args[2]),
-                       ctx.engine->resource());
+                       ctx.engine->allocator());
 }
 
-void appcoef2_reg(Span<const Value> args, size_t /*nargout*/, Span<Value> outs,
+void appcoef2_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/, keel::MutArrayRef<Value> outs,
                   CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 3, 4, "appcoef2");
-    auto *mr = ctx.engine->resource();
+    auto *mr = ctx.engine->allocator();
     int level = -1;   // default = coarsest
     if (args.size() >= 4 && !args[3].isEmpty()
         && !(args[3].isChar() || args[3].isString()))
@@ -59,11 +61,11 @@ void appcoef2_reg(Span<const Value> args, size_t /*nargout*/, Span<Value> outs,
     outs[0] = appcoef2(args[0], args[1], argString(args[2]), level, mr);
 }
 
-void detcoef2_reg(Span<const Value> args, size_t /*nargout*/, Span<Value> outs,
+void detcoef2_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/, keel::MutArrayRef<Value> outs,
                   CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 4, 4, "detcoef2");
-    auto *mr = ctx.engine->resource();
+    auto *mr = ctx.engine->allocator();
     std::string type = argString(args[0]);
     std::string lt = type;
     for (auto &c : lt) c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));

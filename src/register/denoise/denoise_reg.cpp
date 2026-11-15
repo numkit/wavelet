@@ -6,6 +6,8 @@
 //
 // Phase 2b compute/register split — see project_layering_refactor memory.
 
+#include <keel/core.h>
+#include <keel/ref.h>
 #include <numkit/wavelet/denoise/denoise.hpp>
 
 #include <numkit/sys/plugin.hpp>   // CallContext, ctx.engine->resource()
@@ -24,22 +26,22 @@ static std::string argString(const Value &v) {
     return v.toString();
 }
 
-void wthresh_reg(Span<const Value> args, size_t /*nargout*/, Span<Value> outs,
+void wthresh_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/, keel::MutArrayRef<Value> outs,
                  CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 3, 3, "wthresh");
     outs[0] = wthresh(args[0], argString(args[1]), args[2],
-                    ctx.engine->resource());
+                    ctx.engine->allocator());
 }
 
-void wnoisest_reg(Span<const Value> args, size_t /*nargout*/, Span<Value> outs,
+void wnoisest_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/, keel::MutArrayRef<Value> outs,
                   CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 3, 3, "wnoisest");
-    outs[0] = wnoisest(args[0], args[1], args[2], ctx.engine->resource());
+    outs[0] = wnoisest(args[0], args[1], args[2], ctx.engine->allocator());
 }
 
-void wdenoise_reg(Span<const Value> args, size_t /*nargout*/, Span<Value> outs,
+void wdenoise_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/, keel::MutArrayRef<Value> outs,
                   CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 1, 3, "wdenoise");
@@ -50,23 +52,23 @@ void wdenoise_reg(Span<const Value> args, size_t /*nargout*/, Span<Value> outs,
     std::string wname;
     if (args.size() >= 3 && !args[2].isEmpty())
         wname = argString(args[2]);
-    outs[0] = wdenoise(args[0], level, wname, ctx.engine->resource());
+    outs[0] = wdenoise(args[0], level, wname, ctx.engine->allocator());
 }
 
-void wentropy_reg(Span<const Value> args, size_t /*nargout*/, Span<Value> outs,
+void wentropy_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/, keel::MutArrayRef<Value> outs,
                   CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 2, 3, "wentropy");
     const double param = (args.size() >= 3) ? args[2].toScalar() : 0.0;
-    outs[0] = wentropy(args[0], argString(args[1]), param, ctx.engine->resource());
+    outs[0] = wentropy(args[0], argString(args[1]), param, ctx.engine->allocator());
 }
 
-void ddencmp_reg(Span<const Value> args, size_t /*nargout*/, Span<Value> outs,
+void ddencmp_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/, keel::MutArrayRef<Value> outs,
                  CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 3, 3, "ddencmp");
     auto r = ddencmp(argString(args[0]), argString(args[1]), args[2],
-                     ctx.engine->resource());
+                     ctx.engine->allocator());
     if (outs.size() >= 1) outs[0] = std::move(r.thr);
     if (outs.size() >= 2) outs[1] = std::move(r.sorh);
     if (outs.size() >= 3) outs[2] = std::move(r.keepapp);

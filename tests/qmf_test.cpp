@@ -3,6 +3,7 @@
 // Backfill gtest for toolboxes/wavelet/src/filter/qmf.cpp::qmf.
 // Reference values captured from MATLAB R2025b probe.
 
+#include <keel/core.h>
 #include <numkit/core/standard_engine.hpp>
 #include <numkit/core/standard_engine.hpp>
 #include <gtest/gtest.h>
@@ -43,8 +44,8 @@ TEST_F(QmfTest, ParityFlipP1)
 TEST_F(QmfTest, ColumnPreservesShape)
 {
     eval("y = qmf([1; 2; 3]);");
-    EXPECT_EQ(static_cast<size_t>(evalScalar("size(y, 1)")), 3u);
-    EXPECT_EQ(static_cast<size_t>(evalScalar("size(y, 2)")), 1u);
+    EXPECT_EQ(static_cast<keel::usize>(evalScalar("size(y, 1)")), 3u);
+    EXPECT_EQ(static_cast<keel::usize>(evalScalar("size(y, 2)")), 1u);
     EXPECT_DOUBLE_EQ(evalScalar("y(1)"),  3);
     EXPECT_DOUBLE_EQ(evalScalar("y(2)"), -2);
     EXPECT_DOUBLE_EQ(evalScalar("y(3)"),  1);
@@ -59,7 +60,7 @@ TEST_F(QmfTest, Scalar)
 TEST_F(QmfTest, Empty)
 {
     eval("y = qmf([]);");
-    EXPECT_EQ(static_cast<size_t>(evalScalar("numel(y)")), 0u);
+    EXPECT_EQ(static_cast<keel::usize>(evalScalar("numel(y)")), 0u);
 }
 
 TEST_F(QmfTest, Negatives)

@@ -8,6 +8,9 @@
 //
 // Phase 2b compute/register split — see project_layering_refactor memory.
 
+#include <keel/core.h>
+#include <keel/memory.h>
+#include <keel/ref.h>
 #include <numkit/wavelet/shape/shape.hpp>
 
 #include <numkit/sys/plugin.hpp>   // CallContext, ctx.engine->resource()
@@ -23,9 +26,9 @@ namespace numkit::wavelet {
 namespace detail {
 
 static void shape_grid_reg(const char *fn,
-                           std::tuple<Value, Value> (*impl)(double, double, size_t, std::pmr::memory_resource *),
-                           Span<const Value> args, size_t nargout,
-                           Span<Value> outs, CallContext &ctx)
+                           std::tuple<Value, Value> (*impl)(double, double, keel::usize, keel::Allocator *),
+                           keel::ArrayRef<Value> args, keel::usize nargout,
+                           keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 3, 3, fn);
     const double lb = args[0].toScalar();
@@ -34,81 +37,81 @@ static void shape_grid_reg(const char *fn,
     if (!(Nd >= 0.0))
         throw Error(std::string(fn) + ": N must be non-negative",
                     0, 0, fn, "", "numkit:wav:N");
-    const size_t N = static_cast<size_t>(Nd);
-    auto [psi, x] = impl(lb, ub, N, ctx.engine->resource());
+    const keel::usize N = static_cast<keel::usize>(Nd);
+    auto [psi, x] = impl(lb, ub, N, ctx.engine->allocator());
     outs[0] = std::move(psi);
     if (nargout > 1) outs[1] = std::move(x);
 }
 
-void mexihat_reg(Span<const Value> args, size_t nargout,
-                 Span<Value> outs, CallContext &ctx)
+void mexihat_reg(keel::ArrayRef<Value> args, keel::usize nargout,
+                 keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     shape_grid_reg("mexihat", &mexihat, args, nargout, outs, ctx);
 }
 
-void morlet_reg(Span<const Value> args, size_t nargout,
-                Span<Value> outs, CallContext &ctx)
+void morlet_reg(keel::ArrayRef<Value> args, keel::usize nargout,
+                keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     shape_grid_reg("morlet", &morlet, args, nargout, outs, ctx);
 }
 
-void meyeraux_reg(Span<const Value> args, size_t /*nargout*/,
-                  Span<Value> outs, CallContext &ctx)
+void meyeraux_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
+                  keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 1, 1, "meyeraux");
-    outs[0] = meyeraux(args[0], ctx.engine->resource());
+    outs[0] = meyeraux(args[0], ctx.engine->allocator());
 }
 
-void shanwavf_reg(Span<const Value> args, size_t nargout,
-                  Span<Value> outs, CallContext &ctx)
+void shanwavf_reg(keel::ArrayRef<Value> args, keel::usize nargout,
+                  keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 5, 5, "shanwavf");
     const double lb = args[0].toScalar();
     const double ub = args[1].toScalar();
-    const size_t N  = static_cast<size_t>(argcheck::expectedPositiveInteger(
+    const keel::usize N  = static_cast<keel::usize>(argcheck::expectedPositiveInteger(
         argcheck::expectedReal(args[2], 3, "N", "shanwavf"), 3, "N", "shanwavf"));
     const double fb = args[3].toScalar();
     const double fc = args[4].toScalar();
-    auto [psi, x] = shanwavf(lb, ub, N, fb, fc, ctx.engine->resource());
+    auto [psi, x] = shanwavf(lb, ub, N, fb, fc, ctx.engine->allocator());
     outs[0] = std::move(psi);
     if (nargout > 1) outs[1] = std::move(x);
 }
 
-void cmorwavf_reg(Span<const Value> args, size_t nargout,
-                  Span<Value> outs, CallContext &ctx)
+void cmorwavf_reg(keel::ArrayRef<Value> args, keel::usize nargout,
+                  keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 3, 5, "cmorwavf");
     const double lb = args[0].toScalar();
     const double ub = args[1].toScalar();
-    const size_t N  = static_cast<size_t>(argcheck::expectedPositiveInteger(
+    const keel::usize N  = static_cast<keel::usize>(argcheck::expectedPositiveInteger(
         argcheck::expectedReal(args[2], 3, "N", "cmorwavf"), 3, "N", "cmorwavf"));
     // MATLAB R2025b defaults when only 3 args supplied: fb = fc = 1.
     const double fb = (args.size() >= 4) ? args[3].toScalar() : 1.0;
     const double fc = (args.size() >= 5) ? args[4].toScalar() : 1.0;
-    auto [psi, x] = cmorwavf(lb, ub, N, fb, fc, ctx.engine->resource());
+    auto [psi, x] = cmorwavf(lb, ub, N, fb, fc, ctx.engine->allocator());
     outs[0] = std::move(psi);
     if (nargout > 1) outs[1] = std::move(x);
 }
 
-void fbspwavf_reg(Span<const Value> args, size_t nargout,
-                  Span<Value> outs, CallContext &ctx)
+void fbspwavf_reg(keel::ArrayRef<Value> args, keel::usize nargout,
+                  keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 6, 6, "fbspwavf");
     const double lb = args[0].toScalar();
     const double ub = args[1].toScalar();
-    const size_t N  = static_cast<size_t>(argcheck::expectedPositiveInteger(
+    const keel::usize N  = static_cast<keel::usize>(argcheck::expectedPositiveInteger(
         argcheck::expectedReal(args[2], 3, "N", "fbspwavf"), 3, "N", "fbspwavf"));
     const int    m  = argcheck::expectedPositiveInteger(
         argcheck::expectedReal(args[3], 4, "m", "fbspwavf"), 4, "m", "fbspwavf");
     const double fb = args[4].toScalar();
     const double fc = args[5].toScalar();
-    auto [psi, x] = fbspwavf(lb, ub, N, m, fb, fc, ctx.engine->resource());
+    auto [psi, x] = fbspwavf(lb, ub, N, m, fb, fc, ctx.engine->allocator());
     outs[0] = std::move(psi);
     if (nargout > 1) outs[1] = std::move(x);
 }
 
-void centfrq_reg(Span<const Value> args, size_t nargout,
-                 Span<Value> outs, CallContext &ctx)
+void centfrq_reg(keel::ArrayRef<Value> args, keel::usize nargout,
+                 keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 1, 3, "centfrq");
     if (!args[0].isChar() && !args[0].isString())
@@ -128,14 +131,14 @@ void centfrq_reg(Span<const Value> args, size_t nargout,
                         0, 0, "centfrq", "", "numkit:centfrq:invalidPlotArg");
         withRecfreq = true;
     }
-    auto res = centfrqGrid(wname, iter, withRecfreq, ctx.engine->resource());
-    outs[0] = Value::scalar(res.freq, ctx.engine->resource());
+    auto res = centfrqGrid(wname, iter, withRecfreq, ctx.engine->allocator());
+    outs[0] = Value::scalar(res.freq, ctx.engine->allocator());
     if (nargout > 1) outs[1] = std::move(res.xval);
     if (nargout > 2) outs[2] = std::move(res.recfreq);
 }
 
-void scal2frq_reg(Span<const Value> args, size_t /*nargout*/,
-                  Span<Value> outs, CallContext &ctx)
+void scal2frq_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
+                  keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 2, 3, "scal2frq");
     if (!args[1].isChar() && !args[1].isString())
@@ -146,11 +149,11 @@ void scal2frq_reg(Span<const Value> args, size_t /*nargout*/,
     if (args.size() >= 3 && !args[2].isEmpty()) {
         delta = argcheck::expectedReal(args[2], 3, "DELTA", "scal2frq");
     }
-    outs[0] = scal2frq(args[0], wname, delta, ctx.engine->resource());
+    outs[0] = scal2frq(args[0], wname, delta, ctx.engine->allocator());
 }
 
-void cwt_reg(Span<const Value> args, size_t nargout,
-             Span<Value> outs, CallContext &ctx)
+void cwt_reg(keel::ArrayRef<Value> args, keel::usize nargout,
+             keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 1, 13, "cwt");
     std::string wname = "morse";
@@ -167,7 +170,7 @@ void cwt_reg(Span<const Value> args, size_t nargout,
         return s;
     };
 
-    size_t idx = 1;
+    keel::usize idx = 1;
     // Parse optional positional wname and/or fs before Name-Value pairs.
     if (idx < args.size() && (args[idx].isChar() || args[idx].isString())) {
         const std::string s = lowerStr(args[idx].toString());
@@ -219,7 +222,7 @@ void cwt_reg(Span<const Value> args, size_t nargout,
     }
 
     auto res = cwt(args[0], wname, fs, voicesPerOctave, timeBandwidth,
-                   gamma, extendSignal, freqLimits, ctx.engine->resource());
+                   gamma, extendSignal, freqLimits, ctx.engine->allocator());
     outs[0] = std::move(res.cfs);
     if (nargout > 1) outs[1] = std::move(res.f);
     if (nargout > 2) outs[2] = std::move(res.coi);

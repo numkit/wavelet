@@ -64,9 +64,9 @@ TEST_F(WrcoefTest, DetailLevelZeroRejected)
     EXPECT_THROW(eval("wrcoef('d', c, l, 'haar', 0);"), numkit::Error);
     const Value c = *engine.getVariable("c");
     const Value l = *engine.getVariable("l");
-    EXPECT_THROW(wavelet::wrcoef("x", c, l, "haar", 1, engine.resource()), numkit::Error);
-    EXPECT_THROW(wavelet::wrcoef("a", c, l, "haar", -2, engine.resource()), numkit::Error);
-    Value aUpper = wavelet::wrcoef("A", c, l, "haar", 3, engine.resource());
+    EXPECT_THROW(wavelet::wrcoef("x", c, l, "haar", 1, engine.allocator()), numkit::Error);
+    EXPECT_THROW(wavelet::wrcoef("a", c, l, "haar", -2, engine.allocator()), numkit::Error);
+    Value aUpper = wavelet::wrcoef("A", c, l, "haar", 3, engine.allocator());
     EXPECT_DOUBLE_EQ(aUpper.elemAsDouble(0), 4.5);
 }
 

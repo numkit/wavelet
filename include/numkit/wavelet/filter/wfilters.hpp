@@ -4,7 +4,8 @@
 
 #pragma once
 
-#include <memory_resource>
+#include <keel/core.h>
+#include <keel/memory.h>
 #include <numkit/value/value.hpp>
 #include <string>
 #include <vector>
@@ -28,10 +29,10 @@ namespace numkit::wavelet {
 /// @f$ \text{Hi\_R}[k] = (-1)^k\,\text{Lo\_D}[k] @f$ (QMF), and
 /// @f$ \text{Hi\_D}[k] = \text{Hi\_R}[N-1-k] @f$.
 struct FilterBank {
-    std::vector<double> Lo_D;
-    std::vector<double> Hi_D;
-    std::vector<double> Lo_R;
-    std::vector<double> Hi_R;
+    std::vector<keel::f64> Lo_D;
+    std::vector<keel::f64> Hi_D;
+    std::vector<keel::f64> Lo_R;
+    std::vector<keel::f64> Hi_R;
 };
 
 /// Return the four filter banks for a named orthogonal wavelet.
@@ -97,7 +98,7 @@ struct WFiltersResult {
 ///
 /// @see wavelet_filters
 WFiltersResult wfilters(const std::string &name, const std::string &kind = "",
-                        std::pmr::memory_resource *mr = nullptr);
+                        keel::Allocator *mr = nullptr);
 
 
 /// @}

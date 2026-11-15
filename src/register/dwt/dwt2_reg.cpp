@@ -8,6 +8,8 @@
 //
 // Phase 2b compute/register split — see project_layering_refactor memory.
 
+#include <keel/core.h>
+#include <keel/ref.h>
 #include <numkit/wavelet/dwt/dwt2.hpp>
 
 #include <numkit/sys/plugin.hpp>
@@ -27,11 +29,11 @@ static std::string argString(const Value &v) {
     return v.toString();
 }
 
-void dwt2_reg(Span<const Value> args, size_t /*nargout*/, Span<Value> outs,
+void dwt2_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/, keel::MutArrayRef<Value> outs,
               CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 2, 2, "dwt2");
-    auto *mr = ctx.engine->resource();
+    auto *mr = ctx.engine->allocator();
     auto r = dwt2(args[0], argString(args[1]), mr);
     if (outs.size() >= 1) outs[0] = std::move(r.cA);
     if (outs.size() >= 2) outs[1] = std::move(r.cH);
@@ -39,7 +41,7 @@ void dwt2_reg(Span<const Value> args, size_t /*nargout*/, Span<Value> outs,
     if (outs.size() >= 4) outs[3] = std::move(r.cD);
 }
 
-void idwt2_reg(Span<const Value> args, size_t /*nargout*/, Span<Value> outs,
+void idwt2_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/, keel::MutArrayRef<Value> outs,
                CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 5, 6, "idwt2");
@@ -65,7 +67,7 @@ void idwt2_reg(Span<const Value> args, size_t /*nargout*/, Span<Value> outs,
     }
     outs[0] = idwt2(args[0], args[1], args[2], args[3],
                     argString(args[4]), outRows, outCols,
-                    ctx.engine->resource());
+                    ctx.engine->allocator());
 }
 
 } // namespace detail

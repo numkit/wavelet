@@ -7,7 +7,8 @@
 
 #pragma once
 
-#include <memory_resource>
+#include <keel/core.h>
+#include <keel/memory.h>
 #include <numkit/value/value.hpp>
 #include <string>
 #include <utility>
@@ -41,11 +42,11 @@ namespace numkit::wavelet {
 ///
 /// @see iswt, modwt
 Value swt(const Value &x, int n, const std::string &wname,
-          std::pmr::memory_resource *mr = nullptr);
+          keel::Allocator *mr = nullptr);
 
-Value swt(const Value &x, int n, const std::vector<double> &Lo_D,
-          const std::vector<double> &Hi_D,
-          std::pmr::memory_resource *mr = nullptr);
+Value swt(const Value &x, int n, const std::vector<keel::f64> &Lo_D,
+          const std::vector<keel::f64> &Hi_D,
+          keel::Allocator *mr = nullptr);
 
 /// Two-output stationary DWT (`[swa, swd] = swt(x, n, wname)`).
 ///
@@ -60,12 +61,12 @@ Value swt(const Value &x, int n, const std::vector<double> &Lo_D,
 /// @param mr     Memory resource (nullptr → process default).
 /// @return       (SWA, SWD) pair of n × N matrices.
 std::pair<Value, Value> swtAD(const Value &x, int n, const std::string &wname,
-                              std::pmr::memory_resource *mr = nullptr);
+                              keel::Allocator *mr = nullptr);
 
 std::pair<Value, Value> swtAD(const Value &x, int n,
-                              const std::vector<double> &Lo_D,
-                              const std::vector<double> &Hi_D,
-                              std::pmr::memory_resource *mr = nullptr);
+                              const std::vector<keel::f64> &Lo_D,
+                              const std::vector<keel::f64> &Hi_D,
+                              keel::Allocator *mr = nullptr);
 
 /// Inverse stationary DWT (`x = iswt(swc, wname)`).
 ///
@@ -80,11 +81,11 @@ std::pair<Value, Value> swtAD(const Value &x, int n,
 ///
 /// @see swt
 Value iswt(const Value &swc, const std::string &wname,
-           std::pmr::memory_resource *mr = nullptr);
+           keel::Allocator *mr = nullptr);
 
-Value iswt(const Value &swc, const std::vector<double> &Lo_R,
-           const std::vector<double> &Hi_R,
-           std::pmr::memory_resource *mr = nullptr);
+Value iswt(const Value &swc, const std::vector<keel::f64> &Lo_R,
+           const std::vector<keel::f64> &Hi_R,
+           keel::Allocator *mr = nullptr);
 
 /// Two-array inverse stationary DWT (`x = iswt(swa, swd, wname)`).
 ///
@@ -100,12 +101,12 @@ Value iswt(const Value &swc, const std::vector<double> &Lo_R,
 ///
 /// @see swt
 Value iswt(const Value &swa, const Value &swd, const std::string &wname,
-           std::pmr::memory_resource *mr = nullptr);
+           keel::Allocator *mr = nullptr);
 
 Value iswt(const Value &swa, const Value &swd,
-           const std::vector<double> &Lo_R,
-           const std::vector<double> &Hi_R,
-           std::pmr::memory_resource *mr = nullptr);
+           const std::vector<keel::f64> &Lo_R,
+           const std::vector<keel::f64> &Hi_R,
+           keel::Allocator *mr = nullptr);
 
 /// Maximal-overlap discrete wavelet transform (`swc = modwt(x, n, wname)`).
 ///
@@ -128,7 +129,7 @@ Value iswt(const Value &swa, const Value &swd,
 ///
 /// @see imodwt, swt
 Value modwt(const Value &x, int n, const std::string &wname,
-            std::pmr::memory_resource *mr = nullptr);
+            keel::Allocator *mr = nullptr);
 
 /// Inverse MODWT (`x = imodwt(swc, wname)`).
 ///
@@ -142,7 +143,7 @@ Value modwt(const Value &x, int n, const std::string &wname,
 ///
 /// @see modwt
 Value imodwt(const Value &swc, const std::string &wname,
-             std::pmr::memory_resource *mr = nullptr);
+             keel::Allocator *mr = nullptr);
 
 
 /// @}

@@ -8,6 +8,8 @@
 //
 // Phase 2b compute/register-split pilot — see project_layering_refactor memory.
 
+#include <keel/core.h>
+#include <keel/ref.h>
 #include <numkit/wavelet/dwt/haart.hpp>
 #include <numkit/wavelet/dwt/ihaart.hpp>
 
@@ -22,8 +24,8 @@
 namespace numkit::wavelet {
 namespace detail {
 
-void haart_reg(Span<const Value> args, size_t nargout,
-               Span<Value> outs, CallContext &ctx)
+void haart_reg(keel::ArrayRef<Value> args, keel::usize nargout,
+               keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 1, 3, "haart");
     // Parse level (positive integer) + integerflag string here for
@@ -56,20 +58,20 @@ void haart_reg(Span<const Value> args, size_t nargout,
                         0, 0, "haart", "", "numkit:haart:flag");
     }
 
-    HaartResult r = haart(args[0], level, integer_mode, ctx.engine->resource());
+    HaartResult r = haart(args[0], level, integer_mode, ctx.engine->allocator());
     outs[0] = std::move(r.a);
     if (nargout >= 2) outs[1] = std::move(r.d);
 }
 
-void ihaart_reg(Span<const Value> args, size_t /*nargout*/,
-                Span<Value> outs, CallContext &ctx)
+void ihaart_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
+                keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 2, 4, "ihaart");
     // Lax positional parse: level (number) and/or integerflag (string), in
     // any order. The level < Nlevels range check is done inside ihaart().
     int level = 0;
     bool integer_mode = false;
-    for (size_t i = 2; i < args.size(); ++i) {
+    for (keel::usize i = 2; i < args.size(); ++i) {
         const Value &arg = args[i];
         if (arg.isChar() || arg.isString()) {
             std::string flag = arg.toString();
@@ -94,7 +96,7 @@ void ihaart_reg(Span<const Value> args, size_t /*nargout*/,
         }
     }
     outs[0] = ihaart(args[0], args[1], level, integer_mode,
-                     ctx.engine->resource());
+                     ctx.engine->allocator());
 }
 
 } // namespace detail

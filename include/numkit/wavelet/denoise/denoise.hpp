@@ -8,7 +8,8 @@
 
 #pragma once
 
-#include <memory_resource>
+#include <keel/core.h>
+#include <keel/memory.h>
 #include <numkit/value/value.hpp>
 #include <string>
 
@@ -38,7 +39,7 @@ namespace numkit::wavelet {
 ///
 /// @see wnoisest, wdenoise
 Value wthresh(const Value &X, const std::string &sorh, const Value &T,
-              std::pmr::memory_resource *mr = nullptr);
+              keel::Allocator *mr = nullptr);
 
 /// Per-level noise σ estimate (`σ = wnoisest(C, L, S)`).
 ///
@@ -55,7 +56,7 @@ Value wthresh(const Value &X, const std::string &sorh, const Value &T,
 ///
 /// @see wthresh, wdenoise
 Value wnoisest(const Value &C, const Value &L, const Value &S,
-               std::pmr::memory_resource *mr = nullptr);
+               keel::Allocator *mr = nullptr);
 
 /// VisuShrink-style soft-threshold denoising (`y = wdenoise(x, level, wname)`).
 ///
@@ -83,7 +84,7 @@ Value wnoisest(const Value &C, const Value &L, const Value &S,
 ///
 /// @see wthresh, wnoisest, wavedec
 Value wdenoise(const Value &x, int level, const std::string &wname,
-               std::pmr::memory_resource *mr = nullptr);
+               keel::Allocator *mr = nullptr);
 
 /// Entropy of a coefficient vector (`E = wentropy(X, T[, P])`).
 ///
@@ -102,8 +103,8 @@ Value wdenoise(const Value &x, int level, const std::string &wname,
 /// @return       Scalar entropy.
 /// @throws       Error on an unknown type or `norm` exponent `< 1`.
 /// @see wthresh, wdenoise
-Value wentropy(const Value &X, const std::string &type, double param = 0.0,
-               std::pmr::memory_resource *mr = nullptr);
+Value wentropy(const Value &X, const std::string &type, keel::f64 param = 0.0,
+               keel::Allocator *mr = nullptr);
 
 /// Default denoising / compression parameters (`[thr, sorh, keepapp] =
 /// ddencmp(opt, type, x)`).
@@ -132,7 +133,7 @@ struct DdencmpResult {
 /// @throws      Error on an unknown `opt`/`type` or `"wp"`.
 /// @see wentropy, wthresh, wdenoise
 DdencmpResult ddencmp(const std::string &opt, const std::string &type,
-                      const Value &x, std::pmr::memory_resource *mr = nullptr);
+                      const Value &x, keel::Allocator *mr = nullptr);
 
 
 /// @}

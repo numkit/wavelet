@@ -7,6 +7,8 @@
 //
 // Phase 2b compute/register split — see project_layering_refactor memory.
 
+#include <keel/core.h>
+#include <keel/ref.h>
 #include <numkit/wavelet/swt/swt.hpp>
 
 #include <numkit/sys/plugin.hpp>   // CallContext, ctx.engine->resource()
@@ -32,19 +34,19 @@ static std::vector<double> extractFilterVec(const Value &v, const char *fn) {
         (v.dims().rows() != 1 && v.dims().cols() != 1))
         throw Error(std::string(fn) + ": expected real numeric filter vector",
                     0, 0, fn, "", std::string("numkit:") + fn + ":filter");
-    const size_t n = v.numel();
+    const keel::usize n = v.numel();
     std::vector<double> out(n);
-    for (size_t i = 0; i < n; ++i) out[i] = v.elemAsDouble(i);
+    for (keel::usize i = 0; i < n; ++i) out[i] = v.elemAsDouble(i);
     return out;
 }
 
-void swt_reg(Span<const Value> args, size_t nargout, Span<Value> outs,
+void swt_reg(keel::ArrayRef<Value> args, keel::usize nargout, keel::MutArrayRef<Value> outs,
              CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 3, 4, "swt");
     const int lev = argcheck::expectedPositiveInteger(
         argcheck::expectedReal(args[1], 2, "level", "swt"), 2, "level", "swt");
-    auto *mr = ctx.engine->resource();
+    auto *mr = ctx.engine->allocator();
     if (args.size() == 4) {
         auto loD = extractFilterVec(args[2], "swt");
         auto hiD = extractFilterVec(args[3], "swt");
@@ -68,13 +70,13 @@ void swt_reg(Span<const Value> args, size_t nargout, Span<Value> outs,
     outs[0] = swt(args[0], lev, argString(args[2]), mr);
 }
 
-void iswt_reg(Span<const Value> args, size_t /*nargout*/, Span<Value> outs,
+void iswt_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/, keel::MutArrayRef<Value> outs,
               CallContext &ctx)
 {
     // Reference dispatch (iswt.m): 2 args = (SWC, wname);
     // 3 args = (SWA, SWD, wname) when the 3rd is text, else
     // (SWC, Lo_R, Hi_R); 4 args = (SWA, SWD, Lo_R, Hi_R).
-    auto *mr = ctx.engine->resource();
+    auto *mr = ctx.engine->allocator();
     argcheck::checkNargin(args.size(), 2, 4, "iswt");
     const bool a3text = args.size() >= 3 && (args[2].isChar()
                                              || args[2].isString());
@@ -103,7 +105,7 @@ void iswt_reg(Span<const Value> args, size_t /*nargout*/, Span<Value> outs,
                 0, 0, "iswt", "", "numkit:iswt:nargin");
 }
 
-void modwt_reg(Span<const Value> args, size_t /*nargout*/, Span<Value> outs,
+void modwt_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/, keel::MutArrayRef<Value> outs,
                CallContext &ctx)
 {
     // MATLAB R2025b signatures:
@@ -113,9 +115,9 @@ void modwt_reg(Span<const Value> args, size_t /*nargout*/, Span<Value> outs,
     //   w = modwt(x, lev)            (numeric 2nd arg → uses default wname)
     // Default wname = 'sym4'; default lev = floor(log2(N)).
     argcheck::checkNargin(args.size(), 1, 3, "modwt");
-    auto *mr = ctx.engine->resource();
+    auto *mr = ctx.engine->allocator();
     const Value &x = args[0];
-    const size_t N = x.numel();
+    const keel::usize N = x.numel();
     const int default_lev = (N >= 2)
         ? static_cast<int>(std::floor(std::log2(static_cast<double>(N))))
         : 1;
@@ -140,11 +142,11 @@ void modwt_reg(Span<const Value> args, size_t /*nargout*/, Span<Value> outs,
     outs[0] = modwt(x, lev, wname, mr);
 }
 
-void imodwt_reg(Span<const Value> args, size_t /*nargout*/, Span<Value> outs,
+void imodwt_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/, keel::MutArrayRef<Value> outs,
                 CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 2, 2, "imodwt");
-    outs[0] = imodwt(args[0], argString(args[1]), ctx.engine->resource());
+    outs[0] = imodwt(args[0], argString(args[1]), ctx.engine->allocator());
 }
 
 } // namespace detail

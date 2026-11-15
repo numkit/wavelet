@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include <memory_resource>
+#include <keel/memory.h>
 #include <string>
 #include <numkit/value/value.hpp>
 
@@ -40,7 +40,7 @@ namespace numkit::wavelet {
 /// @throws Error on an out-of-range window or an unknown `opt` string.
 Value wkeep(const Value &x, const Value &len,
             const Value &opt = Value::Empty,
-            std::pmr::memory_resource *mr = nullptr);
+            keel::Allocator *mr = nullptr);
 
 /// @brief Extend a signal at its boundaries (`y = wextend(type, mode, x, lf, side)`).
 ///
@@ -65,7 +65,7 @@ Value wkeep(const Value &x, const Value &len,
 /// @see wkeep
 Value wextend(const Value &type, const std::string &mode, const Value &x,
               const Value &lf, const std::string &side = "b",
-              std::pmr::memory_resource *mr = nullptr);
+              keel::Allocator *mr = nullptr);
 
 
 /// @}

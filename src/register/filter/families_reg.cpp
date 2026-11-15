@@ -8,6 +8,8 @@
 //
 // Phase 2b compute/register split — see project_layering_refactor memory.
 
+#include <keel/core.h>
+#include <keel/ref.h>
 #include <numkit/wavelet/filter/families.hpp>
 
 #include <numkit/sys/plugin.hpp>   // CallContext, ctx.engine->resource()
@@ -32,33 +34,33 @@ std::string argName(const Value &v, const char *fn)
 
 namespace detail {
 
-void dbwavf_reg(Span<const Value> args, size_t /*nargout*/,
-                Span<Value> outs, CallContext &ctx)
+void dbwavf_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
+                keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 1, 1, "dbwavf");
-    outs[0] = dbwavf(argName(args[0], "dbwavf"), ctx.engine->resource());
+    outs[0] = dbwavf(argName(args[0], "dbwavf"), ctx.engine->allocator());
 }
 
-void coifwavf_reg(Span<const Value> args, size_t /*nargout*/,
-                  Span<Value> outs, CallContext &ctx)
+void coifwavf_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
+                  keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 1, 1, "coifwavf");
-    outs[0] = coifwavf(argName(args[0], "coifwavf"), ctx.engine->resource());
+    outs[0] = coifwavf(argName(args[0], "coifwavf"), ctx.engine->allocator());
 }
 
-void symwavf_reg(Span<const Value> args, size_t /*nargout*/,
-                 Span<Value> outs, CallContext &ctx)
+void symwavf_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
+                 keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 1, 1, "symwavf");
-    outs[0] = symwavf(argName(args[0], "symwavf"), ctx.engine->resource());
+    outs[0] = symwavf(argName(args[0], "symwavf"), ctx.engine->allocator());
 }
 
 // [Lo_D, Hi_D, Lo_R, Hi_R] = orthfilt(W)
-void orthfilt_reg(Span<const Value> args, size_t /*nargout*/,
-                  Span<Value> outs, CallContext &ctx)
+void orthfilt_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
+                  keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 1, 1, "orthfilt");
-    OrthfiltResult r = orthfilt(args[0], ctx.engine->resource());
+    OrthfiltResult r = orthfilt(args[0], ctx.engine->allocator());
     if (outs.size() >= 1) outs[0] = r.Lo_D;
     if (outs.size() >= 2) outs[1] = r.Hi_D;
     if (outs.size() >= 3) outs[2] = r.Lo_R;

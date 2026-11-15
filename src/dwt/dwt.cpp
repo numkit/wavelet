@@ -15,6 +15,8 @@
 //   * Sum the two reconstructions.
 //   * Crop the centre `len` samples (default `len = 2*la - Lf + 2`).
 
+#include <keel/core.h>
+#include <keel/memory.h>
 #include <numkit/wavelet/dwt/dwt.hpp>
 #include <numkit/wavelet/filter/wfilters.hpp>
 
@@ -35,14 +37,14 @@ namespace {
 // each side. For x = [a b c d] and pad = 3:
 //   ext = [c b a | a b c d | d c b]
 // (the boundary sample is included in the reflection, hence "whole-point").
-std::vector<double> sym_extend(const double *x, size_t N, size_t pad) {
+std::vector<double> sym_extend(const double *x, keel::usize N, keel::usize pad) {
     std::vector<double> y(N + 2 * pad);
-    for (size_t i = 0; i < pad; ++i) {
+    for (keel::usize i = 0; i < pad; ++i) {
         // left: index pad-1-i mirrors x[i]
         y[pad - 1 - i] = (i < N) ? x[i] : x[N - 1];
     }
-    for (size_t i = 0; i < N; ++i) y[pad + i] = x[i];
-    for (size_t i = 0; i < pad; ++i) {
+    for (keel::usize i = 0; i < N; ++i) y[pad + i] = x[i];
+    for (keel::usize i = 0; i < pad; ++i) {
         y[pad + N + i] = (i + 1 <= N) ? x[N - 1 - i] : x[0];
     }
     return y;
@@ -52,11 +54,11 @@ std::vector<double> sym_extend(const double *x, size_t N, size_t pad) {
 std::vector<double> conv_full(const std::vector<double> &a,
                               const std::vector<double> &b) {
     if (a.empty() || b.empty()) return {};
-    const size_t out = a.size() + b.size() - 1;
+    const keel::usize out = a.size() + b.size() - 1;
     std::vector<double> y(out, 0.0);
-    for (size_t i = 0; i < a.size(); ++i) {
+    for (keel::usize i = 0; i < a.size(); ++i) {
         const double ai = a[i];
-        for (size_t j = 0; j < b.size(); ++j)
+        for (keel::usize j = 0; j < b.size(); ++j)
             y[i + j] += ai * b[j];
     }
     return y;
@@ -68,7 +70,7 @@ FilterBank dwt_argcheck(const std::string &wname) {
 
 void dwt_argcheck(const std::vector<double> &Lo_D,
                   const std::vector<double> &Hi_D) {
-    const size_t Lf = Lo_D.size();
+    const keel::usize Lf = Lo_D.size();
     if (Lf < 2 || Hi_D.size() != Lf)
         throw Error("dwt: filter length < 2 or Lo_D/Hi_D length mismatch",
                     0, 0, "dwt", "", "numkit:dwt:filt");
@@ -80,7 +82,7 @@ FilterBank idwt_argcheck(const std::string &wname) {
 
 void idwt_argcheck(const std::vector<double> &Lo_R,
                    const std::vector<double> &Hi_R) {
-    const size_t Lf = Lo_R.size();
+    const keel::usize Lf = Lo_R.size();
     if (Lf < 2 || Hi_R.size() != Lf)
         throw Error("idwt: filter length < 2 or Lo_R/Hi_R length mismatch",
                     0, 0, "idwt", "", "numkit:idwt:filt");
@@ -95,25 +97,25 @@ static std::pair<Value, Value>
 dwt_with_filters(const Value &x,
                  const std::vector<double> &Lo_D,
                  const std::vector<double> &Hi_D,
-                 std::pmr::memory_resource *mr)
+                 keel::Allocator *mr)
 {
     dwt_argcheck(Lo_D, Hi_D);
-    const size_t Lf = Lo_D.size();
+    const keel::usize Lf = Lo_D.size();
 
-    const size_t N = x.numel();
+    const keel::usize N = x.numel();
     if (N == 0)
         return {Value::matrix(1, 0, ValueType::DOUBLE, mr),
                 Value::matrix(1, 0, ValueType::DOUBLE, mr)};
     std::vector<double> xv(N);
-    for (size_t i = 0; i < N; ++i) xv[i] = x.elemAsDouble(i);
+    for (keel::usize i = 0; i < N; ++i) xv[i] = x.elemAsDouble(i);
 
-    const size_t pad = Lf - 1;
+    const keel::usize pad = Lf - 1;
     auto ext = sym_extend(xv.data(), N, pad);
 
     // Output length per band per MATLAB doc:
     //   Llen = floor((N - 1) / 2) + Lf / 2     (Lf even for orthogonal)
     // which equals floor((N + Lf - 1) / 2).
-    const size_t outLen = (N + Lf - 1) / 2;
+    const keel::usize outLen = (N + Lf - 1) / 2;
 
     auto convAndDown = [&](const std::vector<double> &h) {
         auto y = conv_full(ext, h);
@@ -125,8 +127,8 @@ dwt_with_filters(const Value &x,
         // round-trips exact under MATLAB labelling.
         std::vector<double> z;
         z.reserve(outLen);
-        for (size_t k = 0; k < outLen; ++k) {
-            const size_t idx = (Lf - 1) + 2 * k + 1;  // Lf, Lf+2, ... (1-indexed Lf, Lf+2)
+        for (keel::usize k = 0; k < outLen; ++k) {
+            const keel::usize idx = (Lf - 1) + 2 * k + 1;  // Lf, Lf+2, ... (1-indexed Lf, Lf+2)
             z.push_back(idx < y.size() ? y[idx] : 0.0);
         }
         return z;
@@ -146,7 +148,7 @@ dwt_with_filters(const Value &x,
 // Public entry: wname → look up filters via wfilters, dispatch to helper.
 std::pair<Value, Value>
 dwt(const Value &x, const std::string &wname,
-    std::pmr::memory_resource *mr)
+    keel::Allocator *mr)
 {
     auto fb = dwt_argcheck(wname);
     return dwt_with_filters(x, fb.Lo_D, fb.Hi_D, mr);
@@ -157,7 +159,7 @@ std::pair<Value, Value>
 dwt_with_filters_pub(const Value &x,
                      const std::vector<double> &Lo_D,
                      const std::vector<double> &Hi_D,
-                     std::pmr::memory_resource *mr)
+                     keel::Allocator *mr)
 {
     dwt_argcheck(Lo_D, Hi_D);
     return dwt_with_filters(x, Lo_D, Hi_D, mr);
@@ -168,14 +170,14 @@ Value idwt_with_filters(const Value &cA, const Value &cD,
                         const std::vector<double> &Lo_R,
                         const std::vector<double> &Hi_R,
                         long long len,
-                        std::pmr::memory_resource *mr)
+                        keel::Allocator *mr)
 {
     idwt_argcheck(Lo_R, Hi_R);
-    const size_t Lf = Lo_R.size();
+    const keel::usize Lf = Lo_R.size();
 
-    const size_t la = cA.numel();
-    const size_t ld = cD.numel();
-    const size_t L = std::max(la, ld);
+    const keel::usize la = cA.numel();
+    const keel::usize ld = cD.numel();
+    const keel::usize L = std::max(la, ld);
 
     // Upsample by 2 with "post-zero" interleave: u[2i+1] = v[i],
     // u[2i] = 0. This is MATLAB's idwt convention — paired with the
@@ -183,7 +185,7 @@ Value idwt_with_filters(const Value &cA, const Value &cD,
     // downsampling, it makes the round-trip exact.
     auto upsample = [&](const Value &v) {
         std::vector<double> u(2 * L, 0.0);
-        for (size_t i = 0; i < v.numel(); ++i) u[2 * i + 1] = v.elemAsDouble(i);
+        for (keel::usize i = 0; i < v.numel(); ++i) u[2 * i + 1] = v.elemAsDouble(i);
         return u;
     };
 
@@ -195,9 +197,9 @@ Value idwt_with_filters(const Value &cA, const Value &cD,
     auto yD = conv_full(upD, Hi_R);
 
     // Sum (lengths match: 2*L + Lf - 1).
-    const size_t M = yA.size();
+    const keel::usize M = yA.size();
     std::vector<double> y(M, 0.0);
-    for (size_t i = 0; i < M; ++i) y[i] = yA[i] + yD[i];
+    for (keel::usize i = 0; i < M; ++i) y[i] = yA[i] + yD[i];
 
     // Length rule probed against R2025b (idwt.m → upsconv1.m →
     // wkeep1.m): the default keep length is 2·la - Lf + 2 (sym mode),
@@ -208,16 +210,16 @@ Value idwt_with_filters(const Value &cA, const Value &cD,
     // convolution starting at the filter itself, while 2·la - Lf + 2
     // exactly 0 yields an empty result. An explicit L follows the same
     // wkeep1 rule.
-    const size_t sx = M - 1;  // the reference's full-convolution length
+    const keel::usize sx = M - 1;  // the reference's full-convolution length
     long long want = (len >= 0)
         ? len
         : static_cast<long long>(2 * la) - static_cast<long long>(Lf) + 2;
-    size_t outN, offset;
+    keel::usize outN, offset;
     if (want < 0 || static_cast<unsigned long long>(want) >= sx) {
         outN = sx;      // uncropped: u has one leading zero pad
         offset = 1;
     } else {
-        outN = static_cast<size_t>(want);
+        outN = static_cast<keel::usize>(want);
         offset = (sx - outN) / 2 + 1;   // central ('u' side), wkeep1 rule
     }
 
@@ -230,8 +232,8 @@ Value idwt_with_filters(const Value &cA, const Value &cD,
                             mr);
     double *rd = wantSingle ? nullptr : r.doubleDataMut();
     float *rf = wantSingle ? r.singleDataMut() : nullptr;
-    for (size_t i = 0; i < outN; ++i) {
-        const size_t k = offset + i;
+    for (keel::usize i = 0; i < outN; ++i) {
+        const keel::usize k = offset + i;
         const double v = (k < M) ? y[k] : 0.0;
         if (rf) rf[i] = static_cast<float>(v); else rd[i] = v;
     }
@@ -242,7 +244,7 @@ Value idwt_with_filters(const Value &cA, const Value &cD,
 Value idwt(const Value &cA, const Value &cD,
            const std::string &wname,
            long long len,
-           std::pmr::memory_resource *mr)
+           keel::Allocator *mr)
 {
     auto fb = idwt_argcheck(wname);
     return idwt_with_filters(cA, cD, fb.Lo_R, fb.Hi_R, len, mr);
@@ -254,7 +256,7 @@ Value idwt_with_filters_pub(const Value &cA, const Value &cD,
                             const std::vector<double> &Lo_R,
                             const std::vector<double> &Hi_R,
                             long long len,
-                            std::pmr::memory_resource *mr)
+                            keel::Allocator *mr)
 {
     idwt_argcheck(Lo_R, Hi_R);
     return idwt_with_filters(cA, cD, Lo_R, Hi_R, len, mr);

@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include <memory_resource>
+#include <keel/memory.h>
 #include <numkit/value/value.hpp>
 
 namespace numkit::wavelet {
@@ -40,7 +40,7 @@ struct HaartResult {
 /// @throws Error on empty/odd-length input, `level` above the maximum, or
 ///         `integer == true` with complex input.
 HaartResult haart(const Value &x, int level = 0, bool integer = false,
-                  std::pmr::memory_resource *mr = nullptr);
+                  keel::Allocator *mr = nullptr);
 
 
 /// @}

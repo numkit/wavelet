@@ -3,6 +3,7 @@
 // Backfill gtest for toolboxes/wavelet/src/filter/families.cpp::dbwavf.
 // Reference values from MATLAB R2025b probe.
 
+#include <keel/core.h>
 #include <numkit/core/standard_engine.hpp>
 #include <numkit/core/standard_engine.hpp>
 #include <gtest/gtest.h>
@@ -23,7 +24,7 @@ public:
 TEST_F(DbwavfTest, Db1Haar)
 {
     eval("h = dbwavf('db1');");
-    EXPECT_EQ(static_cast<size_t>(evalScalar("numel(h)")), 2u);
+    EXPECT_EQ(static_cast<keel::usize>(evalScalar("numel(h)")), 2u);
     EXPECT_DOUBLE_EQ(evalScalar("h(1)"), 0.5);
     EXPECT_DOUBLE_EQ(evalScalar("h(2)"), 0.5);
 }
@@ -31,7 +32,7 @@ TEST_F(DbwavfTest, Db1Haar)
 TEST_F(DbwavfTest, Db2Length4)
 {
     eval("h = dbwavf('db2');");
-    EXPECT_EQ(static_cast<size_t>(evalScalar("numel(h)")), 4u);
+    EXPECT_EQ(static_cast<keel::usize>(evalScalar("numel(h)")), 4u);
     EXPECT_NEAR(evalScalar("h(1)"),  0.341506, 1e-5);
     EXPECT_NEAR(evalScalar("h(2)"),  0.591506, 1e-5);
     EXPECT_NEAR(evalScalar("h(3)"),  0.158494, 1e-5);
@@ -41,7 +42,7 @@ TEST_F(DbwavfTest, Db2Length4)
 TEST_F(DbwavfTest, Db4Length8)
 {
     eval("h = dbwavf('db4');");
-    EXPECT_EQ(static_cast<size_t>(evalScalar("numel(h)")), 8u);
+    EXPECT_EQ(static_cast<keel::usize>(evalScalar("numel(h)")), 8u);
     EXPECT_NEAR(evalScalar("h(1)"),  0.162902, 1e-5);
     EXPECT_NEAR(evalScalar("h(8)"), -0.007493, 1e-5);
 }
@@ -64,12 +65,12 @@ TEST_F(DbwavfTest, HaarAlias)
 
 TEST_F(DbwavfTest, Db5ToDb10Lengths)
 {
-    EXPECT_EQ(static_cast<size_t>(evalScalar("numel(dbwavf('db5'))")),  10u);
-    EXPECT_EQ(static_cast<size_t>(evalScalar("numel(dbwavf('db6'))")),  12u);
-    EXPECT_EQ(static_cast<size_t>(evalScalar("numel(dbwavf('db7'))")),  14u);
-    EXPECT_EQ(static_cast<size_t>(evalScalar("numel(dbwavf('db8'))")),  16u);
-    EXPECT_EQ(static_cast<size_t>(evalScalar("numel(dbwavf('db9'))")),  18u);
-    EXPECT_EQ(static_cast<size_t>(evalScalar("numel(dbwavf('db10'))")), 20u);
+    EXPECT_EQ(static_cast<keel::usize>(evalScalar("numel(dbwavf('db5'))")),  10u);
+    EXPECT_EQ(static_cast<keel::usize>(evalScalar("numel(dbwavf('db6'))")),  12u);
+    EXPECT_EQ(static_cast<keel::usize>(evalScalar("numel(dbwavf('db7'))")),  14u);
+    EXPECT_EQ(static_cast<keel::usize>(evalScalar("numel(dbwavf('db8'))")),  16u);
+    EXPECT_EQ(static_cast<keel::usize>(evalScalar("numel(dbwavf('db9'))")),  18u);
+    EXPECT_EQ(static_cast<keel::usize>(evalScalar("numel(dbwavf('db10'))")), 20u);
 }
 
 TEST_F(DbwavfTest, Db5ToDb10SumsToOne)

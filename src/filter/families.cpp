@@ -24,6 +24,8 @@
 // "MATLAB Lo_D" and reverses it to obtain MATLAB Lo_R, matching the
 // rest of MATLAB's documented output.
 
+#include <keel/core.h>
+#include <keel/memory.h>
 #include <numkit/wavelet/filter/families.hpp>
 #include <numkit/wavelet/filter/wfilters.hpp>
 
@@ -46,7 +48,7 @@ namespace {
 const double SQRT2 = 1.41421356237309504880;
 const double INV_SQRT2 = 0.70710678118654752440;
 
-Value rowVec(std::pmr::memory_resource *mr, const std::vector<double> &v)
+Value rowVec(keel::Allocator *mr, const std::vector<double> &v)
 {
     Value r = Value::matrix(1, v.size(), ValueType::DOUBLE, mr);
     if (!v.empty()) std::copy(v.begin(), v.end(), r.doubleDataMut());
@@ -57,7 +59,7 @@ Value rowVec(std::pmr::memory_resource *mr, const std::vector<double> &v)
 // 2026-05-08: with the wfilters Lo_D/Lo_R label fix, fb.Lo_R is now the
 // MATLAB Lo_R directly (was MATLAB Lo_D under nk's old swapped
 // labels). No reversal needed anymore.
-Value family_scaling(std::pmr::memory_resource *mr, const std::string &name)
+Value family_scaling(keel::Allocator *mr, const std::string &name)
 {
     auto fb = wavelet_filters(name);   // throws on unsupported family
     std::vector<double> v = fb.Lo_R;
@@ -97,39 +99,39 @@ void orthfilt_argcheck(const Value &W)
 
 // ── Public C++ API (see filter/families.hpp) ──────────────────────────
 
-Value dbwavf(const std::string &name, std::pmr::memory_resource *mr)
+Value dbwavf(const std::string &name, keel::Allocator *mr)
 {
     dbwavf_argcheck(name);
     return family_scaling(mr, name);
 }
 
-Value coifwavf(const std::string &name, std::pmr::memory_resource *mr)
+Value coifwavf(const std::string &name, keel::Allocator *mr)
 {
     coifwavf_argcheck(name);
     return family_scaling(mr, name);
 }
 
-Value symwavf(const std::string &name, std::pmr::memory_resource *mr)
+Value symwavf(const std::string &name, keel::Allocator *mr)
 {
     symwavf_argcheck(name);
     return family_scaling(mr, name);
 }
 
-OrthfiltResult orthfilt(const Value &W, std::pmr::memory_resource *mr)
+OrthfiltResult orthfilt(const Value &W, keel::Allocator *mr)
 {
     orthfilt_argcheck(W);
-    const size_t N = W.numel();
+    const keel::usize N = W.numel();
 
     std::vector<double> Lo_R(N), Lo_D(N), Hi_R(N), Hi_D(N);
-    for (size_t k = 0; k < N; ++k)
+    for (keel::usize k = 0; k < N; ++k)
         Lo_R[k] = W.elemAsDouble(k) * SQRT2;
-    for (size_t k = 0; k < N; ++k)
+    for (keel::usize k = 0; k < N; ++k)
         Lo_D[k] = Lo_R[N - 1 - k];
-    for (size_t k = 0; k < N; ++k) {
+    for (keel::usize k = 0; k < N; ++k) {
         const double s = (k % 2 == 0) ? 1.0 : -1.0;
         Hi_R[k] = s * Lo_R[N - 1 - k];
     }
-    for (size_t k = 0; k < N; ++k)
+    for (keel::usize k = 0; k < N; ++k)
         Hi_D[k] = Hi_R[N - 1 - k];
 
     return { rowVec(mr, Lo_D), rowVec(mr, Hi_D),

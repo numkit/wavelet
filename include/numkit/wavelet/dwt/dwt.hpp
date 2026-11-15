@@ -4,7 +4,8 @@
 
 #pragma once
 
-#include <memory_resource>
+#include <keel/core.h>
+#include <keel/memory.h>
 #include <numkit/value/value.hpp>
 #include <string>
 #include <utility>
@@ -41,7 +42,7 @@ namespace numkit::wavelet {
 /// @see idwt, wavedec, wfilters
 std::pair<Value, Value>
 dwt(const Value &x, const std::string &wname,
-    std::pmr::memory_resource *mr = nullptr);
+    keel::Allocator *mr = nullptr);
 
 /// Internal entry: dwt with explicit analysis filters.
 ///
@@ -59,9 +60,9 @@ dwt(const Value &x, const std::string &wname,
 /// @see dwt, idwt_with_filters_pub
 std::pair<Value, Value>
 dwt_with_filters_pub(const Value &x,
-                     const std::vector<double> &Lo_D,
-                     const std::vector<double> &Hi_D,
-                     std::pmr::memory_resource *mr = nullptr);
+                     const std::vector<keel::f64> &Lo_D,
+                     const std::vector<keel::f64> &Hi_D,
+                     keel::Allocator *mr = nullptr);
 
 /// Inverse single-level discrete wavelet transform.
 ///
@@ -81,7 +82,7 @@ dwt_with_filters_pub(const Value &x,
 Value idwt(const Value &cA, const Value &cD,
            const std::string &wname,
            long long len /* = -1 */,
-           std::pmr::memory_resource *mr = nullptr);
+           keel::Allocator *mr = nullptr);
 
 /// Internal entry: idwt with explicit synthesis filters.
 ///
@@ -100,10 +101,10 @@ Value idwt(const Value &cA, const Value &cD,
 ///
 /// @see idwt, appcoef
 Value idwt_with_filters_pub(const Value &cA, const Value &cD,
-                            const std::vector<double> &Lo_R,
-                            const std::vector<double> &Hi_R,
+                            const std::vector<keel::f64> &Lo_R,
+                            const std::vector<keel::f64> &Hi_R,
                             long long len,
-                            std::pmr::memory_resource *mr = nullptr);
+                            keel::Allocator *mr = nullptr);
 
 
 /// @}

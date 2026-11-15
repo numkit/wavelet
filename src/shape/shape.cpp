@@ -2,6 +2,10 @@
 //
 // Continuous wavelet shape primitives: mexihat, morlet, meyeraux.
 
+#include <keel/core.h>
+#include <keel/memory.h>
+#include <keel/complex.h>
+#include <keel/math.h>
 #include <numkit/wavelet/shape/shape.hpp>
 #include <numkit/wavelet/filter/wfilters.hpp>
 #include <numkit/wavelet/internal/type_gates.hpp>
@@ -30,10 +34,10 @@ namespace numkit::wavelet {
 
 namespace {
 
-void mexihat_argcheck(double /*lb*/, double /*ub*/, size_t /*N*/) {}
-void morlet_argcheck(double /*lb*/, double /*ub*/, size_t /*N*/) {}
+void mexihat_argcheck(double /*lb*/, double /*ub*/, keel::usize /*N*/) {}
+void morlet_argcheck(double /*lb*/, double /*ub*/, keel::usize /*N*/) {}
 
-void shanwavf_argcheck(double /*lb*/, double /*ub*/, size_t /*N*/, double fb, double fc)
+void shanwavf_argcheck(double /*lb*/, double /*ub*/, keel::usize /*N*/, double fb, double fc)
 {
     if (!(fb > 0.0) || !std::isfinite(fb))
         throw Error("shanwavf: bandwidth FB must be positive and finite",
@@ -43,7 +47,7 @@ void shanwavf_argcheck(double /*lb*/, double /*ub*/, size_t /*N*/, double fb, do
                     0, 0, "shanwavf", "", "numkit:shanwavf:fc");
 }
 
-void cmorwavf_argcheck(double /*lb*/, double /*ub*/, size_t /*N*/, double fb, double fc)
+void cmorwavf_argcheck(double /*lb*/, double /*ub*/, keel::usize /*N*/, double fb, double fc)
 {
     if (!(fb > 0.0) || !std::isfinite(fb))
         throw Error("cmorwavf: bandwidth FB must be positive and finite",
@@ -53,7 +57,7 @@ void cmorwavf_argcheck(double /*lb*/, double /*ub*/, size_t /*N*/, double fb, do
                     0, 0, "cmorwavf", "", "numkit:cmorwavf:fc");
 }
 
-void fbspwavf_argcheck(double /*lb*/, double /*ub*/, size_t /*N*/, int m, double fb, double fc)
+void fbspwavf_argcheck(double /*lb*/, double /*ub*/, keel::usize /*N*/, int m, double fb, double fc)
 {
     if (m < 1)
         throw Error("fbspwavf: order m must be >= 1",
@@ -74,14 +78,14 @@ void meyeraux_argcheck(const Value &x)
 }
 
 // linspace(LB, UB, N) into a freshly-allocated Value row.
-Value linspace_row(double lb, double ub, size_t N, std::pmr::memory_resource *mr)
+Value linspace_row(double lb, double ub, keel::usize N, keel::Allocator *mr)
 {
     Value xv = Value::matrix(1, N, ValueType::DOUBLE, mr);
     if (N == 0) return xv;
     double *xd = xv.doubleDataMut();
     if (N == 1) { xd[0] = ub; return xv; }
     const double step = (ub - lb) / static_cast<double>(N - 1);
-    for (size_t i = 0; i < N; ++i)
+    for (keel::usize i = 0; i < N; ++i)
         xd[i] = lb + step * static_cast<double>(i);
     xd[N - 1] = ub;  // exact endpoint
     return xv;
@@ -90,7 +94,7 @@ Value linspace_row(double lb, double ub, size_t N, std::pmr::memory_resource *mr
 } // anonymous
 
 std::tuple<Value, Value>
-mexihat(double lb, double ub, size_t N, std::pmr::memory_resource *mr)
+mexihat(double lb, double ub, keel::usize N, keel::Allocator *mr)
 {
     mexihat_argcheck(lb, ub, N);
     Value xv = linspace_row(lb, ub, N, mr);
@@ -100,7 +104,7 @@ mexihat(double lb, double ub, size_t N, std::pmr::memory_resource *mr)
     double *pd = pv.doubleDataMut();
     // C = 2/√3 · π^(-1/4)
     const double C = (2.0 / std::sqrt(3.0)) * std::pow(M_PI, -0.25);
-    for (size_t i = 0; i < N; ++i) {
+    for (keel::usize i = 0; i < N; ++i) {
         const double t = xd[i];
         const double t2 = t * t;
         pd[i] = C * (1.0 - t2) * std::exp(-t2 / 2.0);
@@ -109,7 +113,7 @@ mexihat(double lb, double ub, size_t N, std::pmr::memory_resource *mr)
 }
 
 std::tuple<Value, Value>
-morlet(double lb, double ub, size_t N, std::pmr::memory_resource *mr)
+morlet(double lb, double ub, keel::usize N, keel::Allocator *mr)
 {
     morlet_argcheck(lb, ub, N);
     Value xv = linspace_row(lb, ub, N, mr);
@@ -117,7 +121,7 @@ morlet(double lb, double ub, size_t N, std::pmr::memory_resource *mr)
     if (N == 0) return {std::move(pv), std::move(xv)};
     const double *xd = xv.doubleData();
     double *pd = pv.doubleDataMut();
-    for (size_t i = 0; i < N; ++i) {
+    for (keel::usize i = 0; i < N; ++i) {
         const double t = xd[i];
         pd[i] = std::exp(-t * t / 2.0) * std::cos(5.0 * t);
     }
@@ -134,7 +138,7 @@ inline double sinc_pi(double x)
 }
 
 // Complex exponential exp(2πi·k·x) → cos(2πk x) + i·sin(2πk x).
-inline Complex cexp_2pi(double kx)
+inline keel::c64 cexp_2pi(double kx)
 {
     const double a = 2.0 * M_PI * kx;
     return {std::cos(a), std::sin(a)};
@@ -143,63 +147,63 @@ inline Complex cexp_2pi(double kx)
 } // anonymous
 
 std::tuple<Value, Value>
-shanwavf(double lb, double ub, size_t N, double fb, double fc, std::pmr::memory_resource *mr)
+shanwavf(double lb, double ub, keel::usize N, double fb, double fc, keel::Allocator *mr)
 {
     shanwavf_argcheck(lb, ub, N, fb, fc);
     Value xv = linspace_row(lb, ub, N, mr);
     Value pv = Value::matrix(1, N, ValueType::COMPLEX, mr);
     if (N == 0) return {std::move(pv), std::move(xv)};
     const double *xd = xv.doubleData();
-    Complex *pd = pv.complexDataMut();
+    keel::c64 *pd = pv.complexDataMut();
     const double s = std::sqrt(fb);
-    for (size_t i = 0; i < N; ++i) {
+    for (keel::usize i = 0; i < N; ++i) {
         const double t = xd[i];
-        const Complex e = cexp_2pi(fc * t);
+        const keel::c64 e = cexp_2pi(fc * t);
         pd[i] = s * sinc_pi(fb * t) * e;
     }
     return {std::move(pv), std::move(xv)};
 }
 
 std::tuple<Value, Value>
-cmorwavf(double lb, double ub, size_t N, double fb, double fc, std::pmr::memory_resource *mr)
+cmorwavf(double lb, double ub, keel::usize N, double fb, double fc, keel::Allocator *mr)
 {
     cmorwavf_argcheck(lb, ub, N, fb, fc);
     Value xv = linspace_row(lb, ub, N, mr);
     Value pv = Value::matrix(1, N, ValueType::COMPLEX, mr);
     if (N == 0) return {std::move(pv), std::move(xv)};
     const double *xd = xv.doubleData();
-    Complex *pd = pv.complexDataMut();
+    keel::c64 *pd = pv.complexDataMut();
     const double inv = 1.0 / std::sqrt(M_PI * fb);
-    for (size_t i = 0; i < N; ++i) {
+    for (keel::usize i = 0; i < N; ++i) {
         const double t = xd[i];
-        const Complex e = cexp_2pi(fc * t);
+        const keel::c64 e = cexp_2pi(fc * t);
         pd[i] = inv * std::exp(-t * t / fb) * e;
     }
     return {std::move(pv), std::move(xv)};
 }
 
 std::tuple<Value, Value>
-fbspwavf(double lb, double ub, size_t N, int m, double fb, double fc, std::pmr::memory_resource *mr)
+fbspwavf(double lb, double ub, keel::usize N, int m, double fb, double fc, keel::Allocator *mr)
 {
     fbspwavf_argcheck(lb, ub, N, m, fb, fc);
     Value xv = linspace_row(lb, ub, N, mr);
     Value pv = Value::matrix(1, N, ValueType::COMPLEX, mr);
     if (N == 0) return {std::move(pv), std::move(xv)};
     const double *xd = xv.doubleData();
-    Complex *pd = pv.complexDataMut();
+    keel::c64 *pd = pv.complexDataMut();
     const double s = std::sqrt(fb);
     const double inv_m = 1.0 / static_cast<double>(m);
-    for (size_t i = 0; i < N; ++i) {
+    for (keel::usize i = 0; i < N; ++i) {
         const double t = xd[i];
         const double sc = sinc_pi(fb * t * inv_m);
         const double pow_sc = std::pow(sc, double(m));
-        const Complex e = cexp_2pi(fc * t);
+        const keel::c64 e = cexp_2pi(fc * t);
         pd[i] = s * pow_sc * e;
     }
     return {std::move(pv), std::move(xv)};
 }
 
-Value meyeraux(const Value &x, std::pmr::memory_resource *mr)
+Value meyeraux(const Value &x, keel::Allocator *mr)
 {
     meyeraux_argcheck(x);
     const auto poly = [](double v) {
@@ -220,7 +224,7 @@ Value meyeraux(const Value &x, std::pmr::memory_resource *mr)
         return Value::scalar(r, mr);
     }
     Value out = internal::allocLike(x, x.type(), mr);
-    for (std::size_t i = 0; i < x.numel(); ++i)
+    for (keel::usize i = 0; i < x.numel(); ++i)
         internal::storeElem(out, i, poly(x.elemAsDouble(i)));
     return out;
 }
@@ -248,7 +252,7 @@ void scal2frq_argcheck(const Value &a, const std::string &wname, double delta)
     if (dm.ndims() > 2 || (dm.rows() != 1 && dm.cols() != 1))
         throw Error("scal2frq: A must be a 1-D vector of positive scales",
                     0, 0, "scal2frq", "", "numkit:scal2frq:invalidScales");
-    for (size_t i = 0; i < a.numel(); ++i) {
+    for (keel::usize i = 0; i < a.numel(); ++i) {
         const double v = a.elemAsDouble(i);
         if (!std::isfinite(v) || v <= 0.0)
             throw Error("scal2frq: all scales in A must be finite and positive",
@@ -268,15 +272,15 @@ std::vector<double> conv_full_vec(const std::vector<double> &a,
 {
     if (a.empty() || b.empty()) return {};
     std::vector<double> c(a.size() + b.size() - 1, 0.0);
-    for (size_t i = 0; i < a.size(); ++i)
-        for (size_t j = 0; j < b.size(); ++j)
+    for (keel::usize i = 0; i < a.size(); ++i)
+        for (keel::usize j = 0; j < b.size(); ++j)
             c[i + j] += a[i] * b[j];
     return c;
 }
 
 bool parse_two_floats(const std::string &s, double &v1, double &v2)
 {
-    const size_t dash = s.find('-');
+    const keel::usize dash = s.find('-');
     if (dash == std::string::npos || dash == 0 || dash + 1 >= s.size())
         return false;
     char *e1 = nullptr;
@@ -290,7 +294,7 @@ bool parse_two_floats(const std::string &s, double &v1, double &v2)
 
 bool parse_int_two_floats(const std::string &s, int &m, double &v1, double &v2)
 {
-    const size_t d1 = s.find('-');
+    const keel::usize d1 = s.find('-');
     if (d1 == std::string::npos || d1 == 0 || d1 + 1 >= s.size())
         return false;
     char *em = nullptr;
@@ -304,13 +308,13 @@ bool parse_int_two_floats(const std::string &s, int &m, double &v1, double &v2)
 
 std::tuple<Value, Value> build_wavefun_psi(const std::string &raw_name,
                                            int iter,
-                                           std::pmr::memory_resource *mr)
+                                           keel::Allocator *mr)
 {
     std::string wname = raw_name;
     for (char &c : wname)
         c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
 
-    const size_t gridN = static_cast<size_t>(1ULL << iter);
+    const keel::usize gridN = static_cast<keel::usize>(1ULL << iter);
 
     if (wname == "morl")
         return morlet(-8.0, 8.0, gridN, mr);
@@ -393,15 +397,15 @@ std::tuple<Value, Value> build_wavefun_psi(const std::string &raw_name,
     std::vector<double> y = Hi;
     for (int step = 1; step < iter; ++step) {
         std::vector<double> up(2 * y.size() - 1, 0.0);
-        for (size_t k = 0; k < y.size(); ++k)
+        for (keel::usize k = 0; k < y.size(); ++k)
             up[2 * k] = y[k];
         y = conv_full_vec(up, Lo);
     }
     const double scale = std::pow(2.0, 0.5 * static_cast<double>(iter));
     for (double &v : y) v *= scale;
 
-    const size_t L = Lo.size();
-    size_t len_psi = 0;
+    const keel::usize L = Lo.size();
+    keel::usize len_psi = 0;
     double T = 0.0;
     if (L == 2) {
         len_psi = gridN + 2;
@@ -417,7 +421,7 @@ std::tuple<Value, Value> build_wavefun_psi(const std::string &raw_name,
     Value psi = Value::matrix(1, len_psi, ValueType::DOUBLE, mr);
     double *pd = psi.doubleDataMut();
     std::fill(pd, pd + len_psi, 0.0);
-    const size_t copy_len = std::min(y.size(), len_psi > 1 ? len_psi - 1 : 0);
+    const keel::usize copy_len = std::min(y.size(), len_psi > 1 ? len_psi - 1 : 0);
     std::copy(y.begin(), y.begin() + copy_len, pd + 1);
 
     Value xval = linspace_row(0.0, T, len_psi, mr);
@@ -428,24 +432,24 @@ std::tuple<Value, Value> build_wavefun_psi(const std::string &raw_name,
 
 CentfrqResult centfrqGrid(const std::string &wname, int iter,
                           bool withRecfreq,
-                          std::pmr::memory_resource *mr)
+                          keel::Allocator *mr)
 {
     centfrq_argcheck(wname, iter);
     auto [psi, xval] = build_wavefun_psi(wname, iter, mr);
-    const size_t n = psi.numel();
+    const keel::usize n = psi.numel();
     Value Y = signal::fft(psi, -1, 0, mr);
 
 
-    auto getComplex = [](const Value &v, size_t idx) -> Complex {
+    auto getComplex = [](const Value &v, keel::usize idx) -> keel::c64 {
         if (v.type() == ValueType::COMPLEX)
             return v.complexData()[idx];
-        return Complex(v.elemAsDouble(idx), 0.0);
+        return keel::c64(v.elemAsDouble(idx), 0.0);
     };
 
-    size_t best_idx0 = 0;
+    keel::usize best_idx0 = 0;
     double best_mag = -1.0;
-    for (size_t i = 0; i < n; ++i) {
-        const Complex c = getComplex(Y, i);
+    for (keel::usize i = 0; i < n; ++i) {
+        const keel::c64 c = getComplex(Y, i);
         const double mag = std::hypot(c.real(), c.imag());
         if (mag > best_mag) {
             best_mag = mag;
@@ -453,8 +457,8 @@ CentfrqResult centfrqGrid(const std::string &wname, int iter,
         }
     }
 
-    const size_t ind = best_idx0 + 1; // 1-based index
-    const size_t ind_fold =
+    const keel::usize ind = best_idx0 + 1; // 1-based index
+    const keel::usize ind_fold =
         (static_cast<double>(ind) > 0.5 * static_cast<double>(n))
             ? (n + 2 - ind)
             : ind;
@@ -463,15 +467,15 @@ CentfrqResult centfrqGrid(const std::string &wname, int iter,
 
     Value recfreq = Value::matrix(0, 0, ValueType::DOUBLE, mr);
     if (withRecfreq) {
-        const Complex Ypeak = getComplex(Y, best_idx0);
+        const keel::c64 Ypeak = getComplex(Y, best_idx0);
 
         const double inv_n = 1.0 / static_cast<double>(n);
         if (psi.isComplex()) {
             recfreq = Value::matrix(1, n, ValueType::COMPLEX, mr);
-            Complex *rd = recfreq.complexDataMut();
-            for (size_t k = 0; k < n; ++k) {
+            keel::c64 *rd = recfreq.complexDataMut();
+            for (keel::usize k = 0; k < n; ++k) {
                 const double ang = 2.0 * M_PI * static_cast<double>(best_idx0 * k) * inv_n;
-                const Complex e(std::cos(ang), std::sin(ang));
+                const keel::c64 e(std::cos(ang), std::sin(ang));
                 rd[k] = (Ypeak * e) * inv_n;
             }
         } else {
@@ -480,9 +484,9 @@ CentfrqResult centfrqGrid(const std::string &wname, int iter,
             const double scale = (best_idx0 == 0 || (n % 2 == 0 && best_idx0 == n / 2))
                                      ? inv_n
                                      : 2.0 * inv_n;
-            for (size_t k = 0; k < n; ++k) {
+            for (keel::usize k = 0; k < n; ++k) {
                 const double ang = 2.0 * M_PI * static_cast<double>(best_idx0 * k) * inv_n;
-                const Complex e(std::cos(ang), std::sin(ang));
+                const keel::c64 e(std::cos(ang), std::sin(ang));
                 rd[k] = (Ypeak * e).real() * scale;
             }
         }
@@ -497,13 +501,13 @@ double centfrq(const std::string &wname, int iter)
 }
 
 Value scal2frq(const Value &a, const std::string &wname,
-               double delta, std::pmr::memory_resource *mr)
+               double delta, keel::Allocator *mr)
 {
     scal2frq_argcheck(a, wname, delta);
     const double cf = centfrq(wname, 8);
     const double num = cf / delta;
     Value out = internal::allocLike(a, a.type(), mr);
-    for (size_t i = 0; i < a.numel(); ++i)
+    for (keel::usize i = 0; i < a.numel(); ++i)
         internal::storeElem(out, i, num / a.elemAsDouble(i));
     return out;
 }
@@ -520,7 +524,7 @@ void cwt_argcheck(const Value &x, const std::string &wname, double fs,
     if (x.dims().ndims() > 2 || (x.dims().rows() > 1 && x.dims().cols() > 1) || x.numel() < 4)
         throw Error("cwt: X must be a 1-D vector with at least 4 samples",
                     0, 0, "cwt", "", "numkit:cwt:expectedVector");
-    for (size_t i = 0; i < x.numel(); ++i) {
+    for (keel::usize i = 0; i < x.numel(); ++i) {
         if (!std::isfinite(x.elemAsDouble(i)))
             throw Error("cwt: X must be finite",
                         0, 0, "cwt", "", "numkit:cwt:expectedFinite");
@@ -567,7 +571,7 @@ CwtResult cwt(const Value &x,
               double gamma,
               bool extendSignal,
               const Value &freqLimits,
-              std::pmr::memory_resource *mr)
+              keel::Allocator *mr)
 {
     cwt_argcheck(x, wname, fs, voicesPerOctave, timeBandwidth, gamma, freqLimits);
 
@@ -575,7 +579,7 @@ CwtResult cwt(const Value &x,
     for (char &c : wl)
         c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
 
-    const size_t N = x.numel();
+    const keel::usize N = x.numel();
     const double nv = static_cast<double>(voicesPerOctave);
     const double beta = timeBandwidth / gamma;
 
@@ -592,11 +596,11 @@ CwtResult cwt(const Value &x,
             const double w_ga = std::pow(w, gamma);
             const double g = beta * std::log(w / wpsi) - (w_ga - wpsi_ga) - target;
             const double gp = beta / w - gamma * (w_ga / w);
-            if (std::abs(gp) < 1e-30) break;
+            if (keel::abs(gp) < 1e-30) break;
             const double step = g / gp;
             w -= step;
             if (w <= wpsi) w = 0.5 * (w + step + wpsi);
-            if (std::abs(step) <= 1e-15 * w) break;
+            if (keel::abs(step) <= 1e-15 * w) break;
         }
         wc = w;
 
@@ -636,52 +640,52 @@ CwtResult cwt(const Value &x,
     }
 
     const double nOct = std::max(0.0, std::log2(smax / s0));
-    const size_t nScales = 1 + static_cast<size_t>(std::floor(nv * nOct + 1e-12));
+    const keel::usize nScales = 1 + static_cast<keel::usize>(std::floor(nv * nOct + 1e-12));
 
     std::vector<double> scales(nScales);
     std::vector<double> freqs(nScales);
-    for (size_t j = 0; j < nScales; ++j) {
+    for (keel::usize j = 0; j < nScales; ++j) {
         scales[j] = s0 * std::pow(2.0, static_cast<double>(j) / nv);
         freqs[j] = (wpsi * fs) / (2.0 * M_PI * scales[j]);
     }
 
-    const size_t padL = extendSignal ? std::min<size_t>(N / 2, 100000) : 0;
-    const size_t Npad = N + 2 * padL;
+    const keel::usize padL = extendSignal ? std::min<keel::usize>(N / 2, 100000) : 0;
+    const keel::usize Npad = N + 2 * padL;
 
     Value xpad = Value::matrix(1, Npad, ValueType::DOUBLE, mr);
     double *xpd = xpad.doubleDataMut();
-    for (size_t i = 0; i < padL; ++i)
+    for (keel::usize i = 0; i < padL; ++i)
         xpd[i] = x.elemAsDouble(padL - 1 - i);
-    for (size_t i = 0; i < N; ++i)
+    for (keel::usize i = 0; i < N; ++i)
         xpd[padL + i] = x.elemAsDouble(i);
-    for (size_t i = 0; i < padL; ++i)
+    for (keel::usize i = 0; i < padL; ++i)
         xpd[padL + N + i] = x.elemAsDouble(N - 1 - i);
 
     Value X = signal::fft(xpad, -1, 0, mr);
-    auto getX = [&](size_t k) -> Complex {
+    auto getX = [&](keel::usize k) -> keel::c64 {
         if (X.type() == ValueType::COMPLEX)
             return X.complexData()[k];
-        return Complex(X.elemAsDouble(k), 0.0);
+        return keel::c64(X.elemAsDouble(k), 0.0);
     };
 
-    const size_t kMax = Npad / 2;
+    const keel::usize kMax = Npad / 2;
     std::vector<double> omega(kMax + 1);
     const double dOmega = (2.0 * M_PI) / static_cast<double>(Npad);
-    for (size_t k = 0; k <= kMax; ++k)
+    for (keel::usize k = 0; k <= kMax; ++k)
         omega[k] = static_cast<double>(k) * dOmega;
 
     const bool outSingle = (x.type() == ValueType::SINGLE);
     Value cfs = Value::matrix(nScales, N, ValueType::COMPLEX, mr);
-    Complex *cfs_d = cfs.complexDataMut();
+    keel::c64 *cfs_d = cfs.complexDataMut();
 
     Value prodRow = Value::matrix(1, Npad, ValueType::COMPLEX, mr);
-    Complex *prd = prodRow.complexDataMut();
+    keel::c64 *prd = prodRow.complexDataMut();
     const double wpsi_ga = (wl == "morse") ? (beta / gamma) : 0.0;
 
-    for (size_t j = 0; j < nScales; ++j) {
+    for (keel::usize j = 0; j < nScales; ++j) {
         const double s = scales[j];
-        std::fill(prd, prd + Npad, Complex(0.0, 0.0));
-        for (size_t k = 1; k <= kMax; ++k) {
+        std::fill(prd, prd + Npad, keel::c64(0.0, 0.0));
+        for (keel::usize k = 1; k <= kMax; ++k) {
             const double sw = s * omega[k];
             double Hval = 0.0;
             if (wl == "morse") {
@@ -695,7 +699,7 @@ CwtResult cwt(const Value &x,
                 Hval = 2.0 * std::exp(-0.5 * diff * diff);
             } else {
                 const double u = (sw - wpsi) / 0.6;
-                if (std::abs(u) < 1.0 - 1e-15)
+                if (keel::abs(u) < 1.0 - 1e-15)
                     Hval = 2.0 * std::exp(1.0 - 1.0 / (1.0 - u * u));
             }
             if (Hval != 0.0)
@@ -703,11 +707,11 @@ CwtResult cwt(const Value &x,
         }
 
         Value yRow = signal::ifft(prodRow, -1, 0, mr);
-        for (size_t n = 0; n < N; ++n) {
-            const Complex c = (yRow.type() == ValueType::COMPLEX)
+        for (keel::usize n = 0; n < N; ++n) {
+            const keel::c64 c = (yRow.type() == ValueType::COMPLEX)
                                   ? yRow.complexData()[padL + n]
-                                  : Complex(yRow.elemAsDouble(padL + n), 0.0);
-            const size_t idx = j + n * nScales; // column-major (nScales x N)
+                                  : keel::c64(yRow.elemAsDouble(padL + n), 0.0);
+            const keel::usize idx = j + n * nScales; // column-major (nScales x N)
             cfs_d[idx] = c;
         }
     }
@@ -715,7 +719,7 @@ CwtResult cwt(const Value &x,
     Value fOut = Value::matrix(nScales, 1,
                                outSingle ? ValueType::SINGLE : ValueType::DOUBLE,
                                mr);
-    for (size_t j = 0; j < nScales; ++j)
+    for (keel::usize j = 0; j < nScales; ++j)
         internal::storeElem(fOut, j, freqs[j]);
 
     Value coiOut = Value::matrix(N, 1,
@@ -723,8 +727,8 @@ CwtResult cwt(const Value &x,
                                  mr);
     const double coiNum = (fs * wpsi * sigt) / (2.0 * M_PI);
     const double fTop = freqs[0];
-    for (size_t n = 0; n < N; ++n) {
-        const size_t dist = std::min(n + 1, N - n);
+    for (keel::usize n = 0; n < N; ++n) {
+        const keel::usize dist = std::min(n + 1, N - n);
         const double val = std::min(fTop, coiNum / static_cast<double>(dist));
         internal::storeElem(coiOut, n, val);
     }

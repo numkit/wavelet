@@ -20,6 +20,9 @@
 
 #pragma once
 
+#include <keel/core.h>
+#include <keel/memory.h>
+#include <keel/complex.h>
 #include <cmath>
 #include <string>
 #include <string_view>
@@ -130,60 +133,60 @@ inline void requireNonempty(const Value &v, std::string_view fn,
 /// @brief Store one element into a typed matrix (saturation mirrors the
 /// reference's integer wavelet arithmetic; values gathered or extrapolated
 /// from the same class round-trip exactly).
-inline void storeElem(Value &out, std::size_t i, double x)
+inline void storeElem(Value &out, keel::usize i, keel::f64 x)
 {
     switch (out.type()) {
-        case ValueType::SINGLE:   out.singleDataMut()[i] = static_cast<float>(x); break;
+        case ValueType::SINGLE:   out.singleDataMut()[i] = static_cast<keel::f32>(x); break;
         case ValueType::LOGICAL:  out.logicalDataMut()[i] = x != 0.0 ? 1 : 0; break;
         case ValueType::CHAR:     out.charDataMut()[i] = static_cast<char>(static_cast<int>(x)); break;
         case ValueType::INT8: {
-            const double r = std::round(x);
-            const double c = r < -128.0 ? -128.0 : (r > 127.0 ? 127.0 : r);
-            out.int8DataMut()[i] = static_cast<int8_t>(c);
+            const keel::f64 r = std::round(x);
+            const keel::f64 c = r < -128.0 ? -128.0 : (r > 127.0 ? 127.0 : r);
+            out.int8DataMut()[i] = static_cast<keel::i8>(c);
             break;
         }
         case ValueType::INT16: {
-            const double r = std::round(x);
-            const double c = r < -32768.0 ? -32768.0 : (r > 32767.0 ? 32767.0 : r);
-            out.int16DataMut()[i] = static_cast<int16_t>(c);
+            const keel::f64 r = std::round(x);
+            const keel::f64 c = r < -32768.0 ? -32768.0 : (r > 32767.0 ? 32767.0 : r);
+            out.int16DataMut()[i] = static_cast<keel::i16>(c);
             break;
         }
         case ValueType::INT32: {
-            const double r = std::round(x);
-            const double c = r < -2147483648.0 ? -2147483648.0
+            const keel::f64 r = std::round(x);
+            const keel::f64 c = r < -2147483648.0 ? -2147483648.0
                               : (r > 2147483647.0 ? 2147483647.0 : r);
-            out.int32DataMut()[i] = static_cast<int32_t>(c);
+            out.int32DataMut()[i] = static_cast<keel::i32>(c);
             break;
         }
         case ValueType::INT64: {
-            const double r = std::round(x);
-            const double c = r < -9.2233720368547758e18 ? -9.2233720368547758e18
+            const keel::f64 r = std::round(x);
+            const keel::f64 c = r < -9.2233720368547758e18 ? -9.2233720368547758e18
                               : (r > 9.2233720368547758e18 ? 9.2233720368547758e18 : r);
-            out.int64DataMut()[i] = static_cast<int64_t>(c);
+            out.int64DataMut()[i] = static_cast<keel::i64>(c);
             break;
         }
         case ValueType::UINT8: {
-            const double r = std::round(x);
-            const double c = r < 0.0 ? 0.0 : (r > 255.0 ? 255.0 : r);
-            out.uint8DataMut()[i] = static_cast<uint8_t>(c);
+            const keel::f64 r = std::round(x);
+            const keel::f64 c = r < 0.0 ? 0.0 : (r > 255.0 ? 255.0 : r);
+            out.uint8DataMut()[i] = static_cast<keel::u8>(c);
             break;
         }
         case ValueType::UINT16: {
-            const double r = std::round(x);
-            const double c = r < 0.0 ? 0.0 : (r > 65535.0 ? 65535.0 : r);
-            out.uint16DataMut()[i] = static_cast<uint16_t>(c);
+            const keel::f64 r = std::round(x);
+            const keel::f64 c = r < 0.0 ? 0.0 : (r > 65535.0 ? 65535.0 : r);
+            out.uint16DataMut()[i] = static_cast<keel::u16>(c);
             break;
         }
         case ValueType::UINT32: {
-            const double r = std::round(x);
-            const double c = r < 0.0 ? 0.0 : (r > 4294967295.0 ? 4294967295.0 : r);
-            out.uint32DataMut()[i] = static_cast<uint32_t>(c);
+            const keel::f64 r = std::round(x);
+            const keel::f64 c = r < 0.0 ? 0.0 : (r > 4294967295.0 ? 4294967295.0 : r);
+            out.uint32DataMut()[i] = static_cast<keel::u32>(c);
             break;
         }
         case ValueType::UINT64: {
-            const double r = std::round(x);
-            const double c = r < 0.0 ? 0.0 : (r > 1.8446744073709552e19 ? 1.8446744073709552e19 : r);
-            out.uint64DataMut()[i] = static_cast<uint64_t>(c);
+            const keel::f64 r = std::round(x);
+            const keel::f64 c = r < 0.0 ? 0.0 : (r > 1.8446744073709552e19 ? 1.8446744073709552e19 : r);
+            out.uint64DataMut()[i] = static_cast<keel::u64>(c);
             break;
         }
         default:
@@ -196,7 +199,7 @@ inline void storeElem(Value &out, std::size_t i, double x)
 /// the same page structure (2-D or 3-D only — the wavelet kernels are
 /// 1-D/2-D; 3-D inputs keep their pages through wrev/wkeep/meyeraux).
 inline Value allocLike(const Value &like, ValueType target,
-                       std::pmr::memory_resource *mr = nullptr)
+                       keel::Allocator *mr = nullptr)
 {
     const Dims &d = like.dims();
     return d.is3D()
@@ -208,24 +211,24 @@ inline Value allocLike(const Value &like, ValueType target,
 /// the class-preserving "return x unchanged" of the probed wkeep /
 /// wextend semantics (invalid LEN returns x, loc 'n' returns x).
 inline Value copyInClass(const Value &src,
-                         std::pmr::memory_resource *mr = nullptr)
+                         keel::Allocator *mr = nullptr)
 {
     if (src.type() == ValueType::COMPLEX) {
         Value out = Value::complexMatrix(src.dims().rows(), src.dims().cols(), mr);
         if (src.isSingleComplex()) out.setSingleComplex(true);
-        const Complex *sd = src.complexData();
-        Complex *od = out.complexDataMut();
-        for (std::size_t i = 0; i < src.numel(); ++i) od[i] = sd[i];
+        const keel::c64 *sd = src.complexData();
+        keel::c64 *od = out.complexDataMut();
+        for (keel::usize i = 0; i < src.numel(); ++i) od[i] = sd[i];
         return out;
     }
     Value out = allocLike(src, src.type(), mr);
-    for (std::size_t i = 0; i < src.numel(); ++i)
+    for (keel::usize i = 0; i < src.numel(); ++i)
         storeElem(out, i, src.elemAsDouble(i));
     return out;
 }
 
 /// @brief Gather element i of `src` as double (real part for complex).
-inline double gatherReal(const Value &src, std::size_t i)
+inline keel::f64 gatherReal(const Value &src, keel::usize i)
 {
     return src.elemAsDouble(i);
 }

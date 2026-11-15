@@ -10,6 +10,9 @@
 // error); wextend's LOC letters map l/u → start, r/d → end, b → both,
 // n → no extension, anything else → both.
 
+#include <keel/core.h>
+#include <keel/memory.h>
+#include <keel/complex.h>
 #include <numkit/wavelet/dwt/wkeep_wextend.hpp>
 #include <numkit/wavelet/internal/type_gates.hpp>
 
@@ -28,20 +31,20 @@ namespace numkit::wavelet {
 
 namespace {
 
-void readShape(const Value &x, size_t &rows, size_t &cols)
+void readShape(const Value &x, keel::usize &rows, keel::usize &cols)
 {
     rows = x.dims().rows();
     cols = x.dims().cols();
     if (rows == 0 && cols == 0) { rows = 1; cols = 0; }
 }
 
-bool isCol(size_t rows, size_t cols)
+bool isCol(keel::usize rows, keel::usize cols)
 {
     return cols == 1 && rows > 1;
 }
 
-void outShape(bool col, size_t outN,
-              size_t &outRows, size_t &outCols)
+void outShape(bool col, keel::usize outN,
+              keel::usize &outRows, keel::usize &outCols)
 {
     if (col) { outRows = outN; outCols = 1; }
     else     { outRows = 1;    outCols = outN; }
@@ -82,16 +85,16 @@ void wkeep_argcheck(const Value &x, const Value &len)
 // ── Public C++ API (see dwt/wkeep_wextend.hpp) ────────────────────────
 
 Value wkeep(const Value &x, const Value &len, const Value &opt,
-            std::pmr::memory_resource *mr)
+            keel::Allocator *mr)
 {
     // Class gate: every array class passes through (char included — the
     // reference keeps it); cells/structs/strings reject. 3-D inputs are
     // outside the documented 1-D/2-D surface.
     wkeep_argcheck(x, len);
 
-    size_t rows, cols;
+    keel::usize rows, cols;
     readShape(x, rows, cols);
-    const size_t N = rows * cols;
+    const keel::usize N = rows * cols;
     const bool xIsVector = (rows == 1) || (cols == 1);
 
     if (len.numel() == 2) {
@@ -134,8 +137,8 @@ Value wkeep(const Value &x, const Value &len, const Value &opt,
                         0, 0, "wkeep", "", "numkit:wkeep:opt");
         } else {
             // Central — same formula as 1-D: floor((N - n) / 2) + 1.
-            fr1 = static_cast<long long>((rows - static_cast<size_t>(R)) / 2) + 1;
-            fc1 = static_cast<long long>((cols - static_cast<size_t>(C)) / 2) + 1;
+            fr1 = static_cast<long long>((rows - static_cast<keel::usize>(R)) / 2) + 1;
+            fc1 = static_cast<long long>((cols - static_cast<keel::usize>(C)) / 2) + 1;
         }
         if (fr1 < 1 || fc1 < 1 ||
             fr1 + R - 1 > static_cast<long long>(rows) ||
@@ -144,19 +147,19 @@ Value wkeep(const Value &x, const Value &len, const Value &opt,
                         0, 0, "wkeep", "", "numkit:wkeep:range");
 
         const bool cplx = x.type() == ValueType::COMPLEX;
-        Value y = cplx ? Value::complexMatrix(static_cast<size_t>(R),
-                                              static_cast<size_t>(C), mr)
-                       : Value::matrix(static_cast<size_t>(R),
-                                       static_cast<size_t>(C), x.type(), mr);
+        Value y = cplx ? Value::complexMatrix(static_cast<keel::usize>(R),
+                                              static_cast<keel::usize>(C), mr)
+                       : Value::matrix(static_cast<keel::usize>(R),
+                                       static_cast<keel::usize>(C), x.type(), mr);
         if (cplx && x.isSingleComplex()) y.setSingleComplex(true);
         if (R == 0 || C == 0) return y;
         for (long long c = 0; c < C; ++c) {
-            const size_t srcC = static_cast<size_t>(fc1 - 1 + c);
+            const keel::usize srcC = static_cast<keel::usize>(fc1 - 1 + c);
             for (long long r = 0; r < R; ++r) {
-                const size_t srcR = static_cast<size_t>(fr1 - 1 + r);
-                const size_t src = srcC * rows + srcR;
-                const size_t dst = static_cast<size_t>(c) * static_cast<size_t>(R)
-                                 + static_cast<size_t>(r);
+                const keel::usize srcR = static_cast<keel::usize>(fr1 - 1 + r);
+                const keel::usize src = srcC * rows + srcR;
+                const keel::usize dst = static_cast<keel::usize>(c) * static_cast<keel::usize>(R)
+                                 + static_cast<keel::usize>(r);
                 if (cplx) y.complexDataMut()[dst] = x.complexElem(src);
                 else internal::storeElem(y, dst, x.elemAsDouble(src));
             }
@@ -180,7 +183,7 @@ Value wkeep(const Value &x, const Value &len, const Value &opt,
         if (opt.isChar() || opt.isString()) {
             const std::string s = lower(opt.toString());
             if (s == "c" || s == "central" || s == "centered" || s == "centred")
-                start1 = static_cast<long long>((N - static_cast<size_t>(n)) / 2) + 1;
+                start1 = static_cast<long long>((N - static_cast<keel::usize>(n)) / 2) + 1;
             else if (s == "l")
                 start1 = 1;
             else if (s == "r")
@@ -198,24 +201,24 @@ Value wkeep(const Value &x, const Value &len, const Value &opt,
             start1 = static_cast<long long>(f);
         }
     } else {
-        start1 = static_cast<long long>((N - static_cast<size_t>(n)) / 2) + 1;
+        start1 = static_cast<long long>((N - static_cast<keel::usize>(n)) / 2) + 1;
     }
     if (start1 < 1 || start1 + n - 1 > static_cast<long long>(N))
         throw Error("wkeep: requested window is out of range.",
                     0, 0, "wkeep", "", "numkit:wkeep:range");
 
     const bool col = isCol(rows, cols);
-    size_t outRows, outCols;
-    outShape(col, static_cast<size_t>(n), outRows, outCols);
+    keel::usize outRows, outCols;
+    outShape(col, static_cast<keel::usize>(n), outRows, outCols);
     const bool cplx = x.type() == ValueType::COMPLEX;
     Value y = cplx ? Value::complexMatrix(outRows, outCols, mr)
                    : Value::matrix(outRows, outCols, x.type(), mr);
     if (cplx && x.isSingleComplex()) y.setSingleComplex(true);
     if (n == 0) return y;
     for (long long k = 0; k < n; ++k) {
-        const size_t src = static_cast<size_t>(start1 - 1 + k);
+        const keel::usize src = static_cast<keel::usize>(start1 - 1 + k);
         if (cplx) y.complexDataMut()[k] = x.complexElem(src);
-        else internal::storeElem(y, static_cast<size_t>(k), x.elemAsDouble(src));
+        else internal::storeElem(y, static_cast<keel::usize>(k), x.elemAsDouble(src));
     }
     return y;
 }
@@ -268,22 +271,22 @@ static std::vector<T> extend1D(const std::vector<T> &xv,
     auto sampleLeft = [&](long long k) -> T {
         // k = 0..lf-1, with k=0 = furthest from data (output[0]).
         if (mode == "sym" || mode == "symh") {
-            return xv[static_cast<size_t>(lf - 1 - k)];
+            return xv[static_cast<keel::usize>(lf - 1 - k)];
         }
         if (mode == "symw") {
             // pre = [x(lf+1), …, x(2)] in 1-based → indices [lf, lf-1, …, 1] 0-based.
             // For output position k (0..lf-1), src idx = lf - k.
             const long long idx = lf - k;
-            return (idx < N) ? xv[static_cast<size_t>(idx)] : xv.back();
+            return (idx < N) ? xv[static_cast<keel::usize>(idx)] : xv.back();
         }
         if (mode == "asym" || mode == "asymh") {
-            return -xv[static_cast<size_t>(lf - 1 - k)];
+            return -xv[static_cast<keel::usize>(lf - 1 - k)];
         }
         if (mode == "asymw") {
             // 2·x(1) - x(j) where j is the symw index (1-based j = lf+1-k = lf-k+1).
             // 0-based: idx = lf - k.
             const long long idx = lf - k;
-            const T xj = (idx < N) ? xv[static_cast<size_t>(idx)] : xv.back();
+            const T xj = (idx < N) ? xv[static_cast<keel::usize>(idx)] : xv.back();
             return T(2) * xv[0] - xj;
         }
         if (mode == "sp0") {
@@ -295,44 +298,44 @@ static std::vector<T> extend1D(const std::vector<T> &xv,
             return xv[0] - T(static_cast<double>(lf - k)) * slope;
         }
         if (mode == "per") {
-            return src[static_cast<size_t>(M - lf + k)];
+            return src[static_cast<keel::usize>(M - lf + k)];
         }
         if (mode == "ppd") {
-            return xv[static_cast<size_t>(N - lf + k)];
+            return xv[static_cast<keel::usize>(N - lf + k)];
         }
         return T(0);  // zpd
     };
     auto sampleRight = [&](long long k) -> T {
         // k = 0..lf-1, k=0 = closest to data.
         if (mode == "sym" || mode == "symh") {
-            return xv[static_cast<size_t>(N - 1 - k)];
+            return xv[static_cast<keel::usize>(N - 1 - k)];
         }
         if (mode == "symw") {
             // post = [x(N-1), …, x(N-lf)] in 1-based → indices [N-2, N-3, …, N-lf-1] 0-based.
             const long long idx = N - 2 - k;
-            return (idx >= 0) ? xv[static_cast<size_t>(idx)] : xv.front();
+            return (idx >= 0) ? xv[static_cast<keel::usize>(idx)] : xv.front();
         }
         if (mode == "asym" || mode == "asymh") {
-            return -xv[static_cast<size_t>(N - 1 - k)];
+            return -xv[static_cast<keel::usize>(N - 1 - k)];
         }
         if (mode == "asymw") {
             const long long idx = N - 2 - k;
-            const T xj = (idx >= 0) ? xv[static_cast<size_t>(idx)] : xv.front();
-            return T(2) * xv[static_cast<size_t>(N - 1)] - xj;
+            const T xj = (idx >= 0) ? xv[static_cast<keel::usize>(idx)] : xv.front();
+            return T(2) * xv[static_cast<keel::usize>(N - 1)] - xj;
         }
         if (mode == "sp0") {
-            return xv[static_cast<size_t>(N - 1)];
+            return xv[static_cast<keel::usize>(N - 1)];
         }
         if (mode == "sp1" || mode == "spd") {
-            const T slope = (N >= 2) ? (xv[static_cast<size_t>(N - 1)]
-                                        - xv[static_cast<size_t>(N - 2)]) : T(0);
-            return xv[static_cast<size_t>(N - 1)] + T(static_cast<double>(k + 1)) * slope;
+            const T slope = (N >= 2) ? (xv[static_cast<keel::usize>(N - 1)]
+                                        - xv[static_cast<keel::usize>(N - 2)]) : T(0);
+            return xv[static_cast<keel::usize>(N - 1)] + T(static_cast<double>(k + 1)) * slope;
         }
         if (mode == "per") {
-            return src[static_cast<size_t>(k)];
+            return src[static_cast<keel::usize>(k)];
         }
         if (mode == "ppd") {
-            return xv[static_cast<size_t>(k)];
+            return xv[static_cast<keel::usize>(k)];
         }
         return T(0);
     };
@@ -342,9 +345,9 @@ static std::vector<T> extend1D(const std::vector<T> &xv,
     const std::vector<T> &mid = (mode == "per") ? src : xv;
     const long long Mlen = static_cast<long long>(mid.size());
     std::vector<T> out;
-    out.reserve(static_cast<size_t>(leftN + Mlen + rightN));
+    out.reserve(static_cast<keel::usize>(leftN + Mlen + rightN));
     for (long long i = 0; i < leftN; ++i) out.push_back(sampleLeft(i));
-    for (long long i = 0; i < Mlen;  ++i) out.push_back(mid[static_cast<size_t>(i)]);
+    for (long long i = 0; i < Mlen;  ++i) out.push_back(mid[static_cast<keel::usize>(i)]);
     for (long long i = 0; i < rightN; ++i) out.push_back(sampleRight(i));
     return out;
 }
@@ -352,7 +355,7 @@ static std::vector<T> extend1D(const std::vector<T> &xv,
 // Explicit instantiations for the two buffer flavours wextend uses.
 template std::vector<double> extend1D<double>(const std::vector<double> &,
                                               long long, char, const std::string &);
-template std::vector<Complex> extend1D<Complex>(const std::vector<Complex> &,
+template std::vector<keel::c64> extend1D<keel::c64>(const std::vector<keel::c64> &,
                                                 long long, char, const std::string &);
 
 } // namespace detail
@@ -471,7 +474,7 @@ void wextend_argcheck(const Value &type, const std::string &modeRaw,
 // Reuses detail::extend1D (the file-internal 1-D extension core).
 Value wextend(const Value &type, const std::string &modeRaw, const Value &x,
               const Value &lf, const std::string &sideRaw,
-              std::pmr::memory_resource *mr)
+              keel::Allocator *mr)
 {
     int dim = 0;
     bool extRows = true;
@@ -499,19 +502,19 @@ Value wextend(const Value &type, const std::string &modeRaw, const Value &x,
     if (dim == 1) {
         // A single axis: the LOC letter addresses it directly.
         const char side = sideRows;               // 'l'/'r'/'b' ('n' handled)
-        size_t rows, cols;
+        keel::usize rows, cols;
         readShape(x, rows, cols);
-        const size_t N = rows * cols;
+        const keel::usize N = rows * cols;
         const bool col = isCol(rows, cols);
         const bool cplx = x.type() == ValueType::COMPLEX;
-        size_t outN = 0;
+        keel::usize outN = 0;
         Value y;
         if (cplx) {
-            std::vector<Complex> xv(N);
-            for (size_t i = 0; i < N; ++i) xv[i] = x.complexElem(i);
-            std::vector<Complex> ext = detail::extend1D(xv, lfRows, side, mode);
+            std::vector<keel::c64> xv(N);
+            for (keel::usize i = 0; i < N; ++i) xv[i] = x.complexElem(i);
+            std::vector<keel::c64> ext = detail::extend1D(xv, lfRows, side, mode);
             outN = ext.size();
-            size_t outRows, outCols;
+            keel::usize outRows, outCols;
             outShape(col, outN, outRows, outCols);
             y = Value::complexMatrix(outRows, outCols, mr);
             if (x.isSingleComplex()) y.setSingleComplex(true);
@@ -519,13 +522,13 @@ Value wextend(const Value &type, const std::string &modeRaw, const Value &x,
             return y;
         }
         std::vector<double> xv(N);
-        for (size_t i = 0; i < N; ++i) xv[i] = x.elemAsDouble(i);
+        for (keel::usize i = 0; i < N; ++i) xv[i] = x.elemAsDouble(i);
         std::vector<double> ext = detail::extend1D(xv, lfRows, side, mode);
         outN = ext.size();
-        size_t outRows, outCols;
+        keel::usize outRows, outCols;
         outShape(col, outN, outRows, outCols);
         y = Value::matrix(outRows, outCols, x.type(), mr);
-        for (size_t i = 0; i < outN; ++i)
+        for (keel::usize i = 0; i < outN; ++i)
             internal::storeElem(y, i, ext[i]);
         return y;
     }
@@ -533,7 +536,7 @@ Value wextend(const Value &type, const std::string &modeRaw, const Value &x,
     // 2-D matrix path (type=2 / '2d' / 'ar' / 'ac'). Work on a row-major
     // buffer of the input's element flavour, extend each axis in turn,
     // materialise once in the input's class.
-    size_t rows, cols;
+    keel::usize rows, cols;
     readShape(x, rows, cols);
     const bool cplx = x.type() == ValueType::COMPLEX;
     const char sideR = sideRows == 'n' ? 0 : sideRows;
@@ -543,80 +546,80 @@ Value wextend(const Value &type, const std::string &modeRaw, const Value &x,
 
     if (!cplx) {
         std::vector<std::vector<double>> data(rows, std::vector<double>(cols));
-        for (size_t r = 0; r < rows; ++r)
-            for (size_t c = 0; c < cols; ++c)
+        for (keel::usize r = 0; r < rows; ++r)
+            for (keel::usize c = 0; c < cols; ++c)
                 data[r][c] = x.elemAsDouble(c * rows + r);
 
         if (extRows && lfR > 0) {
             std::vector<std::vector<double>> ext_col;
             ext_col.reserve(cols);
-            for (size_t c = 0; c < cols; ++c) {
+            for (keel::usize c = 0; c < cols; ++c) {
                 std::vector<double> col_v(rows);
-                for (size_t r = 0; r < rows; ++r) col_v[r] = data[r][c];
+                for (keel::usize r = 0; r < rows; ++r) col_v[r] = data[r][c];
                 ext_col.push_back(detail::extend1D(col_v, lfR, sideR, mode));
             }
-            const size_t newRows = ext_col[0].size();
+            const keel::usize newRows = ext_col[0].size();
             data.assign(newRows, std::vector<double>(cols));
-            for (size_t c = 0; c < cols; ++c)
-                for (size_t r = 0; r < newRows; ++r)
+            for (keel::usize c = 0; c < cols; ++c)
+                for (keel::usize r = 0; r < newRows; ++r)
                     data[r][c] = ext_col[c][r];
             rows = newRows;
         }
         if (extCols && lfC > 0) {
             std::vector<std::vector<double>> ext_row;
             ext_row.reserve(rows);
-            for (size_t r = 0; r < rows; ++r)
+            for (keel::usize r = 0; r < rows; ++r)
                 ext_row.push_back(detail::extend1D(data[r], lfC, sideC, mode));
-            const size_t newCols = ext_row[0].size();
+            const keel::usize newCols = ext_row[0].size();
             for (auto &row : data) row.assign(newCols, 0.0);
-            for (size_t r = 0; r < rows; ++r)
-                for (size_t c = 0; c < newCols; ++c)
+            for (keel::usize r = 0; r < rows; ++r)
+                for (keel::usize c = 0; c < newCols; ++c)
                     data[r][c] = ext_row[r][c];
             cols = newCols;
         }
 
         Value y = Value::matrix(rows, cols, x.type(), mr);
-        for (size_t c = 0; c < cols; ++c)
-            for (size_t r = 0; r < rows; ++r)
+        for (keel::usize c = 0; c < cols; ++c)
+            for (keel::usize r = 0; r < rows; ++r)
                 internal::storeElem(y, c * rows + r, data[r][c]);
         return y;
     }
 
-    std::vector<std::vector<Complex>> data(rows, std::vector<Complex>(cols));
-    for (size_t r = 0; r < rows; ++r)
-        for (size_t c = 0; c < cols; ++c)
+    std::vector<std::vector<keel::c64>> data(rows, std::vector<keel::c64>(cols));
+    for (keel::usize r = 0; r < rows; ++r)
+        for (keel::usize c = 0; c < cols; ++c)
             data[r][c] = x.complexElem(c * rows + r);
     if (extRows && lfR > 0) {
-        std::vector<std::vector<Complex>> ext_col;
+        std::vector<std::vector<keel::c64>> ext_col;
         ext_col.reserve(cols);
-        for (size_t c = 0; c < cols; ++c) {
-            std::vector<Complex> col_v(rows);
-            for (size_t r = 0; r < rows; ++r) col_v[r] = data[r][c];
+        for (keel::usize c = 0; c < cols; ++c) {
+            std::vector<keel::c64> col_v(rows);
+            for (keel::usize r = 0; r < rows; ++r) col_v[r] = data[r][c];
             ext_col.push_back(detail::extend1D(col_v, lfR, sideR, mode));
         }
-        const size_t newRows = ext_col[0].size();
-        data.assign(newRows, std::vector<Complex>(cols));
-        for (size_t c = 0; c < cols; ++c)
-            for (size_t r = 0; r < newRows; ++r)
+        const keel::usize newRows = ext_col[0].size();
+        data.assign(newRows, std::vector<keel::c64>(cols));
+        for (keel::usize c = 0; c < cols; ++c)
+            for (keel::usize r = 0; r < newRows; ++r)
                 data[r][c] = ext_col[c][r];
         rows = newRows;
     }
     if (extCols && lfC > 0) {
-        std::vector<std::vector<Complex>> ext_row;
+        std::vector<std::vector<keel::c64>> ext_row;
         ext_row.reserve(rows);
-        for (size_t r = 0; r < rows; ++r)
+        for (keel::usize r = 0; r < rows; ++r)
             ext_row.push_back(detail::extend1D(data[r], lfC, sideC, mode));
-        const size_t newCols = ext_row[0].size();
-        for (auto &row : data) row.assign(newCols, Complex(0.0, 0.0));
-        for (size_t r = 0; r < rows; ++r)
-            for (size_t c = 0; c < newCols; ++c)
+        const keel::usize newCols = ext_row[0].size();
+        for (auto &row : data) row.assign(newCols, keel::c64(0.0, 0.0));
+        for (keel::usize r = 0; r < rows; ++r)
+            for (keel::usize c = 0; c < newCols; ++c)
                 data[r][c] = ext_row[r][c];
         cols = newCols;
     }
     Value y = Value::complexMatrix(rows, cols, mr);
     if (x.isSingleComplex()) y.setSingleComplex(true);
-    for (size_t c = 0; c < cols; ++c)
-        for (size_t r = 0; r < rows; ++r)
+    for (keel::usize c = 0; c < cols; ++c)
+        for (keel::usize r = 0; r < rows; ++r)
             y.complexDataMut()[c * rows + r] = data[r][c];
     return y;
 }

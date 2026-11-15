@@ -17,6 +17,9 @@
 // and p = 1, 2 (complex). The complex form's normalization is grid-dependent
 // (trapezoidal on [LB, UB]) — gauswavf's is not. Same convention as MATLAB.
 
+#include <keel/core.h>
+#include <keel/memory.h>
+#include <keel/complex.h>
 #include <numkit/wavelet/shape/shape.hpp>
 
 // Compute-only TU: Value substrate + Error, no engine. The gauswavf /
@@ -25,7 +28,6 @@
 #include <numkit/value/error.hpp>
 
 #include <cmath>
-#include <complex>
 #include <vector>
 
 #ifndef M_PI
@@ -36,14 +38,14 @@ namespace numkit::wavelet {
 
 namespace {
 
-Value linspace_row(double lb, double ub, size_t N, std::pmr::memory_resource *mr)
+Value linspace_row(double lb, double ub, keel::usize N, keel::Allocator *mr)
 {
     Value xv = Value::matrix(1, N, ValueType::DOUBLE, mr);
     if (N == 0) return xv;
     double *xd = xv.doubleDataMut();
     if (N == 1) { xd[0] = ub; return xv; }
     const double step = (ub - lb) / static_cast<double>(N - 1);
-    for (size_t i = 0; i < N; ++i)
+    for (keel::usize i = 0; i < N; ++i)
         xd[i] = lb + step * static_cast<double>(i);
     xd[N - 1] = ub;
     return xv;
@@ -64,13 +66,13 @@ double hermite_real(int p, double t)
     return Hc;
 }
 
-Complex hermite_complex(int p, Complex z)
+keel::c64 hermite_complex(int p, keel::c64 z)
 {
-    if (p == 0) return Complex(1.0, 0.0);
+    if (p == 0) return keel::c64(1.0, 0.0);
     if (p == 1) return 2.0 * z;
-    Complex Hm(1.0, 0.0), Hc = 2.0 * z;
+    keel::c64 Hm(1.0, 0.0), Hc = 2.0 * z;
     for (int n = 1; n < p; ++n) {
-        const Complex Hn = 2.0 * z * Hc - 2.0 * static_cast<double>(n) * Hm;
+        const keel::c64 Hn = 2.0 * z * Hc - 2.0 * static_cast<double>(n) * Hm;
         Hm = Hc;
         Hc = Hn;
     }
@@ -86,14 +88,14 @@ double dblfact_norm_sq(int p)
     return r;
 }
 
-void gauswavf_argcheck(double /*lb*/, double /*ub*/, size_t /*N*/, int p)
+void gauswavf_argcheck(double /*lb*/, double /*ub*/, keel::usize /*N*/, int p)
 {
     if (p < 1)
         throw Error("gauswavf: derivative order p must be ≥ 1",
                     0, 0, "gauswavf", "", "numkit:gauswavf:p");
 }
 
-void cgauwavf_argcheck(double /*lb*/, double /*ub*/, size_t /*N*/, int p)
+void cgauwavf_argcheck(double /*lb*/, double /*ub*/, keel::usize /*N*/, int p)
 {
     if (p < 1)
         throw Error("cgauwavf: derivative order p must be ≥ 1",
@@ -103,7 +105,7 @@ void cgauwavf_argcheck(double /*lb*/, double /*ub*/, size_t /*N*/, int p)
 } // anonymous
 
 std::tuple<Value, Value>
-gauswavf(double lb, double ub, size_t N, int p, std::pmr::memory_resource *mr)
+gauswavf(double lb, double ub, keel::usize N, int p, keel::Allocator *mr)
 {
     gauswavf_argcheck(lb, ub, N, p);
     Value xv = linspace_row(lb, ub, N, mr);
@@ -116,7 +118,7 @@ gauswavf(double lb, double ub, size_t N, int p, std::pmr::memory_resource *mr)
     const int sgn = (((p + 1) / 2) % 2 == 0) ? +1 : -1;
     const double scale = static_cast<double>(sgn) * alpha_mag;
 
-    for (size_t i = 0; i < N; ++i) {
+    for (keel::usize i = 0; i < N; ++i) {
         const double t = xd[i];
         const double Hp = hermite_real(p, t);
         pd[i] = scale * Hp * std::exp(-t * t);
@@ -125,7 +127,7 @@ gauswavf(double lb, double ub, size_t N, int p, std::pmr::memory_resource *mr)
 }
 
 std::tuple<Value, Value>
-cgauwavf(double lb, double ub, size_t N, int p, std::pmr::memory_resource *mr)
+cgauwavf(double lb, double ub, keel::usize N, int p, keel::Allocator *mr)
 {
     cgauwavf_argcheck(lb, ub, N, p);
     Value xv = linspace_row(lb, ub, N, mr);
@@ -133,28 +135,28 @@ cgauwavf(double lb, double ub, size_t N, int p, std::pmr::memory_resource *mr)
     if (N == 0) return {std::move(pv), std::move(xv)};
 
     const double *xd = xv.doubleData();
-    Complex *pd = pv.complexDataMut();
+    keel::c64 *pd = pv.complexDataMut();
     const double sgn_p = (p % 2 == 0) ? 1.0 : -1.0;
 
     // Stage 1 — raw f_p(t) into the complex output buffer.
     std::vector<double> mag2(N);
-    for (size_t i = 0; i < N; ++i) {
+    for (keel::usize i = 0; i < N; ++i) {
         const double t = xd[i];
-        const Complex z(t, 0.5);
-        const Complex Hp = hermite_complex(p, z);
+        const keel::c64 z(t, 0.5);
+        const keel::c64 Hp = hermite_complex(p, z);
         // exp(-t² - i·t) = exp(-t²) · (cos(t) - i·sin(t))
         const double e = std::exp(-t * t);
-        const Complex phase(std::cos(t), -std::sin(t));
-        const Complex f = sgn_p * Hp * (e * phase);
+        const keel::c64 phase(std::cos(t), -std::sin(t));
+        const keel::c64 f = sgn_p * Hp * (e * phase);
         pd[i] = f;
-        mag2[i] = std::norm(f);
+        mag2[i] = keel::norm(f);
     }
 
     // Stage 2 — trapezoidal L² norm² over [lb, ub] on the same grid.
     double norm_sq = 0.0;
     if (N >= 2) {
         const double h = (ub - lb) / static_cast<double>(N - 1);
-        for (size_t i = 0; i < N; ++i) {
+        for (keel::usize i = 0; i < N; ++i) {
             const double w = (i == 0 || i == N - 1) ? 0.5 : 1.0;
             norm_sq += w * mag2[i];
         }
@@ -163,7 +165,7 @@ cgauwavf(double lb, double ub, size_t N, int p, std::pmr::memory_resource *mr)
         norm_sq = mag2[0];
     }
     const double inv_n = (norm_sq > 0.0) ? 1.0 / std::sqrt(norm_sq) : 0.0;
-    for (size_t i = 0; i < N; ++i) pd[i] *= inv_n;
+    for (keel::usize i = 0; i < N; ++i) pd[i] *= inv_n;
 
     return {std::move(pv), std::move(xv)};
 }

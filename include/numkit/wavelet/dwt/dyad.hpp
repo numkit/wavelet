@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include <memory_resource>
+#include <keel/memory.h>
 #include <string>
 #include <numkit/value/value.hpp>
 
@@ -31,7 +31,7 @@ namespace numkit::wavelet {
 /// @return      Downsampled array.
 /// @see dyadup
 Value dyaddown(const Value &x, int odd = 0, char type = 'c',
-               std::pmr::memory_resource *mr = nullptr);
+               keel::Allocator *mr = nullptr);
 
 /// @brief Dyadic upsampling with zero insertion — `y = dyadup(x, odd, type)`.
 ///
@@ -47,7 +47,7 @@ Value dyaddown(const Value &x, int odd = 0, char type = 'c',
 /// @return      Upsampled array.
 /// @see dyaddown
 Value dyadup(const Value &x, int odd = 1, char type = 'c',
-             std::pmr::memory_resource *mr = nullptr);
+             keel::Allocator *mr = nullptr);
 
 /// @brief Maximum wavelet decomposition level — `L = wmaxlev(N, wname)`.
 ///
@@ -62,7 +62,7 @@ Value dyadup(const Value &x, int odd = 1, char type = 'c',
 /// @return       Scalar maximum decomposition level (`>= 0`).
 /// @throws Error if `N` is empty or the filter length is `< 2`.
 Value wmaxlev(const Value &N, const std::string &wname,
-              std::pmr::memory_resource *mr = nullptr);
+              keel::Allocator *mr = nullptr);
 
 
 /// @}

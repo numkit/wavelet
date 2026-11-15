@@ -28,6 +28,9 @@
 // Complex input is supported only in 'noninteger' mode (lifting floor
 // is not defined on complex values; MATLAB also disallows it).
 
+#include <keel/core.h>
+#include <keel/memory.h>
+#include <keel/complex.h>
 #include <numkit/wavelet/dwt/haart.hpp>
 
 // Compute-only TU: Value substrate + Error, no engine. The haart builtin
@@ -36,7 +39,6 @@
 #include <numkit/value/error.hpp>
 
 #include <cmath>
-#include <complex>
 #include <string>
 #include <vector>
 
@@ -45,7 +47,7 @@ namespace numkit::wavelet {
 namespace {
 
 // Largest k such that 2^k divides N (with 2^k ≤ N).
-int max_haar_level(size_t N)
+int max_haar_level(keel::usize N)
 {
     int k = 0;
     while (N > 1 && (N % 2 == 0)) { ++k; N /= 2; }
@@ -54,30 +56,30 @@ int max_haar_level(size_t N)
 
 // One Haar level on a single contiguous slice of length `inLen` (even).
 // Writes inLen/2 entries to `a` and inLen/2 entries to `d`.
-void haar_step_real(const double *x, size_t inLen, double *a, double *d,
+void haar_step_real(const double *x, keel::usize inLen, double *a, double *d,
                     bool integer)
 {
-    const size_t H = inLen / 2;
+    const keel::usize H = inLen / 2;
     if (integer) {
-        for (size_t i = 0; i < H; ++i) {
+        for (keel::usize i = 0; i < H; ++i) {
             const double dv = x[2 * i + 1] - x[2 * i];
             d[i] = dv;
             a[i] = x[2 * i] + std::floor(dv / 2.0);
         }
     } else {
         const double s = 1.0 / std::sqrt(2.0);
-        for (size_t i = 0; i < H; ++i) {
+        for (keel::usize i = 0; i < H; ++i) {
             a[i] = (x[2 * i] + x[2 * i + 1]) * s;
             d[i] = (x[2 * i + 1] - x[2 * i]) * s;
         }
     }
 }
 
-void haar_step_cplx(const Complex *x, size_t inLen, Complex *a, Complex *d)
+void haar_step_cplx(const keel::c64 *x, keel::usize inLen, keel::c64 *a, keel::c64 *d)
 {
-    const size_t H = inLen / 2;
+    const keel::usize H = inLen / 2;
     const double s = 1.0 / std::sqrt(2.0);
-    for (size_t i = 0; i < H; ++i) {
+    for (keel::usize i = 0; i < H; ++i) {
         a[i] = (x[2 * i] + x[2 * i + 1]) * s;
         d[i] = (x[2 * i + 1] - x[2 * i]) * s;
     }
@@ -88,18 +90,18 @@ void haar_step_cplx(const Complex *x, size_t inLen, Complex *a, Complex *d)
 // matrix we keep the original (rows × cols) shape.
 struct Buf {
     std::vector<double> real;
-    std::vector<Complex> cplx;
-    size_t colLen = 0;
-    size_t ncols  = 0;
+    std::vector<keel::c64> cplx;
+    keel::usize colLen = 0;
+    keel::usize ncols  = 0;
     bool   isComplex = false;
 };
 
 Buf load_x(const Value &x, bool /*integer_mode*/)
 {
     Buf b;
-    const size_t rows = x.dims().rows();
-    const size_t cols = x.dims().cols();
-    const size_t N    = rows * cols;
+    const keel::usize rows = x.dims().rows();
+    const keel::usize cols = x.dims().cols();
+    const keel::usize N    = rows * cols;
     const bool isVec  = (rows <= 1) || (cols <= 1);
     if (isVec) { b.colLen = N; b.ncols = 1; }
     else       { b.colLen = rows; b.ncols = cols; }
@@ -107,10 +109,10 @@ Buf load_x(const Value &x, bool /*integer_mode*/)
     b.isComplex = x.isComplex();
     if (b.isComplex) {
         b.cplx.resize(N);
-        for (size_t i = 0; i < N; ++i) b.cplx[i] = x.complexElem(i);
+        for (keel::usize i = 0; i < N; ++i) b.cplx[i] = x.complexElem(i);
     } else {
         b.real.resize(N);
-        for (size_t i = 0; i < N; ++i) b.real[i] = x.elemAsDouble(i);
+        for (keel::usize i = 0; i < N; ++i) b.real[i] = x.elemAsDouble(i);
     }
     return b;
 }
@@ -123,11 +125,11 @@ void haart_argcheck(const Value &x, int level, bool integer)
     if (x.numel() == 0)
         throw Error("haart: expected input number 1, X, to be nonempty",
                     0, 0, "haart", "", "numkit:haart:empty");
-    const size_t rows = x.dims().rows();
-    const size_t cols = x.dims().cols();
-    const size_t N    = rows * cols;
+    const keel::usize rows = x.dims().rows();
+    const keel::usize cols = x.dims().cols();
+    const keel::usize N    = rows * cols;
     const bool isVec  = (rows <= 1) || (cols <= 1);
-    const size_t colLen = isVec ? N : rows;
+    const keel::usize colLen = isVec ? N : rows;
     if (colLen < 2 || (colLen % 2) != 0)
         throw Error("haart: the data length must be even. Consider replicating "
                     "for an even length signal, or removing the last element.",
@@ -148,47 +150,47 @@ void haart_argcheck(const Value &x, int level, bool integer)
 // ── Public C++ API (see dwt/haart.hpp) ────────────────────────────────
 
 HaartResult haart(const Value &x, int level, bool integer,
-                  std::pmr::memory_resource *mr)
+                  keel::Allocator *mr)
 {
     haart_argcheck(x, level, integer);
 
     Buf buf = load_x(x, false);
-    const size_t colLen = buf.colLen;
-    const size_t ncols  = buf.ncols;
+    const keel::usize colLen = buf.colLen;
+    const keel::usize ncols  = buf.ncols;
 
     const int max_lev = max_haar_level(colLen);
     const int lev = (level == 0) ? max_lev : level;
 
     const ValueType vt = buf.isComplex ? ValueType::COMPLEX : ValueType::DOUBLE;
     std::vector<double>  curR = buf.real;
-    std::vector<Complex> curC = buf.cplx;
-    size_t inLen = colLen;
+    std::vector<keel::c64> curC = buf.cplx;
+    keel::usize inLen = colLen;
 
     std::vector<Value> details;
-    details.reserve(static_cast<size_t>(lev));
+    details.reserve(static_cast<keel::usize>(lev));
     HaartResult R;
 
     for (int k = 0; k < lev; ++k) {
-        const size_t H = inLen / 2;
+        const keel::usize H = inLen / 2;
         Value aMat = Value::matrix(H, ncols, vt, mr);
         Value dMat = Value::matrix(H, ncols, vt, mr);
 
         if (buf.isComplex) {
-            Complex *aP = aMat.complexDataMut();
-            Complex *dP = dMat.complexDataMut();
-            for (size_t c = 0; c < ncols; ++c)
+            keel::c64 *aP = aMat.complexDataMut();
+            keel::c64 *dP = dMat.complexDataMut();
+            for (keel::usize c = 0; c < ncols; ++c)
                 haar_step_cplx(curC.data() + c * inLen, inLen,
                                aP + c * H, dP + c * H);
         } else {
             double *aP = aMat.doubleDataMut();
             double *dP = dMat.doubleDataMut();
-            for (size_t c = 0; c < ncols; ++c)
+            for (keel::usize c = 0; c < ncols; ++c)
                 haar_step_real(curR.data() + c * inLen, inLen,
                                aP + c * H, dP + c * H, integer);
         }
 
         if (buf.isComplex) {
-            const Complex *aP = aMat.complexData();
+            const keel::c64 *aP = aMat.complexData();
             curC.assign(aP, aP + H * ncols);
         } else {
             const double *aP = aMat.doubleData();
@@ -202,9 +204,9 @@ HaartResult haart(const Value &x, int level, bool integer,
     if (lev == 1) {
         R.d = std::move(details[0]);              // plain matrix
     } else {
-        Value cellOut = Value::cell(static_cast<size_t>(lev), 1, mr);
+        Value cellOut = Value::cell(static_cast<keel::usize>(lev), 1, mr);
         for (int k = 0; k < lev; ++k)
-            cellOut.cellAt(static_cast<size_t>(k)) = std::move(details[k]);
+            cellOut.cellAt(static_cast<keel::usize>(k)) = std::move(details[k]);
         R.d = std::move(cellOut);                 // d{1} is finest
     }
     return R;

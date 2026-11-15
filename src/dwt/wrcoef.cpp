@@ -26,6 +26,8 @@
 //
 // Output y is a row vector of length |x|.
 
+#include <keel/core.h>
+#include <keel/memory.h>
 #include <numkit/wavelet/dwt/multilevel.hpp>
 #include <numkit/wavelet/dwt/dwt.hpp>
 #include <numkit/wavelet/filter/wfilters.hpp>
@@ -47,12 +49,12 @@ namespace {
 std::vector<double> vec_from_value(const Value &v)
 {
     std::vector<double> out(v.numel());
-    for (size_t i = 0; i < v.numel(); ++i) out[i] = v.elemAsDouble(i);
+    for (keel::usize i = 0; i < v.numel(); ++i) out[i] = v.elemAsDouble(i);
     return out;
 }
 
 Value row_from_vec(const std::vector<double> &v,
-                   std::pmr::memory_resource *mr)
+                   keel::Allocator *mr)
 {
     Value r = Value::matrix(1, v.size(), ValueType::DOUBLE, mr);
     if (!v.empty()) std::copy(v.begin(), v.end(), r.doubleDataMut());
@@ -77,7 +79,7 @@ std::string wrcoef_argcheck(const std::string &type, const Value &c,
         throw Error("wrcoef: level n must be a non-negative integer",
                     0, 0, "wrcoef", "", "numkit:wrcoef:level");
 
-    const size_t Lcount = l.numel();
+    const keel::usize Lcount = l.numel();
     if (Lcount < 3)
         throw Error("wrcoef: l must have at least 3 entries",
                     0, 0, "wrcoef", "", "numkit:wrcoef:l");
@@ -96,9 +98,9 @@ std::string wrcoef_argcheck(const std::string &type, const Value &c,
                         0, 0, "wrcoef", "", "numkit:wrcoef:level");
     }
 
-    size_t expectedC = static_cast<size_t>(l.elemAsDouble(0));
+    keel::usize expectedC = static_cast<keel::usize>(l.elemAsDouble(0));
     for (int k = 0; k < N; ++k)
-        expectedC += static_cast<size_t>(l.elemAsDouble(1 + k));
+        expectedC += static_cast<keel::usize>(l.elemAsDouble(1 + k));
     if (c.numel() != expectedC)
         throw Error("wrcoef: c length does not match l bookkeeping",
                     0, 0, "wrcoef", "", "numkit:wrcoef:cl");
@@ -123,26 +125,26 @@ Value wrcoef_reconstruct_impl(const std::string &tl, const Value &c,
                               const std::vector<double> &Lo_R,
                               const std::vector<double> &Hi_R,
                               int n,
-                              std::pmr::memory_resource *mr)
+                              keel::Allocator *mr)
 {
-    const size_t Lcount = l.numel();
+    const keel::usize Lcount = l.numel();
     const int N = static_cast<int>(Lcount) - 2;
     if (n == -1)
         n = N;            // sentinel: caller passed -1 to mean "default"
 
     auto cv = vec_from_value(c);
-    auto sliceLen = [&](size_t idx) -> size_t {
-        return static_cast<size_t>(l.elemAsDouble(idx));
+    auto sliceLen = [&](keel::usize idx) -> keel::usize {
+        return static_cast<keel::usize>(l.elemAsDouble(idx));
     };
 
     // Detail at level k (1-based, k=1 finest, k=N coarsest)
     // lives in c at L-index (1 + N - k). Compute the [start, end)
     // ranges in c for each detail.
-    std::vector<std::pair<size_t, size_t>> dRange(N + 1);   // index 1..N
+    std::vector<std::pair<keel::usize, keel::usize>> dRange(N + 1);   // index 1..N
     {
-        size_t off = sliceLen(0);
+        keel::usize off = sliceLen(0);
         for (int idxL = 1; idxL <= N; ++idxL) {
-            const size_t dlen = sliceLen(idxL);
+            const keel::usize dlen = sliceLen(idxL);
             const int level   = N - idxL + 1;     // L-pos idxL ↔ level
             dRange[level] = {off, off + dlen};
             off += dlen;
@@ -152,30 +154,30 @@ Value wrcoef_reconstruct_impl(const std::string &tl, const Value &c,
     if (tl == "a") {
         // Zero detail levels 1..n  (do nothing if n==0).
         for (int k = 1; k <= n; ++k) {
-            for (size_t i = dRange[k].first; i < dRange[k].second; ++i)
+            for (keel::usize i = dRange[k].first; i < dRange[k].second; ++i)
                 cv[i] = 0.0;
         }
     } else {
         // Zero cA_N.
-        for (size_t i = 0; i < sliceLen(0); ++i) cv[i] = 0.0;
+        for (keel::usize i = 0; i < sliceLen(0); ++i) cv[i] = 0.0;
         // Zero every detail except level n.
         for (int k = 1; k <= N; ++k) {
             if (k == n) continue;
-            for (size_t i = dRange[k].first; i < dRange[k].second; ++i)
+            for (keel::usize i = dRange[k].first; i < dRange[k].second; ++i)
                 cv[i] = 0.0;
         }
     }
 
-    size_t off = 0;
-    const size_t aLen = sliceLen(0);
+    keel::usize off = 0;
+    const keel::usize aLen = sliceLen(0);
     std::vector<double> running(cv.begin() + off, cv.begin() + off + aLen);
     off += aLen;
 
     for (int k = 0; k < N; ++k) {
-        const size_t dLen = sliceLen(1 + k);
+        const keel::usize dLen = sliceLen(1 + k);
         std::vector<double> detail(cv.begin() + off, cv.begin() + off + dLen);
         off += dLen;
-        const size_t recLen = sliceLen(2 + k);
+        const keel::usize recLen = sliceLen(2 + k);
         Value cA = row_from_vec(running, mr);
         Value cD = row_from_vec(detail, mr);
         Value next = idwt_with_filters_pub(cA, cD, Lo_R, Hi_R,
@@ -189,7 +191,7 @@ Value wrcoef_reconstruct_impl(const std::string &tl, const Value &c,
 
 Value wrcoef(const std::string &type, const Value &c, const Value &l,
              const std::string &wname, int n,
-             std::pmr::memory_resource *mr)
+             keel::Allocator *mr)
 {
     const std::string tl = wrcoef_argcheck(type, c, l, n);
     auto fb = wavelet_filters(wname);
@@ -200,7 +202,7 @@ Value wrcoef(const std::string &type, const Value &c, const Value &l,
              const std::vector<double> &Lo_R,
              const std::vector<double> &Hi_R,
              int n,
-             std::pmr::memory_resource *mr)
+             keel::Allocator *mr)
 {
     const std::string tl = wrcoef_argcheck(type, c, l, Lo_R, Hi_R, n);
     return wrcoef_reconstruct_impl(tl, c, l, Lo_R, Hi_R, n, mr);

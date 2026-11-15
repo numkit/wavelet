@@ -2,6 +2,7 @@
 //
 // Backfill gtest for toolboxes/wavelet/src/filter/families.cpp::symwavf.
 
+#include <keel/core.h>
 #include <numkit/core/standard_engine.hpp>
 #include <numkit/core/standard_engine.hpp>
 #include <gtest/gtest.h>
@@ -20,7 +21,7 @@ public:
 TEST_F(SymwavfTest, Sym2)
 {
     eval("h = symwavf('sym2');");
-    EXPECT_EQ(static_cast<size_t>(evalScalar("numel(h)")), 4u);
+    EXPECT_EQ(static_cast<keel::usize>(evalScalar("numel(h)")), 4u);
     EXPECT_NEAR(evalScalar("h(1)"),  0.341506, 1e-5);
     EXPECT_NEAR(evalScalar("h(4)"), -0.091506, 1e-5);
 }
@@ -28,7 +29,7 @@ TEST_F(SymwavfTest, Sym2)
 TEST_F(SymwavfTest, Sym4)
 {
     eval("h = symwavf('sym4');");
-    EXPECT_EQ(static_cast<size_t>(evalScalar("numel(h)")), 8u);
+    EXPECT_EQ(static_cast<keel::usize>(evalScalar("numel(h)")), 8u);
     EXPECT_NEAR(evalScalar("h(1)"),  0.022785, 1e-5);
     EXPECT_NEAR(evalScalar("h(8)"), -0.053574, 1e-5);
 }
@@ -43,13 +44,13 @@ TEST_F(SymwavfTest, NormalisedToSumOne)
 
 TEST_F(SymwavfTest, Sym3ToSym10Lengths)
 {
-    EXPECT_EQ(static_cast<size_t>(evalScalar("numel(symwavf('sym3'))")),  6u);
-    EXPECT_EQ(static_cast<size_t>(evalScalar("numel(symwavf('sym5'))")),  10u);
-    EXPECT_EQ(static_cast<size_t>(evalScalar("numel(symwavf('sym6'))")),  12u);
-    EXPECT_EQ(static_cast<size_t>(evalScalar("numel(symwavf('sym7'))")),  14u);
-    EXPECT_EQ(static_cast<size_t>(evalScalar("numel(symwavf('sym8'))")),  16u);
-    EXPECT_EQ(static_cast<size_t>(evalScalar("numel(symwavf('sym9'))")),  18u);
-    EXPECT_EQ(static_cast<size_t>(evalScalar("numel(symwavf('sym10'))")), 20u);
+    EXPECT_EQ(static_cast<keel::usize>(evalScalar("numel(symwavf('sym3'))")),  6u);
+    EXPECT_EQ(static_cast<keel::usize>(evalScalar("numel(symwavf('sym5'))")),  10u);
+    EXPECT_EQ(static_cast<keel::usize>(evalScalar("numel(symwavf('sym6'))")),  12u);
+    EXPECT_EQ(static_cast<keel::usize>(evalScalar("numel(symwavf('sym7'))")),  14u);
+    EXPECT_EQ(static_cast<keel::usize>(evalScalar("numel(symwavf('sym8'))")),  16u);
+    EXPECT_EQ(static_cast<keel::usize>(evalScalar("numel(symwavf('sym9'))")),  18u);
+    EXPECT_EQ(static_cast<keel::usize>(evalScalar("numel(symwavf('sym10'))")), 20u);
 }
 
 TEST_F(SymwavfTest, ExtendedSumsToOne)

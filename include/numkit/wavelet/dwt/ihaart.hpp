@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include <memory_resource>
+#include <keel/memory.h>
 #include <numkit/value/value.hpp>
 
 namespace numkit::wavelet {
@@ -37,7 +37,7 @@ namespace numkit::wavelet {
 ///         `[0, Nlevels)`, or `integer == true` with complex `a`.
 /// @see haart
 Value ihaart(const Value &a, const Value &d, int level = 0,
-             bool integer = false, std::pmr::memory_resource *mr = nullptr);
+             bool integer = false, keel::Allocator *mr = nullptr);
 
 
 /// @}

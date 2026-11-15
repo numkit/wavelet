@@ -3,6 +3,7 @@
 // Backfill gtest for toolboxes/wavelet/src/filter/families.cpp::coifwavf.
 // Reference values from MATLAB R2025b probe.
 
+#include <keel/core.h>
 #include <numkit/core/standard_engine.hpp>
 #include <numkit/core/standard_engine.hpp>
 #include <gtest/gtest.h>
@@ -21,7 +22,7 @@ public:
 TEST_F(CoifwavfTest, Coif1Length6)
 {
     eval("h = coifwavf('coif1');");
-    EXPECT_EQ(static_cast<size_t>(evalScalar("numel(h)")), 6u);
+    EXPECT_EQ(static_cast<keel::usize>(evalScalar("numel(h)")), 6u);
     EXPECT_NEAR(evalScalar("h(1)"), -0.051430, 1e-5);
     EXPECT_NEAR(evalScalar("h(2)"),  0.238930, 1e-5);
     EXPECT_NEAR(evalScalar("h(3)"),  0.602859, 1e-5);
@@ -38,18 +39,18 @@ TEST_F(CoifwavfTest, NormalisedToSumOne)
 TEST_F(CoifwavfTest, RowOrientation)
 {
     eval("h = coifwavf('coif1');");
-    EXPECT_EQ(static_cast<size_t>(evalScalar("size(h, 1)")), 1u);
-    EXPECT_EQ(static_cast<size_t>(evalScalar("size(h, 2)")), 6u);
+    EXPECT_EQ(static_cast<keel::usize>(evalScalar("size(h, 1)")), 1u);
+    EXPECT_EQ(static_cast<keel::usize>(evalScalar("size(h, 2)")), 6u);
 }
 
 // Bug fix 2026-05-08 — extended Coiflet table from coif1 to coif1..coif5.
 
 TEST_F(CoifwavfTest, Coif2ToCoif5Lengths)
 {
-    EXPECT_EQ(static_cast<size_t>(evalScalar("numel(coifwavf('coif2'))")), 12u);
-    EXPECT_EQ(static_cast<size_t>(evalScalar("numel(coifwavf('coif3'))")), 18u);
-    EXPECT_EQ(static_cast<size_t>(evalScalar("numel(coifwavf('coif4'))")), 24u);
-    EXPECT_EQ(static_cast<size_t>(evalScalar("numel(coifwavf('coif5'))")), 30u);
+    EXPECT_EQ(static_cast<keel::usize>(evalScalar("numel(coifwavf('coif2'))")), 12u);
+    EXPECT_EQ(static_cast<keel::usize>(evalScalar("numel(coifwavf('coif3'))")), 18u);
+    EXPECT_EQ(static_cast<keel::usize>(evalScalar("numel(coifwavf('coif4'))")), 24u);
+    EXPECT_EQ(static_cast<keel::usize>(evalScalar("numel(coifwavf('coif5'))")), 30u);
 }
 
 TEST_F(CoifwavfTest, ExtendedSumsToOne)
