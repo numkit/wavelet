@@ -13,13 +13,12 @@
 #include <keel/memory.h>
 #include <keel/ref.h>
 #include <keel/string.h>
+#include <keel/utf8.h>
 #include <numkit/wavelet/shape/shape.hpp>
 
 #include <numkit/sys/plugin.hpp>   // CallContext, ctx.engine->resource()
 #include <numkit/value/argcheck.hpp>
 #include <numkit/value/error.hpp>
-
-#include <cctype>
 #include <tuple>
 #include <utility>
 
@@ -168,7 +167,7 @@ void cwt_reg(keel::ArrayRef<Value> args, keel::usize nargout,
     auto lowerStr = [](keel::StringRef sv) {
         keel::String s(sv);
         for (char &c : s)
-            c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+            c = keel::to_ascii_lower(c);
         return s;
     };
 

@@ -5,6 +5,7 @@
 #include <keel/core.h>
 #include <keel/memory.h>
 #include <keel/ref.h>
+#include <keel/utf8.h>
 #include <numkit/wavelet/dwt/dyad.hpp>
 #include <numkit/wavelet/filter/wfilters.hpp>
 
@@ -12,8 +13,6 @@
 // dyadup / wmaxlev builtins (CallContext wrappers) live in dwt/dyad_reg.cpp.
 #include <numkit/value/value.hpp>
 #include <numkit/value/error.hpp>
-
-#include <cctype>
 #include <cmath>
 
 namespace numkit::wavelet {
@@ -22,7 +21,7 @@ namespace {
 
 char dyad_argcheck(const Value & /*x*/, int /*odd*/, char type)
 {
-    const char c = static_cast<char>(std::tolower(static_cast<unsigned char>(type)));
+    const char c = keel::to_ascii_lower(type);
     if (c != 'c' && c != 'r' && c != 'm')
         throw Error("dyad: type must be 'c', 'r', or 'm'",
                     0, 0, "dyad", "", "numkit:dyad:type");

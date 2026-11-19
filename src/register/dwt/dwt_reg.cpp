@@ -14,13 +14,12 @@
 #include <keel/format.h>
 #include <keel/ref.h>
 #include <keel/string.h>
+#include <keel/utf8.h>
 #include <numkit/wavelet/dwt/dwt.hpp>
 
 #include <numkit/sys/plugin.hpp>   // CallContext, ctx.engine->resource()
 #include <numkit/value/argcheck.hpp>
 #include <numkit/value/error.hpp>
-
-#include <cctype>
 #include <tuple>
 
 namespace numkit::wavelet {
@@ -41,7 +40,7 @@ static bool parse_mode_nv(keel::ArrayRef<Value> args, keel::usize start,
                           const char *fn) {
     auto lower = [](keel::StringRef sv) {
         keel::String s(sv);
-        for (auto &c : s) c = (char)std::tolower((unsigned char)c);
+        for (auto &c : s) c = keel::to_ascii_lower(c);
         return s;
     };
     for (keel::usize i = start; i + 1 < args.size(); i += 2) {

@@ -12,13 +12,12 @@
 #include <keel/format.h>
 #include <keel/ref.h>
 #include <keel/string.h>
+#include <keel/utf8.h>
 #include <numkit/wavelet/shape/shape.hpp>
 
 #include <numkit/sys/plugin.hpp>   // CallContext, ctx.engine->resource()
 #include <numkit/value/argcheck.hpp>
 #include <numkit/value/error.hpp>
-
-#include <cctype>
 #include <cerrno>
 #include <climits>
 #include <cstdlib>
@@ -35,7 +34,7 @@ static int parseGaussOrder(const Value &arg, const char *prefix, const char *fn)
     if (arg.isChar() || arg.isString()) {
         keel::String s = arg.toString();
         // Lowercase the prefix portion for comparison.
-        for (auto &c : s) c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+        for (auto &c : s) c = keel::to_ascii_lower(c);
         const keel::StringRef pref(prefix);
         if (s.size() <= pref.size() || !s.starts_with(pref))
             throw Error(keel::format("{}: bad wname '{}' (expected {}N)", fn, s, prefix),

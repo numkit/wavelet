@@ -32,6 +32,7 @@
 #include <keel/memory.h>
 #include <keel/ref.h>
 #include <keel/string.h>
+#include <keel/utf8.h>
 #include <numkit/wavelet/dwt/multilevel.hpp>
 #include <numkit/wavelet/dwt/dwt.hpp>
 #include <numkit/wavelet/filter/wfilters.hpp>
@@ -42,7 +43,6 @@
 #include <numkit/value/error.hpp>
 
 #include <algorithm>
-#include <cctype>
 #include <utility>
 
 namespace numkit::wavelet {
@@ -68,7 +68,7 @@ keel::String lower_type(keel::StringRef sv)
 {
     keel::String s(sv);
     for (auto &ch : s)
-        ch = static_cast<char>(std::tolower(static_cast<unsigned char>(ch)));
+        ch = keel::to_ascii_lower(ch);
     return s;
 }
 

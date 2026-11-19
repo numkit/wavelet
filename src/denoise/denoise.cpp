@@ -13,6 +13,7 @@
 #include <keel/math.h>
 #include <keel/ref.h>
 #include <keel/string.h>
+#include <keel/utf8.h>
 #include <numkit/wavelet/denoise/denoise.hpp>
 #include <numkit/wavelet/dwt/multilevel.hpp>
 #include <numkit/wavelet/dwt/dwt.hpp>     // ddencmp: 1-level dwt noise estimate
@@ -25,7 +26,6 @@
 #include <numkit/value/error.hpp>
 
 #include <algorithm>
-#include <cctype>
 #include <cmath>
 
 namespace numkit::wavelet {
@@ -74,7 +74,7 @@ keel::String wentropy_argcheck(keel::StringRef type, double param)
 {
     keel::String t(type);
     std::transform(t.begin(), t.end(), t.begin(),
-                   [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+                   [](unsigned char c) { return keel::to_ascii_lower(c); });
     if (t == "norm") {
         if (param < 1.0)
             throw Error("wentropy: 'norm' exponent P must be >= 1",
@@ -92,7 +92,7 @@ keel::String ddencmp_argcheck(keel::StringRef opt, keel::StringRef type)
     auto lower = [](keel::StringRef sv) {
         keel::String s(sv);
         std::transform(s.begin(), s.end(), s.begin(),
-                       [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+                       [](unsigned char c) { return keel::to_ascii_lower(c); });
         return s;
     };
     keel::String o = lower(opt);

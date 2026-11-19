@@ -10,6 +10,7 @@
 #include <keel/math.h>
 #include <keel/ref.h>
 #include <keel/string.h>
+#include <keel/utf8.h>
 #include <numkit/wavelet/shape/shape.hpp>
 #include <numkit/wavelet/filter/wfilters.hpp>
 #include <numkit/wavelet/internal/type_gates.hpp>
@@ -24,7 +25,6 @@
 #include <numkit/value/error.hpp>
 
 #include <algorithm>
-#include <cctype>
 #include <cmath>
 #include <cstdlib>
 
@@ -314,7 +314,7 @@ std::tuple<Value, Value> build_wavefun_psi(keel::StringRef raw_name,
 {
     keel::String wname(raw_name);
     for (char &c : wname)
-        c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+        c = keel::to_ascii_lower(c);
 
     const keel::usize gridN = static_cast<keel::usize>(1ULL << iter);
 
@@ -537,7 +537,7 @@ void cwt_argcheck(const Value &x, keel::StringRef wname, double fs,
     }
     keel::String wl(wname);
     for (char &c : wl)
-        c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+        c = keel::to_ascii_lower(c);
     if (wl != "morse" && wl != "amor" && wl != "bump")
         throw Error(keel::format("cwt: WAVELET must be 'morse', 'amor', or 'bump' (got '{}')", wname),
                     0, 0, "cwt", "", "numkit:cwt:invalidWavelet");
@@ -583,7 +583,7 @@ CwtResult cwt(const Value &x,
 
     keel::String wl(wname);
     for (char &c : wl)
-        c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+        c = keel::to_ascii_lower(c);
 
     const keel::usize N = x.numel();
     const double nv = static_cast<double>(voicesPerOctave);

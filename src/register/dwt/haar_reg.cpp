@@ -12,14 +12,13 @@
 #include <keel/format.h>
 #include <keel/ref.h>
 #include <keel/string.h>
+#include <keel/utf8.h>
 #include <numkit/wavelet/dwt/haart.hpp>
 #include <numkit/wavelet/dwt/ihaart.hpp>
 
 #include <numkit/sys/plugin.hpp>   // CallContext, ctx.engine->resource()
 #include <numkit/value/argcheck.hpp>
 #include <numkit/value/error.hpp>
-
-#include <cctype>
 #include <cmath>
 
 namespace numkit::wavelet {
@@ -50,7 +49,7 @@ void haart_reg(keel::ArrayRef<Value> args, keel::usize nargout,
                         0, 0, "haart", "", "numkit:haart:flag");
         keel::String flag = args[2].toString();
         for (auto &c : flag)
-            c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+            c = keel::to_ascii_lower(c);
         if      (flag == "integer")    integer_mode = true;
         else if (flag == "noninteger") integer_mode = false;
         else
@@ -76,7 +75,7 @@ void ihaart_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
         if (arg.isChar() || arg.isString()) {
             keel::String flag = arg.toString();
             for (auto &c : flag)
-                c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+                c = keel::to_ascii_lower(c);
             if      (flag == "integer")    integer_mode = true;
             else if (flag == "noninteger") integer_mode = false;
             else

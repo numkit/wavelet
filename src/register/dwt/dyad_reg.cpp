@@ -15,9 +15,6 @@
 #include <numkit/sys/plugin.hpp>   // CallContext, ctx.engine->resource()
 #include <numkit/value/argcheck.hpp>
 #include <numkit/value/error.hpp>
-
-#include <cctype>
-
 namespace numkit::wavelet {
 
 namespace {

@@ -13,6 +13,7 @@
 #include <keel/format.h>
 #include <keel/ref.h>
 #include <keel/string.h>
+#include <keel/utf8.h>
 #include <numkit/wavelet/dwt/multilevel.hpp>
 
 #include <numkit/sys/plugin.hpp>   // CallContext, ctx.engine->resource()
@@ -20,7 +21,6 @@
 #include <numkit/value/error.hpp>
 
 #include <algorithm>
-#include <cctype>
 #include <utility>
 
 namespace numkit::wavelet {
@@ -62,7 +62,7 @@ void appcoef_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/, keel::MutA
     // Parse trailing 'mode' / Mode= N-V: only 'sym' supported.
     auto lower = [](keel::StringRef sv) {
         keel::String s(sv);
-        for (auto &c : s) c = (char)std::tolower((unsigned char)c);
+        for (auto &c : s) c = keel::to_ascii_lower(c);
         return s;
     };
     auto check_mode_at = [&](keel::usize start) {
@@ -145,7 +145,7 @@ void detcoef_reg(keel::ArrayRef<Value> args, keel::usize nargout, keel::MutArray
         && (args[3].isChar() || args[3].isString())
         && [&] {
             keel::String s = args[3].toString();
-            for (auto &c : s) c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+            for (auto &c : s) c = keel::to_ascii_lower(c);
             return s == "cells";
         }();
 
@@ -167,7 +167,7 @@ void detcoef_reg(keel::ArrayRef<Value> args, keel::usize nargout, keel::MutArray
     if (levArg.isChar() || levArg.isString()) {
         const keel::String orig = levArg.toString();
         keel::String s = orig.clone();
-        for (auto &c : s) c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+        for (auto &c : s) c = keel::to_ascii_lower(c);
         if (s != "cells")
             throw Error(keel::format("detcoef: unknown option '{}'", orig),
                         0, 0, "detcoef", "", "numkit:detcoef:opt");

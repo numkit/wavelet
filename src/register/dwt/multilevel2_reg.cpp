@@ -9,13 +9,12 @@
 #include <keel/core.h>
 #include <keel/ref.h>
 #include <keel/string.h>
+#include <keel/utf8.h>
 #include <numkit/wavelet/dwt/multilevel2.hpp>
 
 #include <numkit/sys/plugin.hpp>   // CallContext, ctx.engine->resource()
 #include <numkit/value/argcheck.hpp>
 #include <numkit/value/error.hpp>
-
-#include <cctype>
 #include <utility>
 
 namespace numkit::wavelet {
@@ -68,7 +67,7 @@ void detcoef2_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/, keel::Mut
     auto *mr = ctx.engine->allocator();
     keel::String type = argString(args[0]);
     keel::String lt = type.clone();
-    for (auto &c : lt) c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+    for (auto &c : lt) c = keel::to_ascii_lower(c);
     const int level = argcheck::expectedPositiveInteger(
         argcheck::expectedReal(args[3], 4, "level", "detcoef2"), 4, "level", "detcoef2");
 
