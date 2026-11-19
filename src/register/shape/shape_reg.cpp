@@ -9,8 +9,10 @@
 // Phase 2b compute/register split — see project_layering_refactor memory.
 
 #include <keel/core.h>
+#include <keel/format.h>
 #include <keel/memory.h>
 #include <keel/ref.h>
+#include <keel/string.h>
 #include <numkit/wavelet/shape/shape.hpp>
 
 #include <numkit/sys/plugin.hpp>   // CallContext, ctx.engine->resource()
@@ -18,7 +20,6 @@
 #include <numkit/value/error.hpp>
 
 #include <cctype>
-#include <string>
 #include <tuple>
 #include <utility>
 
@@ -35,7 +36,7 @@ static void shape_grid_reg(const char *fn,
     const double ub = args[1].toScalar();
     const double Nd = args[2].toScalar();
     if (!(Nd >= 0.0))
-        throw Error(std::string(fn) + ": N must be non-negative",
+        throw Error(keel::format("{}: N must be non-negative", fn),
                     0, 0, fn, "", "numkit:wav:N");
     const keel::usize N = static_cast<keel::usize>(Nd);
     auto [psi, x] = impl(lb, ub, N, ctx.engine->allocator());
@@ -117,7 +118,7 @@ void centfrq_reg(keel::ArrayRef<Value> args, keel::usize nargout,
     if (!args[0].isChar() && !args[0].isString())
         throw Error("centfrq: WNAME must be a string or char vector",
                     0, 0, "centfrq", "", "numkit:centfrq:invalidWavelet");
-    const std::string wname(args[0].toString().as_ref());
+    const keel::String wname = args[0].toString();
     int iter = 8;
     if (args.size() >= 2 && !args[1].isEmpty()) {
         iter = argcheck::expectedPositiveInteger(
@@ -144,7 +145,7 @@ void scal2frq_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
     if (!args[1].isChar() && !args[1].isString())
         throw Error("scal2frq: WNAME must be a string or char vector",
                     0, 0, "scal2frq", "", "numkit:scal2frq:invalidWavelet");
-    const std::string wname(args[1].toString().as_ref());
+    const keel::String wname = args[1].toString();
     double delta = 1.0;
     if (args.size() >= 3 && !args[2].isEmpty()) {
         delta = argcheck::expectedReal(args[2], 3, "DELTA", "scal2frq");
@@ -156,7 +157,7 @@ void cwt_reg(keel::ArrayRef<Value> args, keel::usize nargout,
              keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 1, 13, "cwt");
-    std::string wname = "morse";
+    keel::String wname("morse");
     double fs = 1.0;
     int voicesPerOctave = 10;
     double timeBandwidth = 60.0;
@@ -165,7 +166,7 @@ void cwt_reg(keel::ArrayRef<Value> args, keel::usize nargout,
     Value freqLimits;
 
     auto lowerStr = [](keel::StringRef sv) {
-        std::string s(sv.data(), sv.size());
+        keel::String s(sv);
         for (char &c : s)
             c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
         return s;
@@ -174,9 +175,10 @@ void cwt_reg(keel::ArrayRef<Value> args, keel::usize nargout,
     keel::usize idx = 1;
     // Parse optional positional wname and/or fs before Name-Value pairs.
     if (idx < args.size() && (args[idx].isChar() || args[idx].isString())) {
-        const std::string s = lowerStr(args[idx].toString());
+        const keel::String raw = args[idx].toString();
+        keel::String s = lowerStr(raw);
         if (s == "morse" || s == "amor" || s == "bump") {
-            wname = s;
+            wname = std::move(s);
             ++idx;
         }
     }
@@ -187,12 +189,13 @@ void cwt_reg(keel::ArrayRef<Value> args, keel::usize nargout,
 
     while (idx < args.size()) {
         if (!args[idx].isChar() && !args[idx].isString())
-            throw Error("cwt: expected option name at argument " + std::to_string(idx + 1),
+            throw Error(keel::format("cwt: expected option name at argument {}", idx + 1),
                         0, 0, "cwt", "", "numkit:cwt:invalidOption");
+        const keel::String optRaw = args[idx].toString();
         if (idx + 1 >= args.size())
-            throw Error("cwt: missing value for option '" + std::string(args[idx].toString().as_ref()) + "'",
+            throw Error(keel::format("cwt: missing value for option '{}'", optRaw),
                         0, 0, "cwt", "", "numkit:cwt:missingOptionValue");
-        const std::string key = lowerStr(args[idx].toString());
+        const keel::String key = lowerStr(optRaw);
         const Value &val = args[idx + 1];
         if (key == "voicesperoctave") {
             voicesPerOctave = argcheck::expectedPositiveInteger(
@@ -216,7 +219,7 @@ void cwt_reg(keel::ArrayRef<Value> args, keel::usize nargout,
         } else if (key == "frequencylimits") {
             freqLimits = val;
         } else {
-            throw Error("cwt: unrecognized option '" + std::string(args[idx].toString().as_ref()) + "'",
+            throw Error(keel::format("cwt: unrecognized option '{}'", optRaw),
                         0, 0, "cwt", "", "numkit:cwt:unknownOption");
         }
         idx += 2;

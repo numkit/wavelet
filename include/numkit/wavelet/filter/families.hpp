@@ -8,7 +8,7 @@
 #pragma once
 
 #include <keel/memory.h>
-#include <string>
+#include <keel/ref.h>
 #include <numkit/value/value.hpp>
 
 namespace numkit::wavelet {
@@ -28,7 +28,7 @@ namespace numkit::wavelet {
 /// @throws Error if `name` is not `"haar"`/`"dbN"`, or the family is
 ///         unsupported by the underlying filter table.
 /// @see coifwavf, symwavf, orthfilt
-Value dbwavf(const std::string &name, keel::Allocator *mr = nullptr);
+Value dbwavf(keel::StringRef name, keel::Allocator *mr = nullptr);
 
 /// @brief Coiflet scaling filter — `F = coifwavf(name)`.
 ///
@@ -40,7 +40,7 @@ Value dbwavf(const std::string &name, keel::Allocator *mr = nullptr);
 /// @return      Row vector of scaling-filter coefficients.
 /// @throws Error if `name` is not `"coifK"`, or the family is unsupported.
 /// @see dbwavf, symwavf, orthfilt
-Value coifwavf(const std::string &name, keel::Allocator *mr = nullptr);
+Value coifwavf(keel::StringRef name, keel::Allocator *mr = nullptr);
 
 /// @brief Symlet scaling filter — `F = symwavf(name)`.
 ///
@@ -52,7 +52,7 @@ Value coifwavf(const std::string &name, keel::Allocator *mr = nullptr);
 /// @return      Row vector of scaling-filter coefficients.
 /// @throws Error if `name` is not `"symN"`, or the family is unsupported.
 /// @see dbwavf, coifwavf, orthfilt
-Value symwavf(const std::string &name, keel::Allocator *mr = nullptr);
+Value symwavf(keel::StringRef name, keel::Allocator *mr = nullptr);
 
 /// @brief The four orthogonal-wavelet filter banks produced by orthfilt.
 struct OrthfiltResult {

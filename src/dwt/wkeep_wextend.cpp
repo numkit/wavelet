@@ -10,9 +10,13 @@
 // error); wextend's LOC letters map l/u → start, r/d → end, b → both,
 // n → no extension, anything else → both.
 
+#include <keel/array.h>
 #include <keel/core.h>
+#include <keel/format.h>
 #include <keel/memory.h>
 #include <keel/complex.h>
+#include <keel/ref.h>
+#include <keel/string.h>
 #include <numkit/wavelet/dwt/wkeep_wextend.hpp>
 #include <numkit/wavelet/internal/type_gates.hpp>
 
@@ -24,8 +28,8 @@
 #include <numkit/value/error.hpp>
 
 #include <algorithm>
-#include <string>
-#include <vector>
+#include <cctype>
+#include <cmath>
 
 namespace numkit::wavelet {
 
@@ -50,9 +54,9 @@ void outShape(bool col, keel::usize outN,
     else     { outRows = 1;    outCols = outN; }
 }
 
-std::string lower(keel::StringRef sv)
+keel::String lower(keel::StringRef sv)
 {
-    std::string s(sv.data(), sv.size());
+    keel::String s(sv);
     for (auto &c : s)
         c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
     return s;
@@ -72,12 +76,12 @@ void wkeep_argcheck(const Value &x, const Value &len)
                                internal::WvClasses::AnyWithChar,
                                /*allowComplex=*/true);
     if (x.dims().ndim() > 2)
-        throw Error("wkeep: X must be a vector or a 2-D matrix (got a "
-                        + internal::shapeOf(x) + " array).",
+        throw Error(keel::format("wkeep: X must be a vector or a 2-D matrix (got a {} array).",
+                                 internal::shapeOf(x)),
                     0, 0, "wkeep", "", "numkit:wkeep:inputType");
     if (len.isChar() || len.isString())
-        throw Error("wkeep: input 2 (L) must be numeric (got a "
-                        + std::string(mtypeName(len.type())) + " array).",
+        throw Error(keel::format("wkeep: input 2 (L) must be numeric (got a {} array).",
+                                 mtypeName(len.type())),
                     0, 0, "wkeep", "", "numkit:wkeep:inputType");
 }
 
@@ -170,9 +174,9 @@ Value wkeep(const Value &x, const Value &len, const Value &opt,
 
     // 1-D form: scalar LEN.
     if (len.numel() != 1)
-        throw Error("wkeep: input 2 (L) must be a scalar length or a "
-                        "[R C] pair (got a " + internal::shapeOf(len)
-                        + " array).",
+        throw Error(keel::format("wkeep: input 2 (L) must be a scalar length or a "
+                                 "[R C] pair (got a {} array).",
+                                 internal::shapeOf(len)),
                     0, 0, "wkeep", "", "numkit:wkeep:inputType");
     const double nD = len.elemAsDouble(0);
     if (!validKeepLen(nD, static_cast<long long>(N)))
@@ -182,7 +186,8 @@ Value wkeep(const Value &x, const Value &len, const Value &opt,
     long long start1 = 1;                                  // 1-based start
     if (!opt.isEmpty()) {
         if (opt.isChar() || opt.isString()) {
-            const std::string s = lower(opt.toString());
+            const keel::String optStr = opt.toString();
+            const keel::String s = lower(optStr);
             if (s == "c" || s == "central" || s == "centered" || s == "centred")
                 start1 = static_cast<long long>((N - static_cast<keel::usize>(n)) / 2) + 1;
             else if (s == "l")
@@ -190,8 +195,8 @@ Value wkeep(const Value &x, const Value &len, const Value &opt,
             else if (s == "r")
                 start1 = static_cast<long long>(N) - n + 1;
             else
-                throw Error("wkeep: unknown option '" + s +
-                            "' (expected 'c', 'l', 'r' or a numeric start)",
+                throw Error(keel::format("wkeep: unknown option '{}' "
+                                         "(expected 'c', 'l', 'r' or a numeric start)", s),
                             0, 0, "wkeep", "", "numkit:wkeep:opt");
         } else {
             const double f = opt.elemAsDouble(0);
@@ -258,15 +263,16 @@ namespace detail {
 // Element type is templated: the class-preserving wextend runs the same
 // permutation/linear-combination core on double and Complex buffers.
 template <typename T>
-static std::vector<T> extend1D(const std::vector<T> &xv,
+static keel::Array<T> extend1D(keel::ArrayRef<T> xv,
                                long long lf, char side,
-                               const std::string &mode)
+                               keel::StringRef mode)
 {
     const long long N = static_cast<long long>(xv.size());
     if (lf < 0) lf = 0;
     // For 'per' the data segment is the (possibly edge-padded) version of x.
-    std::vector<T> src = xv;
-    if (mode == "per" && (N % 2) == 1 && N > 0) src.push_back(xv.back());
+    keel::Array<T> src;
+    src.assign(xv);
+    if (mode == "per" && (N % 2) == 1 && N > 0) src.push_back(xv[static_cast<keel::usize>(N - 1)]);
     const long long M = static_cast<long long>(src.size());
 
     auto sampleLeft = [&](long long k) -> T {
@@ -278,7 +284,7 @@ static std::vector<T> extend1D(const std::vector<T> &xv,
             // pre = [x(lf+1), …, x(2)] in 1-based → indices [lf, lf-1, …, 1] 0-based.
             // For output position k (0..lf-1), src idx = lf - k.
             const long long idx = lf - k;
-            return (idx < N) ? xv[static_cast<keel::usize>(idx)] : xv.back();
+            return (idx < N) ? xv[static_cast<keel::usize>(idx)] : xv[static_cast<keel::usize>(N - 1)];
         }
         if (mode == "asym" || mode == "asymh") {
             return -xv[static_cast<keel::usize>(lf - 1 - k)];
@@ -287,7 +293,7 @@ static std::vector<T> extend1D(const std::vector<T> &xv,
             // 2·x(1) - x(j) where j is the symw index (1-based j = lf+1-k = lf-k+1).
             // 0-based: idx = lf - k.
             const long long idx = lf - k;
-            const T xj = (idx < N) ? xv[static_cast<keel::usize>(idx)] : xv.back();
+            const T xj = (idx < N) ? xv[static_cast<keel::usize>(idx)] : xv[static_cast<keel::usize>(N - 1)];
             return T(2) * xv[0] - xj;
         }
         if (mode == "sp0") {
@@ -314,14 +320,14 @@ static std::vector<T> extend1D(const std::vector<T> &xv,
         if (mode == "symw") {
             // post = [x(N-1), …, x(N-lf)] in 1-based → indices [N-2, N-3, …, N-lf-1] 0-based.
             const long long idx = N - 2 - k;
-            return (idx >= 0) ? xv[static_cast<keel::usize>(idx)] : xv.front();
+            return (idx >= 0) ? xv[static_cast<keel::usize>(idx)] : xv[0];
         }
         if (mode == "asym" || mode == "asymh") {
             return -xv[static_cast<keel::usize>(N - 1 - k)];
         }
         if (mode == "asymw") {
             const long long idx = N - 2 - k;
-            const T xj = (idx >= 0) ? xv[static_cast<keel::usize>(idx)] : xv.front();
+            const T xj = (idx >= 0) ? xv[static_cast<keel::usize>(idx)] : xv[0];
             return T(2) * xv[static_cast<keel::usize>(N - 1)] - xj;
         }
         if (mode == "sp0") {
@@ -343,9 +349,9 @@ static std::vector<T> extend1D(const std::vector<T> &xv,
 
     const long long leftN  = (side == 'r') ? 0 : lf;
     const long long rightN = (side == 'l') ? 0 : lf;
-    const std::vector<T> &mid = (mode == "per") ? src : xv;
+    const keel::ArrayRef<T> mid = (mode == "per") ? src.as_ref() : xv;
     const long long Mlen = static_cast<long long>(mid.size());
-    std::vector<T> out;
+    keel::Array<T> out;
     out.reserve(static_cast<keel::usize>(leftN + Mlen + rightN));
     for (long long i = 0; i < leftN; ++i) out.push_back(sampleLeft(i));
     for (long long i = 0; i < Mlen;  ++i) out.push_back(mid[static_cast<keel::usize>(i)]);
@@ -354,10 +360,10 @@ static std::vector<T> extend1D(const std::vector<T> &xv,
 }
 
 // Explicit instantiations for the two buffer flavours wextend uses.
-template std::vector<double> extend1D<double>(const std::vector<double> &,
-                                              long long, char, const std::string &);
-template std::vector<keel::c64> extend1D<keel::c64>(const std::vector<keel::c64> &,
-                                                long long, char, const std::string &);
+template keel::Array<double> extend1D<double>(keel::ArrayRef<double>,
+                                              long long, char, keel::StringRef);
+template keel::Array<keel::c64> extend1D<keel::c64>(keel::ArrayRef<keel::c64>,
+                                                    long long, char, keel::StringRef);
 
 } // namespace detail
 
@@ -381,50 +387,51 @@ void parseExtLf(const Value &lf, const char *fn,
                 long long &lfRows, long long &lfCols, bool twoDim)
 {
     if (lf.type() == ValueType::COMPLEX)
-        throw Error(std::string(fn) + ": input 4 (L) must be a nonnegative "
-                    "integer (got a complex value).",
-                    0, 0, fn, "", std::string("numkit:") + fn + ":expectedInteger");
+        throw Error(keel::format("{}: input 4 (L) must be a nonnegative "
+                                 "integer (got a complex value).", fn),
+                    0, 0, fn, "", keel::format("numkit:{}:expectedInteger", fn));
     if (lf.isCell() || lf.isStruct() || lf.isChar() || lf.isString())
-        throw Error(std::string(fn) + ": input 4 (L) must be numeric.",
-                    0, 0, fn, "", std::string("numkit:") + fn + ":expectedInteger");
+        throw Error(keel::format("{}: input 4 (L) must be numeric.", fn),
+                    0, 0, fn, "", keel::format("numkit:{}:expectedInteger", fn));
     if (lf.numel() == 2 && twoDim) {
         const double a = lf.elemAsDouble(0);
         const double b = lf.elemAsDouble(1);
         if (a < 0 || b < 0)
-            throw Error(std::string(fn) + ": input 4 (L) must be nonnegative.",
-                        0, 0, fn, "", std::string("numkit:") + fn + ":expectedNonnegative");
+            throw Error(keel::format("{}: input 4 (L) must be nonnegative.", fn),
+                        0, 0, fn, "", keel::format("numkit:{}:expectedNonnegative", fn));
         if (a != std::floor(a) || b != std::floor(b))
-            throw Error(std::string(fn) + ": input 4 (L) must be an integer.",
-                        0, 0, fn, "", std::string("numkit:") + fn + ":expectedInteger");
+            throw Error(keel::format("{}: input 4 (L) must be an integer.", fn),
+                        0, 0, fn, "", keel::format("numkit:{}:expectedInteger", fn));
         lfRows = static_cast<long long>(a);
         lfCols = static_cast<long long>(b);
         return;
     }
     if (lf.numel() != 1)
-        throw Error(std::string(fn) + ": input 4 (L) must be a scalar "
-                    "nonnegative integer.",
-                    0, 0, fn, "", std::string("numkit:") + fn + ":expectedInteger");
+        throw Error(keel::format("{}: input 4 (L) must be a scalar "
+                                 "nonnegative integer.", fn),
+                    0, 0, fn, "", keel::format("numkit:{}:expectedInteger", fn));
     const double v = lf.elemAsDouble(0);
     if (v < 0)
-        throw Error(std::string(fn) + ": input 4 (L) must be nonnegative.",
-                    0, 0, fn, "", std::string("numkit:") + fn + ":expectedNonnegative");
+        throw Error(keel::format("{}: input 4 (L) must be nonnegative.", fn),
+                    0, 0, fn, "", keel::format("numkit:{}:expectedNonnegative", fn));
     if (v != std::floor(v))
-        throw Error(std::string(fn) + ": input 4 (L) must be an integer.",
-                    0, 0, fn, "", std::string("numkit:") + fn + ":expectedInteger");
+        throw Error(keel::format("{}: input 4 (L) must be an integer.", fn),
+                    0, 0, fn, "", keel::format("numkit:{}:expectedInteger", fn));
     lfRows = lfCols = static_cast<long long>(v);
 }
 
-void wextend_argcheck(const Value &type, const std::string &modeRaw,
+void wextend_argcheck(const Value &type, keel::StringRef modeRaw,
                       const Value &x, const Value &lf,
                       int &dim, bool &extRows, bool &extCols,
-                      std::string &mode,
+                      keel::String &mode,
                       long long &lfRows, long long &lfCols)
 {
     dim = 0;
     extRows = true;
     extCols = true;
     if (type.isChar() || type.isString()) {
-        const std::string s = lower(type.toString());
+        const keel::String typeStr = type.toString();
+        const keel::String s = lower(typeStr);
         if (s == "1" || s == "1d") dim = 1;
         else if (s == "2" || s == "2d") dim = 2;
         else if (s == "ar") { dim = 2; extRows = true;  extCols = false; }
@@ -447,8 +454,8 @@ void wextend_argcheck(const Value &type, const std::string &modeRaw,
                                internal::WvClasses::IntWavelet,
                                /*allowComplex=*/true);
     if (x.dims().ndim() > 2)
-        throw Error("wextend: X must be a vector or a 2-D matrix (got a "
-                        + internal::shapeOf(x) + " array).",
+        throw Error(keel::format("wextend: X must be a vector or a 2-D matrix (got a {} array).",
+                                 internal::shapeOf(x)),
                     0, 0, "wextend", "", "numkit:wextend:inputType");
 
     mode = lower(modeRaw);
@@ -459,9 +466,9 @@ void wextend_argcheck(const Value &type, const std::string &modeRaw,
     bool modeOK = false;
     for (const char *m : kModes) if (mode == m) { modeOK = true; break; }
     if (!modeOK)
-        throw Error("wextend: unsupported mode '" + mode +
-                    "' (supported: sym/symh/symw, asym/asymh/asymw, "
-                    "sp0/sp1/spd, per, zpd, ppd)",
+        throw Error(keel::format("wextend: unsupported mode '{}' "
+                                 "(supported: sym/symh/symw, asym/asymh/asymw, "
+                                 "sp0/sp1/spd, per, zpd, ppd)", mode),
                     0, 0, "wextend", "", "numkit:wextend:mode");
 
     lfRows = 0;
@@ -473,14 +480,14 @@ void wextend_argcheck(const Value &type, const std::string &modeRaw,
 
 // ── Public C++ API: wextend (see dwt/wkeep_wextend.hpp) ───────────────
 // Reuses detail::extend1D (the file-internal 1-D extension core).
-Value wextend(const Value &type, const std::string &modeRaw, const Value &x,
-              const Value &lf, const std::string &sideRaw,
+Value wextend(const Value &type, keel::StringRef modeRaw, const Value &x,
+              const Value &lf, keel::StringRef sideRaw,
               keel::Allocator *mr)
 {
     int dim = 0;
     bool extRows = true;
     bool extCols = true;
-    std::string mode;
+    keel::String mode;
     long long lfRows = 0, lfCols = 0;
     wextend_argcheck(type, modeRaw, x, lf, dim, extRows, extCols,
                      mode, lfRows, lfCols);
@@ -488,7 +495,7 @@ Value wextend(const Value &type, const std::string &modeRaw, const Value &x,
     // LOC: per-axis side letters (see parseLocChar). 'n' → x unchanged.
     char sideRows = 'b', sideCols = 'b';
     {
-        const std::string s = lower(sideRaw);
+        const keel::String s = lower(sideRaw);
         if (s.empty()) {
             // no LOC argument
         } else if (s.size() >= 2 && dim == 2) {
@@ -511,9 +518,9 @@ Value wextend(const Value &type, const std::string &modeRaw, const Value &x,
         keel::usize outN = 0;
         Value y;
         if (cplx) {
-            std::vector<keel::c64> xv(N);
+            keel::Array<keel::c64> xv(N);
             for (keel::usize i = 0; i < N; ++i) xv[i] = x.complexElem(i);
-            std::vector<keel::c64> ext = detail::extend1D(xv, lfRows, side, mode);
+            keel::Array<keel::c64> ext = detail::extend1D<keel::c64>(xv, lfRows, side, mode);
             outN = ext.size();
             keel::usize outRows, outCols;
             outShape(col, outN, outRows, outCols);
@@ -522,9 +529,9 @@ Value wextend(const Value &type, const std::string &modeRaw, const Value &x,
             std::copy(ext.begin(), ext.end(), y.complexDataMut());
             return y;
         }
-        std::vector<double> xv(N);
+        keel::Array<double> xv(N);
         for (keel::usize i = 0; i < N; ++i) xv[i] = x.elemAsDouble(i);
-        std::vector<double> ext = detail::extend1D(xv, lfRows, side, mode);
+        keel::Array<double> ext = detail::extend1D<double>(xv, lfRows, side, mode);
         outN = ext.size();
         keel::usize outRows, outCols;
         outShape(col, outN, outRows, outCols);
@@ -546,82 +553,86 @@ Value wextend(const Value &type, const std::string &modeRaw, const Value &x,
     const long long lfC = sideC ? lfCols : 0;
 
     if (!cplx) {
-        std::vector<std::vector<double>> data(rows, std::vector<double>(cols));
+        keel::Array<double> data(rows * cols);
         for (keel::usize r = 0; r < rows; ++r)
             for (keel::usize c = 0; c < cols; ++c)
-                data[r][c] = x.elemAsDouble(c * rows + r);
+                data[r * cols + c] = x.elemAsDouble(c * rows + r);
 
-        if (extRows && lfR > 0) {
-            std::vector<std::vector<double>> ext_col;
+        if (extRows && lfR > 0 && cols > 0) {
+            keel::Array<keel::Array<double>> ext_col;
             ext_col.reserve(cols);
+            keel::Array<double> col_v(rows);
             for (keel::usize c = 0; c < cols; ++c) {
-                std::vector<double> col_v(rows);
-                for (keel::usize r = 0; r < rows; ++r) col_v[r] = data[r][c];
-                ext_col.push_back(detail::extend1D(col_v, lfR, sideR, mode));
+                for (keel::usize r = 0; r < rows; ++r) col_v[r] = data[r * cols + c];
+                ext_col.push_back(detail::extend1D<double>(col_v, lfR, sideR, mode));
             }
             const keel::usize newRows = ext_col[0].size();
-            data.assign(newRows, std::vector<double>(cols));
+            data.resize(newRows * cols);
             for (keel::usize c = 0; c < cols; ++c)
                 for (keel::usize r = 0; r < newRows; ++r)
-                    data[r][c] = ext_col[c][r];
+                    data[r * cols + c] = ext_col[c][r];
             rows = newRows;
         }
-        if (extCols && lfC > 0) {
-            std::vector<std::vector<double>> ext_row;
+        if (extCols && lfC > 0 && rows > 0) {
+            keel::Array<keel::Array<double>> ext_row;
             ext_row.reserve(rows);
             for (keel::usize r = 0; r < rows; ++r)
-                ext_row.push_back(detail::extend1D(data[r], lfC, sideC, mode));
+                ext_row.push_back(detail::extend1D<double>(
+                    keel::ArrayRef<double>(data.data() + r * cols, cols),
+                    lfC, sideC, mode));
             const keel::usize newCols = ext_row[0].size();
-            for (auto &row : data) row.assign(newCols, 0.0);
+            data.resize(rows * newCols);
             for (keel::usize r = 0; r < rows; ++r)
                 for (keel::usize c = 0; c < newCols; ++c)
-                    data[r][c] = ext_row[r][c];
+                    data[r * newCols + c] = ext_row[r][c];
             cols = newCols;
         }
 
         Value y = Value::matrix(rows, cols, x.type(), mr);
         for (keel::usize c = 0; c < cols; ++c)
             for (keel::usize r = 0; r < rows; ++r)
-                internal::storeElem(y, c * rows + r, data[r][c]);
+                internal::storeElem(y, c * rows + r, data[r * cols + c]);
         return y;
     }
 
-    std::vector<std::vector<keel::c64>> data(rows, std::vector<keel::c64>(cols));
+    keel::Array<keel::c64> data(rows * cols);
     for (keel::usize r = 0; r < rows; ++r)
         for (keel::usize c = 0; c < cols; ++c)
-            data[r][c] = x.complexElem(c * rows + r);
-    if (extRows && lfR > 0) {
-        std::vector<std::vector<keel::c64>> ext_col;
+            data[r * cols + c] = x.complexElem(c * rows + r);
+    if (extRows && lfR > 0 && cols > 0) {
+        keel::Array<keel::Array<keel::c64>> ext_col;
         ext_col.reserve(cols);
+        keel::Array<keel::c64> col_v(rows);
         for (keel::usize c = 0; c < cols; ++c) {
-            std::vector<keel::c64> col_v(rows);
-            for (keel::usize r = 0; r < rows; ++r) col_v[r] = data[r][c];
-            ext_col.push_back(detail::extend1D(col_v, lfR, sideR, mode));
+            for (keel::usize r = 0; r < rows; ++r) col_v[r] = data[r * cols + c];
+            ext_col.push_back(detail::extend1D<keel::c64>(col_v, lfR, sideR, mode));
         }
         const keel::usize newRows = ext_col[0].size();
-        data.assign(newRows, std::vector<keel::c64>(cols));
+        data.resize(newRows * cols);
         for (keel::usize c = 0; c < cols; ++c)
             for (keel::usize r = 0; r < newRows; ++r)
-                data[r][c] = ext_col[c][r];
+                data[r * cols + c] = ext_col[c][r];
         rows = newRows;
     }
-    if (extCols && lfC > 0) {
-        std::vector<std::vector<keel::c64>> ext_row;
+    if (extCols && lfC > 0 && rows > 0) {
+        keel::Array<keel::Array<keel::c64>> ext_row;
         ext_row.reserve(rows);
         for (keel::usize r = 0; r < rows; ++r)
-            ext_row.push_back(detail::extend1D(data[r], lfC, sideC, mode));
+            ext_row.push_back(detail::extend1D<keel::c64>(
+                keel::ArrayRef<keel::c64>(data.data() + r * cols, cols),
+                lfC, sideC, mode));
         const keel::usize newCols = ext_row[0].size();
-        for (auto &row : data) row.assign(newCols, keel::c64(0.0, 0.0));
+        data.resize(rows * newCols);
         for (keel::usize r = 0; r < rows; ++r)
             for (keel::usize c = 0; c < newCols; ++c)
-                data[r][c] = ext_row[r][c];
+                data[r * newCols + c] = ext_row[r][c];
         cols = newCols;
     }
     Value y = Value::complexMatrix(rows, cols, mr);
     if (x.isSingleComplex()) y.setSingleComplex(true);
     for (keel::usize c = 0; c < cols; ++c)
         for (keel::usize r = 0; r < rows; ++r)
-            y.complexDataMut()[c * rows + r] = data[r][c];
+            y.complexDataMut()[c * rows + r] = data[r * cols + c];
     return y;
 }
 

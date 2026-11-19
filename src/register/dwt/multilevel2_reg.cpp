@@ -8,6 +8,7 @@
 
 #include <keel/core.h>
 #include <keel/ref.h>
+#include <keel/string.h>
 #include <numkit/wavelet/dwt/multilevel2.hpp>
 
 #include <numkit/sys/plugin.hpp>   // CallContext, ctx.engine->resource()
@@ -15,17 +16,16 @@
 #include <numkit/value/error.hpp>
 
 #include <cctype>
-#include <string>
 #include <utility>
 
 namespace numkit::wavelet {
 namespace detail {
 
-static std::string argString(const Value &v) {
+static keel::String argString(const Value &v) {
     if (!v.isChar() && !v.isString())
         throw Error("wavelet: expected string argument",
                     0, 0, "", "", "numkit:wavelet:type");
-    return std::string(v.toString().as_ref());
+    return v.toString();
 }
 
 void wavedec2_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/, keel::MutArrayRef<Value> outs,
@@ -66,8 +66,8 @@ void detcoef2_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/, keel::Mut
 {
     argcheck::checkNargin(args.size(), 4, 4, "detcoef2");
     auto *mr = ctx.engine->allocator();
-    std::string type = argString(args[0]);
-    std::string lt = type;
+    keel::String type = argString(args[0]);
+    keel::String lt = type.clone();
     for (auto &c : lt) c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
     const int level = argcheck::expectedPositiveInteger(
         argcheck::expectedReal(args[3], 4, "level", "detcoef2"), 4, "level", "detcoef2");

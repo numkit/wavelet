@@ -17,6 +17,7 @@
 // and p = 1, 2 (complex). The complex form's normalization is grid-dependent
 // (trapezoidal on [LB, UB]) — gauswavf's is not. Same convention as MATLAB.
 
+#include <keel/array.h>
 #include <keel/core.h>
 #include <keel/memory.h>
 #include <keel/complex.h>
@@ -28,7 +29,6 @@
 #include <numkit/value/error.hpp>
 
 #include <cmath>
-#include <vector>
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -139,7 +139,7 @@ cgauwavf(double lb, double ub, keel::usize N, int p, keel::Allocator *mr)
     const double sgn_p = (p % 2 == 0) ? 1.0 : -1.0;
 
     // Stage 1 — raw f_p(t) into the complex output buffer.
-    std::vector<double> mag2(N);
+    keel::Array<double> mag2(N);
     for (keel::usize i = 0; i < N; ++i) {
         const double t = xd[i];
         const keel::c64 z(t, 0.5);

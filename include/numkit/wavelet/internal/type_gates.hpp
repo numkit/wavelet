@@ -21,11 +21,12 @@
 #pragma once
 
 #include <keel/core.h>
+#include <keel/format.h>
 #include <keel/memory.h>
+#include <keel/ref.h>
+#include <keel/string.h>
 #include <keel/complex.h>
 #include <cmath>
-#include <string>
-#include <string_view>
 
 #include <numkit/value/error.hpp>
 #include <numkit/value/value.hpp>
@@ -37,13 +38,12 @@ namespace numkit::wavelet::internal {
 /// @{
 
 /// Render "2x3x4" for got-clauses.
-inline std::string shapeOf(const Value &v)
+inline keel::String shapeOf(const Value &v)
 {
     const Dims &d = v.dims();
-    std::string s = std::to_string(d.dim(0));
+    keel::String s = keel::format("{}", d.dim(0));
     for (int k = 1; k < d.ndim(); ++k) {
-        s += "x";
-        s += std::to_string(d.dim(k));
+        keel::format_into(s, "x{}", d.dim(k));
     }
     return s;
 }
@@ -81,7 +81,7 @@ inline bool classAllowed(const Value &v, unsigned mask)
 }
 
 /// Human listing of a mask's classes (message text).
-inline std::string describeClasses(unsigned mask)
+inline keel::StringRef describeClasses(unsigned mask)
 {
     if (mask == WvClasses::FloatOnly)
         return "double or single";
@@ -96,38 +96,34 @@ inline std::string describeClasses(unsigned mask)
 /// accepted classes. Wrong class → :inputType; complex → :expectedReal
 /// unless allowComplex (the entry's reference computes complex values —
 /// the caller handles the complex path or voices its own stub).
-inline void requireWaveClass(const Value &v, std::string_view fn,
-                             std::string_view argName, int argNum,
+inline void requireWaveClass(const Value &v, keel::StringRef fn,
+                             keel::StringRef argName, int argNum,
                              unsigned mask, bool allowComplex = false)
 {
     const ValueType t = v.type();
     if (t == ValueType::COMPLEX && !allowComplex)
-        throw Error(std::string(fn) + ": input " + std::to_string(argNum)
-                        + " (" + std::string(argName) + ") must be real — "
-                        + "complex data is rejected here (got a "
-                        + shapeOf(v) + " complex array).",
-                    0, 0, std::string(fn), "",
-                    "numkit:" + std::string(fn) + ":expectedReal");
+        throw Error(keel::format("{}: input {} ({}) must be real — "
+                                 "complex data is rejected here (got a {} complex array).",
+                                 fn, argNum, argName, shapeOf(v)),
+                    0, 0, fn, "",
+                    keel::format("numkit:{}:expectedReal", fn));
     if (!classAllowed(v, mask))
-        throw Error(std::string(fn) + ": input " + std::to_string(argNum)
-                        + " (" + std::string(argName) + ") must be "
-                        + describeClasses(mask) + " (got a " + shapeOf(v)
-                        + " " + mtypeName(t) + " array).",
-                    0, 0, std::string(fn), "",
-                    "numkit:" + std::string(fn) + ":inputType");
+        throw Error(keel::format("{}: input {} ({}) must be {} (got a {} {} array).",
+                                 fn, argNum, argName, describeClasses(mask), shapeOf(v), mtypeName(t)),
+                    0, 0, fn, "",
+                    keel::format("numkit:{}:inputType", fn));
 }
 
 /// @brief Nonempty gate (meyeraux, iswt): the reference rejects empty
 /// arrays with expectedNonempty.
-inline void requireNonempty(const Value &v, std::string_view fn,
-                            std::string_view argName, int argNum)
+inline void requireNonempty(const Value &v, keel::StringRef fn,
+                            keel::StringRef argName, int argNum)
 {
     if (v.numel() > 0)
         return;
-    throw Error(std::string(fn) + ": input " + std::to_string(argNum)
-                    + " (" + std::string(argName) + ") must be nonempty.",
-                0, 0, std::string(fn), "",
-                "numkit:" + std::string(fn) + ":expectedNonempty");
+    throw Error(keel::format("{}: input {} ({}) must be nonempty.", fn, argNum, argName),
+                0, 0, fn, "",
+                keel::format("numkit:{}:expectedNonempty", fn));
 }
 
 /// @brief Store one element into a typed matrix (saturation mirrors the

@@ -9,10 +9,9 @@
 
 #include <keel/core.h>
 #include <keel/memory.h>
+#include <keel/ref.h>
 #include <numkit/value/value.hpp>
-#include <string>
 #include <utility>
-#include <vector>
 
 namespace numkit::wavelet {
 
@@ -41,11 +40,11 @@ namespace numkit::wavelet {
 /// @throws       Error if `length(x)` is not a multiple of @f$ 2^n @f$.
 ///
 /// @see iswt, modwt
-Value swt(const Value &x, int n, const std::string &wname,
+Value swt(const Value &x, int n, keel::StringRef wname,
           keel::Allocator *mr = nullptr);
 
-Value swt(const Value &x, int n, const std::vector<keel::f64> &Lo_D,
-          const std::vector<keel::f64> &Hi_D,
+Value swt(const Value &x, int n, keel::ArrayRef<keel::f64> Lo_D,
+          keel::ArrayRef<keel::f64> Hi_D,
           keel::Allocator *mr = nullptr);
 
 /// Two-output stationary DWT (`[swa, swd] = swt(x, n, wname)`).
@@ -60,12 +59,12 @@ Value swt(const Value &x, int n, const std::vector<keel::f64> &Lo_D,
 /// @param wname  Wavelet name.
 /// @param mr     Memory resource (nullptr → process default).
 /// @return       (SWA, SWD) pair of n × N matrices.
-std::pair<Value, Value> swtAD(const Value &x, int n, const std::string &wname,
+std::pair<Value, Value> swtAD(const Value &x, int n, keel::StringRef wname,
                               keel::Allocator *mr = nullptr);
 
 std::pair<Value, Value> swtAD(const Value &x, int n,
-                              const std::vector<keel::f64> &Lo_D,
-                              const std::vector<keel::f64> &Hi_D,
+                              keel::ArrayRef<keel::f64> Lo_D,
+                              keel::ArrayRef<keel::f64> Hi_D,
                               keel::Allocator *mr = nullptr);
 
 /// Inverse stationary DWT (`x = iswt(swc, wname)`).
@@ -80,11 +79,11 @@ std::pair<Value, Value> swtAD(const Value &x, int n,
 /// @return       Reconstructed row vector of length N.
 ///
 /// @see swt
-Value iswt(const Value &swc, const std::string &wname,
+Value iswt(const Value &swc, keel::StringRef wname,
            keel::Allocator *mr = nullptr);
 
-Value iswt(const Value &swc, const std::vector<keel::f64> &Lo_R,
-           const std::vector<keel::f64> &Hi_R,
+Value iswt(const Value &swc, keel::ArrayRef<keel::f64> Lo_R,
+           keel::ArrayRef<keel::f64> Hi_R,
            keel::Allocator *mr = nullptr);
 
 /// Two-array inverse stationary DWT (`x = iswt(swa, swd, wname)`).
@@ -100,12 +99,12 @@ Value iswt(const Value &swc, const std::vector<keel::f64> &Lo_R,
 /// @return       Reconstructed row vector of length N.
 ///
 /// @see swt
-Value iswt(const Value &swa, const Value &swd, const std::string &wname,
+Value iswt(const Value &swa, const Value &swd, keel::StringRef wname,
            keel::Allocator *mr = nullptr);
 
 Value iswt(const Value &swa, const Value &swd,
-           const std::vector<keel::f64> &Lo_R,
-           const std::vector<keel::f64> &Hi_R,
+           keel::ArrayRef<keel::f64> Lo_R,
+           keel::ArrayRef<keel::f64> Hi_R,
            keel::Allocator *mr = nullptr);
 
 /// Maximal-overlap discrete wavelet transform (`swc = modwt(x, n, wname)`).
@@ -128,7 +127,7 @@ Value iswt(const Value &swa, const Value &swd,
 /// @return       (n+1) × N coefficient matrix.
 ///
 /// @see imodwt, swt
-Value modwt(const Value &x, int n, const std::string &wname,
+Value modwt(const Value &x, int n, keel::StringRef wname,
             keel::Allocator *mr = nullptr);
 
 /// Inverse MODWT (`x = imodwt(swc, wname)`).
@@ -142,7 +141,7 @@ Value modwt(const Value &x, int n, const std::string &wname,
 /// @return       Reconstructed row vector of length N.
 ///
 /// @see modwt
-Value imodwt(const Value &swc, const std::string &wname,
+Value imodwt(const Value &swc, keel::StringRef wname,
              keel::Allocator *mr = nullptr);
 
 

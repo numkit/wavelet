@@ -28,8 +28,11 @@
 // Complex input is supported only in 'noninteger' mode (lifting floor
 // is not defined on complex values; MATLAB also disallows it).
 
+#include <keel/array.h>
 #include <keel/core.h>
+#include <keel/format.h>
 #include <keel/memory.h>
+#include <keel/ref.h>
 #include <keel/complex.h>
 #include <numkit/wavelet/dwt/haart.hpp>
 
@@ -39,8 +42,6 @@
 #include <numkit/value/error.hpp>
 
 #include <cmath>
-#include <string>
-#include <vector>
 
 namespace numkit::wavelet {
 
@@ -89,8 +90,8 @@ void haar_step_cplx(const keel::c64 *x, keel::usize inLen, keel::c64 *a, keel::c
 // For a vector the whole content is one column of length N; for a
 // matrix we keep the original (rows × cols) shape.
 struct Buf {
-    std::vector<double> real;
-    std::vector<keel::c64> cplx;
+    keel::Array<double> real;
+    keel::Array<keel::c64> cplx;
     keel::usize colLen = 0;
     keel::usize ncols  = 0;
     bool   isComplex = false;
@@ -137,8 +138,7 @@ void haart_argcheck(const Value &x, int level, bool integer)
     const int max_lev = max_haar_level(colLen);
     const int lev = (level == 0) ? max_lev : level;
     if (lev > max_lev)
-        throw Error("haart: expected LEVEL to be a scalar with value <= " +
-                    std::to_string(max_lev),
+        throw Error(keel::format("haart: expected LEVEL to be a scalar with value <= {}", max_lev),
                     0, 0, "haart", "", "numkit:haart:level");
     if (integer && x.isComplex())
         throw Error("haart: integer mode is not supported for complex data",
@@ -162,11 +162,11 @@ HaartResult haart(const Value &x, int level, bool integer,
     const int lev = (level == 0) ? max_lev : level;
 
     const ValueType vt = buf.isComplex ? ValueType::COMPLEX : ValueType::DOUBLE;
-    std::vector<double>  curR = buf.real;
-    std::vector<keel::c64> curC = buf.cplx;
+    keel::Array<double>  curR = keel::move(buf.real);
+    keel::Array<keel::c64> curC = keel::move(buf.cplx);
     keel::usize inLen = colLen;
 
-    std::vector<Value> details;
+    keel::Array<Value> details(mr);
     details.reserve(static_cast<keel::usize>(lev));
     HaartResult R;
 
@@ -191,10 +191,10 @@ HaartResult haart(const Value &x, int level, bool integer,
 
         if (buf.isComplex) {
             const keel::c64 *aP = aMat.complexData();
-            curC.assign(aP, aP + H * ncols);
+            curC.assign(keel::ArrayRef<keel::c64>(aP, H * ncols));
         } else {
             const double *aP = aMat.doubleData();
-            curR.assign(aP, aP + H * ncols);
+            curR.assign(keel::ArrayRef<double>(aP, H * ncols));
         }
         details.push_back(std::move(dMat));
         if (k == lev - 1) R.a = std::move(aMat);

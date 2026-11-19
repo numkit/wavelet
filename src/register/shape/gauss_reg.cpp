@@ -9,7 +9,9 @@
 // Phase 2b compute/register split — see project_layering_refactor memory.
 
 #include <keel/core.h>
+#include <keel/format.h>
 #include <keel/ref.h>
+#include <keel/string.h>
 #include <numkit/wavelet/shape/shape.hpp>
 
 #include <numkit/sys/plugin.hpp>   // CallContext, ctx.engine->resource()
@@ -17,8 +19,9 @@
 #include <numkit/value/error.hpp>
 
 #include <cctype>
-#include <stdexcept>
-#include <string>
+#include <cerrno>
+#include <climits>
+#include <cstdlib>
 #include <utility>
 
 namespace numkit::wavelet {
@@ -30,20 +33,23 @@ namespace detail {
 static int parseGaussOrder(const Value &arg, const char *prefix, const char *fn)
 {
     if (arg.isChar() || arg.isString()) {
-        std::string s(arg.toString().as_ref());
+        keel::String s = arg.toString();
         // Lowercase the prefix portion for comparison.
         for (auto &c : s) c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
-        const keel::usize plen = std::char_traits<char>::length(prefix);
-        if (s.size() <= plen || s.compare(0, plen, prefix) != 0)
-            throw Error(std::string(fn) + ": bad wname '" + s +
-                        "' (expected " + prefix + "N)",
+        const keel::StringRef pref(prefix);
+        if (s.size() <= pref.size() || !s.starts_with(pref))
+            throw Error(keel::format("{}: bad wname '{}' (expected {}N)", fn, s, prefix),
                          0, 0, fn, "", "numkit:wname");
-        try { return std::stoi(s.substr(plen)); }
-        catch (...) {
-            throw Error(std::string(fn) + ": bad wname '" + s +
-                        "' (cannot parse order N)",
+        const char *numStart = s.c_str() + pref.size();
+        char *numEnd = nullptr;
+        errno = 0;
+        const long v = std::strtol(numStart, &numEnd, 10);
+        if (numEnd == numStart || *numEnd != '\0' || errno == ERANGE ||
+            v < INT_MIN || v > INT_MAX) {
+            throw Error(keel::format("{}: bad wname '{}' (cannot parse order N)", fn, s),
                          0, 0, fn, "", "numkit:wname");
         }
+        return static_cast<int>(v);
     }
     return argcheck::expectedInteger(
         argcheck::expectedReal(arg, 1, "order", "gauswavf"), 1, "order", "gauswavf");

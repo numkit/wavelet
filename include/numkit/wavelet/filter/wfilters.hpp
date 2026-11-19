@@ -4,11 +4,11 @@
 
 #pragma once
 
+#include <keel/array.h>
 #include <keel/core.h>
 #include <keel/memory.h>
+#include <keel/ref.h>
 #include <numkit/value/value.hpp>
-#include <string>
-#include <vector>
 
 namespace numkit::wavelet {
 
@@ -29,10 +29,10 @@ namespace numkit::wavelet {
 /// @f$ \text{Hi\_R}[k] = (-1)^k\,\text{Lo\_D}[k] @f$ (QMF), and
 /// @f$ \text{Hi\_D}[k] = \text{Hi\_R}[N-1-k] @f$.
 struct FilterBank {
-    std::vector<keel::f64> Lo_D;
-    std::vector<keel::f64> Hi_D;
-    std::vector<keel::f64> Lo_R;
-    std::vector<keel::f64> Hi_R;
+    keel::Array<keel::f64> Lo_D;
+    keel::Array<keel::f64> Hi_D;
+    keel::Array<keel::f64> Lo_R;
+    keel::Array<keel::f64> Hi_R;
 };
 
 /// Return the four filter banks for a named orthogonal wavelet.
@@ -46,7 +46,7 @@ struct FilterBank {
 /// @throws      Error on unsupported name.
 ///
 /// @see wfilters
-FilterBank wavelet_filters(const std::string &name);
+FilterBank wavelet_filters(keel::StringRef name);
 
 /// Fill @p out with the four filters of a biorthogonal (`bior*`) or
 /// reverse-biorthogonal (`rbio*`) family. Unlike the orthogonal families
@@ -56,7 +56,7 @@ FilterBank wavelet_filters(const std::string &name);
 /// @param name  Candidate family name (e.g. `"bior2.2"`, `"rbio4.4"`).
 /// @param out   Filled with the four filter vectors on success.
 /// @return      `true` if @p name is a known bior/rbio family, else `false`.
-bool bior_filterbank(const std::string &name, FilterBank &out);
+bool bior_filterbank(keel::StringRef name, FilterBank &out);
 
 /// Result of @ref wfilters (`[…] = wfilters(wname[, kind])`).
 ///
@@ -97,7 +97,7 @@ struct WFiltersResult {
 /// @endcode
 ///
 /// @see wavelet_filters
-WFiltersResult wfilters(const std::string &name, const std::string &kind = "",
+WFiltersResult wfilters(keel::StringRef name, keel::StringRef kind = "",
                         keel::Allocator *mr = nullptr);
 
 

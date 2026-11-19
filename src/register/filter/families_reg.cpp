@@ -9,25 +9,25 @@
 // Phase 2b compute/register split — see project_layering_refactor memory.
 
 #include <keel/core.h>
+#include <keel/format.h>
 #include <keel/ref.h>
+#include <keel/string.h>
 #include <numkit/wavelet/filter/families.hpp>
 
 #include <numkit/sys/plugin.hpp>   // CallContext, ctx.engine->resource()
 #include <numkit/value/argcheck.hpp>
 #include <numkit/value/error.hpp>
 
-#include <string>
-
 namespace numkit::wavelet {
 
 namespace {
 
-std::string argName(const Value &v, const char *fn)
+keel::String argName(const Value &v, const char *fn)
 {
     if (!v.isChar() && !v.isString())
-        throw Error(std::string(fn) + ": wavelet name must be a character vector",
+        throw Error(keel::format("{}: wavelet name must be a character vector", fn),
                     0, 0, fn, "", "numkit:wavelet:type");
-    return std::string(v.toString().as_ref());
+    return v.toString();
 }
 
 } // anonymous

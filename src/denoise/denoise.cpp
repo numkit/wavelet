@@ -5,10 +5,14 @@
 // existing wavedec / waverec / detcoef plumbing — no extra DSP
 // machinery here, just thresholding and a robust σ estimate.
 
+#include <keel/array.h>
 #include <keel/core.h>
+#include <keel/format.h>
 #include <keel/memory.h>
 #include <keel/complex.h>
 #include <keel/math.h>
+#include <keel/ref.h>
+#include <keel/string.h>
 #include <numkit/wavelet/denoise/denoise.hpp>
 #include <numkit/wavelet/dwt/multilevel.hpp>
 #include <numkit/wavelet/dwt/dwt.hpp>     // ddencmp: 1-level dwt noise estimate
@@ -23,14 +27,12 @@
 #include <algorithm>
 #include <cctype>
 #include <cmath>
-#include <string>
-#include <vector>
 
 namespace numkit::wavelet {
 
 namespace {
 
-double median_abs(std::vector<double> v) {
+double median_abs(keel::Array<double> v) {
     if (v.empty()) return 0.0;
     for (auto &x : v) x = keel::abs(x);
     std::sort(v.begin(), v.end());
@@ -40,13 +42,13 @@ double median_abs(std::vector<double> v) {
                : 0.5 * (v[n / 2 - 1] + v[n / 2]);
 }
 
-std::vector<double> vecFromValue(const Value &v) {
-    std::vector<double> out(v.numel());
+keel::Array<double> vecFromValue(const Value &v, keel::Allocator *mr = nullptr) {
+    keel::Array<double> out(v.numel(), mr);
     for (keel::usize i = 0; i < v.numel(); ++i) out[i] = v.elemAsDouble(i);
     return out;
 }
 
-void wthresh_argcheck(const Value &X, const std::string &sorh, const Value &T)
+void wthresh_argcheck(const Value &X, keel::StringRef sorh, const Value &T)
 {
     internal::requireWaveClass(X, "wthresh", "X", 1,
                                internal::WvClasses::FloatOnly,
@@ -54,8 +56,7 @@ void wthresh_argcheck(const Value &X, const std::string &sorh, const Value &T)
     const bool hard = (sorh == "h" || sorh == "H");
     const bool soft = (sorh == "s" || sorh == "S");
     if (!hard && !soft)
-        throw Error("wthresh: SORH must be 's' (soft) or 'h' (hard) — got '"
-                        + sorh + "'",
+        throw Error(keel::format("wthresh: SORH must be 's' (soft) or 'h' (hard) — got '{}'", sorh),
                     0, 0, "wthresh", "", "numkit:wthresh:sorh");
     if (T.type() == ValueType::COMPLEX)
         throw Error("wthresh: input 3 (T) must be real.",
@@ -63,16 +64,15 @@ void wthresh_argcheck(const Value &X, const std::string &sorh, const Value &T)
     const bool elemT = T.numel() != 1;
     if (elemT && (T.dims().rows() != X.dims().rows()
                   || T.dims().cols() != X.dims().cols()))
-        throw Error("wthresh: input 3 (T) must be a scalar or the same "
-                        "size as X (got a " + internal::shapeOf(T) + " "
-                        + mtypeName(T.type()) + " array for a "
-                        + internal::shapeOf(X) + " X).",
+        throw Error(keel::format("wthresh: input 3 (T) must be a scalar or the same "
+                                 "size as X (got a {} {} array for a {} X).",
+                                 internal::shapeOf(T), mtypeName(T.type()), internal::shapeOf(X)),
                     0, 0, "wthresh", "", "numkit:wthresh:size");
 }
 
-std::string wentropy_argcheck(const std::string &type, double param)
+keel::String wentropy_argcheck(keel::StringRef type, double param)
 {
-    std::string t = type;
+    keel::String t(type);
     std::transform(t.begin(), t.end(), t.begin(),
                    [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
     if (t == "norm") {
@@ -81,22 +81,22 @@ std::string wentropy_argcheck(const std::string &type, double param)
                         0, 0, "wentropy", "", "numkit:wentropy:norm");
     } else if (t != "shannon" && t != "log energy" && t != "logenergy"
                && t != "threshold" && t != "sure") {
-        throw Error("wentropy: unknown type '" + type +
-                        "' (shannon / log energy / threshold / sure / norm)",
+        throw Error(keel::format("wentropy: unknown type '{}' (shannon / log energy / threshold / sure / norm)", type),
                     0, 0, "wentropy", "", "numkit:wentropy:type");
     }
     return t;
 }
 
-std::string ddencmp_argcheck(const std::string &opt, const std::string &type)
+keel::String ddencmp_argcheck(keel::StringRef opt, keel::StringRef type)
 {
-    auto lower = [](std::string s) {
+    auto lower = [](keel::StringRef sv) {
+        keel::String s(sv);
         std::transform(s.begin(), s.end(), s.begin(),
                        [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
         return s;
     };
-    const std::string o = lower(opt);
-    const std::string t = lower(type);
+    keel::String o = lower(opt);
+    const keel::String t = lower(type);
 
     if (t == "wp")
         throw Error("ddencmp: wavelet-packet ('wp') defaults are not yet "
@@ -113,7 +113,7 @@ std::string ddencmp_argcheck(const std::string &opt, const std::string &type)
 
 } // anonymous
 
-Value wthresh(const Value &X, const std::string &sorh, const Value &T,
+Value wthresh(const Value &X, keel::StringRef sorh, const Value &T,
               keel::Allocator *mr)
 {
     wthresh_argcheck(X, sorh, T);
@@ -193,7 +193,7 @@ Value wnoisest(const Value &C, const Value &L, const Value &S, keel::Allocator *
     return out;
 }
 
-Value wdenoise(const Value &x, int level, const std::string &wname, keel::Allocator *mr)
+Value wdenoise(const Value &x, int level, keel::StringRef wname, keel::Allocator *mr)
 {
     const keel::usize N = x.numel();
     if (N < 2) {
@@ -212,7 +212,7 @@ Value wdenoise(const Value &x, int level, const std::string &wname, keel::Alloca
         level = std::min(maxLog, 5);
         if (level < 1) level = 1;
     }
-    const std::string w = wname.empty() ? std::string("sym4") : wname;
+    const keel::StringRef w = wname.empty() ? keel::StringRef("sym4") : wname;
 
     // 1. Multi-level decomposition.
     auto [C, L] = wavedec(x, level, w, mr);
@@ -251,12 +251,12 @@ Value wdenoise(const Value &x, int level, const std::string &wname, keel::Alloca
     return waverec(C, L, w, mr);
 }
 
-Value wentropy(const Value &X, const std::string &type, double param,
+Value wentropy(const Value &X, keel::StringRef type, double param,
                keel::Allocator *mr)
 {
-    const std::string t = wentropy_argcheck(type, param);
+    const keel::String t = wentropy_argcheck(type, param);
 
-    auto x = vecFromValue(X);
+    auto x = vecFromValue(X, mr);
     const keel::usize n = x.size();
     double e = 0.0;
 
@@ -279,10 +279,10 @@ Value wentropy(const Value &X, const std::string &type, double param,
     return Value::scalar(e, mr);
 }
 
-DdencmpResult ddencmp(const std::string &opt, const std::string &type,
+DdencmpResult ddencmp(keel::StringRef opt, keel::StringRef type,
                       const Value &x, keel::Allocator *mr)
 {
-    const std::string o = ddencmp_argcheck(opt, type);
+    const keel::String o = ddencmp_argcheck(opt, type);
 
     // Noise level from the finest-detail coefficients of a 1-level db1 DWT.
     auto [cA, cD] = dwt(x, "db1", mr);

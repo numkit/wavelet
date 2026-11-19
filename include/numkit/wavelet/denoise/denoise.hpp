@@ -10,8 +10,8 @@
 
 #include <keel/core.h>
 #include <keel/memory.h>
+#include <keel/ref.h>
 #include <numkit/value/value.hpp>
-#include <string>
 
 namespace numkit::wavelet {
 
@@ -38,7 +38,7 @@ namespace numkit::wavelet {
 /// @throws      Error if `sorh` is not `"h"`/`"H"`/`"s"`/`"S"`.
 ///
 /// @see wnoisest, wdenoise
-Value wthresh(const Value &X, const std::string &sorh, const Value &T,
+Value wthresh(const Value &X, keel::StringRef sorh, const Value &T,
               keel::Allocator *mr = nullptr);
 
 /// Per-level noise σ estimate (`σ = wnoisest(C, L, S)`).
@@ -83,7 +83,7 @@ Value wnoisest(const Value &C, const Value &L, const Value &S,
 /// @endcode
 ///
 /// @see wthresh, wnoisest, wavedec
-Value wdenoise(const Value &x, int level, const std::string &wname,
+Value wdenoise(const Value &x, int level, keel::StringRef wname,
                keel::Allocator *mr = nullptr);
 
 /// Entropy of a coefficient vector (`E = wentropy(X, T[, P])`).
@@ -103,7 +103,7 @@ Value wdenoise(const Value &x, int level, const std::string &wname,
 /// @return       Scalar entropy.
 /// @throws       Error on an unknown type or `norm` exponent `< 1`.
 /// @see wthresh, wdenoise
-Value wentropy(const Value &X, const std::string &type, keel::f64 param = 0.0,
+Value wentropy(const Value &X, keel::StringRef type, keel::f64 param = 0.0,
                keel::Allocator *mr = nullptr);
 
 /// Default denoising / compression parameters (`[thr, sorh, keepapp] =
@@ -132,7 +132,7 @@ struct DdencmpResult {
 /// @return      `{thr, sorh, keepapp}` (see @ref DdencmpResult).
 /// @throws      Error on an unknown `opt`/`type` or `"wp"`.
 /// @see wentropy, wthresh, wdenoise
-DdencmpResult ddencmp(const std::string &opt, const std::string &type,
+DdencmpResult ddencmp(keel::StringRef opt, keel::StringRef type,
                       const Value &x, keel::Allocator *mr = nullptr);
 
 

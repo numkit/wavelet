@@ -10,23 +10,23 @@
 
 #include <keel/core.h>
 #include <keel/ref.h>
+#include <keel/string.h>
 #include <numkit/wavelet/dwt/dwt2.hpp>
 
 #include <numkit/sys/plugin.hpp>
 #include <numkit/value/argcheck.hpp>
 #include <numkit/value/error.hpp>
 
-#include <string>
 #include <utility>
 
 namespace numkit::wavelet {
 namespace detail {
 
-static std::string argString(const Value &v) {
+static keel::String argString(const Value &v) {
     if (!v.isChar() && !v.isString())
         throw Error("wavelet: expected string argument",
                     0, 0, "", "", "numkit:wavelet:type");
-    return std::string(v.toString().as_ref());
+    return v.toString();
 }
 
 void dwt2_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/, keel::MutArrayRef<Value> outs,

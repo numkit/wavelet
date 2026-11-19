@@ -14,17 +14,15 @@
 //
 // rbioNr.Nd is biorNr.Nd with the analysis/synthesis roles swapped.
 
+#include <keel/ref.h>
 #include <numkit/wavelet/filter/wfilters.hpp>
 #include <numkit/value/argcheck.hpp>
-
-#include <string>
-#include <vector>
 
 namespace numkit::wavelet {
 
 namespace {
 
-void bior_filterbank_argcheck(const std::string &name)
+void bior_filterbank_argcheck(keel::StringRef name)
 {
     (void)name;
 }
@@ -224,15 +222,15 @@ const BiorSpec kBior[] = {
 } // anonymous
 
 // Returns true and fills `out` if `name` is a known bior*/rbio* family.
-bool bior_filterbank(const std::string &name, FilterBank &out) {
+bool bior_filterbank(keel::StringRef name, FilterBank &out) {
     bior_filterbank_argcheck(name);
     if (name.empty()) return false;
     for (const auto &s : kBior) {
         if (name == s.name) {
-            out.Lo_D.assign(s.Lo_D, s.Lo_D + s.len);
-            out.Hi_D.assign(s.Hi_D, s.Hi_D + s.len);
-            out.Lo_R.assign(s.Lo_R, s.Lo_R + s.len);
-            out.Hi_R.assign(s.Hi_R, s.Hi_R + s.len);
+            out.Lo_D.assign(keel::ArrayRef<double>(s.Lo_D, s.len));
+            out.Hi_D.assign(keel::ArrayRef<double>(s.Hi_D, s.len));
+            out.Lo_R.assign(keel::ArrayRef<double>(s.Lo_R, s.len));
+            out.Hi_R.assign(keel::ArrayRef<double>(s.Hi_R, s.len));
             return true;
         }
     }

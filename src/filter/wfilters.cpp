@@ -13,7 +13,9 @@
 // Sign convention and numerical parity are checked against MATLAB
 // R2025b in the parity harness.
 
+#include <keel/format.h>
 #include <keel/memory.h>
+#include <keel/ref.h>
 #include <numkit/wavelet/filter/wfilters.hpp>
 
 // Compute-only TU: Value substrate + Error, no engine. The wfilters
@@ -26,8 +28,6 @@
 #include <algorithm>
 #include <cmath>
 #include <stdexcept>
-#include <string>
-#include <vector>
 
 namespace numkit::wavelet {
 
@@ -467,40 +467,40 @@ const Spec kFamilies[] = {
     {"coif5", LO_R_coif5, 30},
 };
 
-const Spec *findSpec(const std::string &name) {
+const Spec *findSpec(keel::StringRef name) {
     for (const auto &s : kFamilies)
         if (name == s.name) return &s;
     return nullptr;
 }
 
-Value vecToRow(const std::vector<double> &v, keel::Allocator *mr) {
+Value vecToRow(keel::ArrayRef<double> v, keel::Allocator *mr) {
     Value r = Value::matrix(1, v.size(), ValueType::DOUBLE, mr);
     if (!v.empty()) std::copy(v.begin(), v.end(), r.doubleDataMut());
     return r;
 }
 
-void wavelet_filters_argcheck(const std::string &name, const Spec *&s, FilterBank &bfb)
+void wavelet_filters_argcheck(keel::StringRef name, const Spec *&s, FilterBank &bfb)
 {
     s = findSpec(name);
     if (!s && !bior_filterbank(name, bfb)) {
-        throw Error("wfilters: unsupported wavelet name '" + name +
-                    "' (try haar, db1..db10, sym2..sym10, coif1..coif5, "
-                    "bior1.1..bior6.8, rbio1.1..rbio6.8)",
+        throw Error(keel::format("wfilters: unsupported wavelet name '{}' "
+                                 "(try haar, db1..db10, sym2..sym10, coif1..coif5, "
+                                 "bior1.1..bior6.8, rbio1.1..rbio6.8)", name),
                     0, 0, "wfilters", "", "numkit:wfilters:name");
     }
 }
 
-void wfilters_argcheck(const std::string &kind)
+void wfilters_argcheck(keel::StringRef kind)
 {
     if (!kind.empty() && kind != "all" && kind != "d" && kind != "r" && kind != "l" && kind != "h")
-        throw Error("wfilters: unknown kind '" + kind +
-                    "' (expected 'd', 'r', 'l' or 'h')",
+        throw Error(keel::format("wfilters: unknown kind '{}' "
+                                 "(expected 'd', 'r', 'l' or 'h')", kind),
                     0, 0, "wfilters", "", "numkit:wfilters:kind");
 }
 
 } // anonymous
 
-FilterBank wavelet_filters(const std::string &name) {
+FilterBank wavelet_filters(keel::StringRef name) {
     const Spec *s = nullptr;
     FilterBank bfb;
     wavelet_filters_argcheck(name, s, bfb);
@@ -522,7 +522,7 @@ FilterBank wavelet_filters(const std::string &name) {
     //   Hi_R[k] = (-1)^k · Lo_R[N-1-k] = (-1)^k · Lo_D[k]
     //   Hi_D[k] = wrev(Hi_R)[k] = Hi_R[N-1-k]
     FilterBank fb;
-    fb.Lo_D.assign(s->Lo_R, s->Lo_R + N);   // stored values = MATLAB Lo_D
+    fb.Lo_D.assign(keel::ArrayRef<double>(s->Lo_R, static_cast<keel::usize>(N)));   // stored values = MATLAB Lo_D
     fb.Lo_R.resize(N);
     fb.Hi_R.resize(N);
     fb.Hi_D.resize(N);
@@ -541,7 +541,7 @@ FilterBank wavelet_filters(const std::string &name) {
     return fb;
 }
 
-WFiltersResult wfilters(const std::string &name, const std::string &kind,
+WFiltersResult wfilters(keel::StringRef name, keel::StringRef kind,
                         keel::Allocator *mr)
 {
     wfilters_argcheck(kind);

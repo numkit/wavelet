@@ -4,6 +4,7 @@
 
 #include <keel/core.h>
 #include <keel/memory.h>
+#include <keel/ref.h>
 #include <numkit/wavelet/dwt/dyad.hpp>
 #include <numkit/wavelet/filter/wfilters.hpp>
 
@@ -14,7 +15,6 @@
 
 #include <cctype>
 #include <cmath>
-#include <string>
 
 namespace numkit::wavelet {
 
@@ -29,7 +29,7 @@ char dyad_argcheck(const Value & /*x*/, int /*odd*/, char type)
     return c;
 }
 
-void wmaxlev_argcheck(const Value &N, const std::string & /*wname*/)
+void wmaxlev_argcheck(const Value &N, keel::StringRef /*wname*/)
 {
     if (N.numel() == 0)
         throw Error("wmaxlev: N must not be empty",
@@ -194,7 +194,7 @@ Value dyadup(const Value &x, int odd, char type,
     return y;
 }
 
-Value wmaxlev(const Value &N, const std::string &wname,
+Value wmaxlev(const Value &N, keel::StringRef wname,
               keel::Allocator *mr)
 {
     wmaxlev_argcheck(N, wname);

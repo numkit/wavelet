@@ -7,7 +7,7 @@
 #pragma once
 
 #include <keel/memory.h>
-#include <string>
+#include <keel/ref.h>
 #include <numkit/value/value.hpp>
 
 namespace numkit::wavelet {
@@ -61,7 +61,7 @@ Value dyadup(const Value &x, int odd = 1, char type = 'c',
 /// @param mr     Memory resource (nullptr → process default).
 /// @return       Scalar maximum decomposition level (`>= 0`).
 /// @throws Error if `N` is empty or the filter length is `< 2`.
-Value wmaxlev(const Value &N, const std::string &wname,
+Value wmaxlev(const Value &N, keel::StringRef wname,
               keel::Allocator *mr = nullptr);
 
 

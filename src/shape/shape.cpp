@@ -2,10 +2,14 @@
 //
 // Continuous wavelet shape primitives: mexihat, morlet, meyeraux.
 
+#include <keel/array.h>
 #include <keel/core.h>
+#include <keel/format.h>
 #include <keel/memory.h>
 #include <keel/complex.h>
 #include <keel/math.h>
+#include <keel/ref.h>
+#include <keel/string.h>
 #include <numkit/wavelet/shape/shape.hpp>
 #include <numkit/wavelet/filter/wfilters.hpp>
 #include <numkit/wavelet/internal/type_gates.hpp>
@@ -23,8 +27,6 @@
 #include <cctype>
 #include <cmath>
 #include <cstdlib>
-#include <string>
-#include <vector>
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -231,18 +233,18 @@ Value meyeraux(const Value &x, keel::Allocator *mr)
 
 namespace {
 
-void centfrq_argcheck(const std::string &wname, int iter)
+void centfrq_argcheck(keel::StringRef wname, int iter)
 {
     if (wname.empty())
         throw Error("centfrq: wavelet name must be a non-empty string",
                     0, 0, "centfrq", "", "numkit:centfrq:invalidWavelet");
     if (iter < 1 || iter > 20)
-        throw Error("centfrq: ITER must be a positive integer in 1..20 (got " +
-                    std::to_string(iter) + ")",
+        throw Error(keel::format("centfrq: ITER must be a positive integer in 1..20 (got {})",
+                                 iter),
                     0, 0, "centfrq", "", "numkit:centfrq:invalidIter");
 }
 
-void scal2frq_argcheck(const Value &a, const std::string &wname, double delta)
+void scal2frq_argcheck(const Value &a, keel::StringRef wname, double delta)
 {
     internal::requireNonempty(a, "scal2frq", "A", 1);
     if (a.type() != ValueType::DOUBLE && a.type() != ValueType::SINGLE)
@@ -267,38 +269,38 @@ void scal2frq_argcheck(const Value &a, const std::string &wname, double delta)
 }
 
 
-std::vector<double> conv_full_vec(const std::vector<double> &a,
-                                  const std::vector<double> &b)
+keel::Array<double> conv_full_vec(keel::ArrayRef<double> a,
+                                  keel::ArrayRef<double> b)
 {
     if (a.empty() || b.empty()) return {};
-    std::vector<double> c(a.size() + b.size() - 1, 0.0);
+    keel::Array<double> c(a.size() + b.size() - 1, 0.0);
     for (keel::usize i = 0; i < a.size(); ++i)
         for (keel::usize j = 0; j < b.size(); ++j)
             c[i + j] += a[i] * b[j];
     return c;
 }
 
-bool parse_two_floats(const std::string &s, double &v1, double &v2)
+bool parse_two_floats(keel::StringRef s, double &v1, double &v2)
 {
     const keel::usize dash = s.find('-');
-    if (dash == std::string::npos || dash == 0 || dash + 1 >= s.size())
+    if (dash == keel::kInvalidIndex || dash == 0 || dash + 1 >= s.size())
         return false;
     char *e1 = nullptr;
     char *e2 = nullptr;
-    const std::string p1 = s.substr(0, dash);
-    const std::string p2 = s.substr(dash + 1);
+    const keel::String p1(s.substr(0, dash));
+    const keel::String p2(s.substr(dash + 1));
     v1 = std::strtod(p1.c_str(), &e1);
     v2 = std::strtod(p2.c_str(), &e2);
     return (e1 && *e1 == '\0' && e2 && *e2 == '\0' && v1 > 0.0 && v2 > 0.0);
 }
 
-bool parse_int_two_floats(const std::string &s, int &m, double &v1, double &v2)
+bool parse_int_two_floats(keel::StringRef s, int &m, double &v1, double &v2)
 {
     const keel::usize d1 = s.find('-');
-    if (d1 == std::string::npos || d1 == 0 || d1 + 1 >= s.size())
+    if (d1 == keel::kInvalidIndex || d1 == 0 || d1 + 1 >= s.size())
         return false;
     char *em = nullptr;
-    const std::string pm = s.substr(0, d1);
+    const keel::String pm(s.substr(0, d1));
     const long mv = std::strtol(pm.c_str(), &em, 10);
     if (!em || *em != '\0' || mv < 1)
         return false;
@@ -306,11 +308,11 @@ bool parse_int_two_floats(const std::string &s, int &m, double &v1, double &v2)
     return parse_two_floats(s.substr(d1 + 1), v1, v2);
 }
 
-std::tuple<Value, Value> build_wavefun_psi(const std::string &raw_name,
+std::tuple<Value, Value> build_wavefun_psi(keel::StringRef raw_name,
                                            int iter,
                                            keel::Allocator *mr)
 {
-    std::string wname = raw_name;
+    keel::String wname(raw_name);
     for (char &c : wname)
         c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
 
@@ -321,82 +323,86 @@ std::tuple<Value, Value> build_wavefun_psi(const std::string &raw_name,
     if (wname == "mexh")
         return mexihat(-8.0, 8.0, gridN, mr);
 
-    if (wname.rfind("gaus", 0) == 0) {
+    if (wname.starts_with("gaus")) {
         int p = 1;
         if (wname.size() > 4) {
             char *ep = nullptr;
             const long pv = std::strtol(wname.c_str() + 4, &ep, 10);
             if (!ep || *ep != '\0' || pv < 1 || pv > 8)
-                throw Error("centfrq: invalid Gaussian wavelet order in '" + raw_name + "'",
+                throw Error(keel::format("centfrq: invalid Gaussian wavelet order in '{}'", raw_name),
                             0, 0, "centfrq", "", "numkit:centfrq:invalidWavelet");
             p = static_cast<int>(pv);
         }
         return gauswavf(-5.0, 5.0, gridN, p, mr);
     }
 
-    if (wname.rfind("cgau", 0) == 0) {
+    if (wname.starts_with("cgau")) {
         int p = 1;
         if (wname.size() > 4) {
             char *ep = nullptr;
             const long pv = std::strtol(wname.c_str() + 4, &ep, 10);
             if (!ep || *ep != '\0' || pv < 1 || pv > 8)
-                throw Error("centfrq: invalid complex Gaussian wavelet order in '" + raw_name + "'",
+                throw Error(keel::format("centfrq: invalid complex Gaussian wavelet order in '{}'", raw_name),
                             0, 0, "centfrq", "", "numkit:centfrq:invalidWavelet");
             p = static_cast<int>(pv);
         }
         return cgauwavf(-5.0, 5.0, gridN, p, mr);
     }
 
-    if (wname.rfind("shan", 0) == 0) {
+    if (wname.starts_with("shan")) {
         double fb = 1.0, fc = 1.5;
         if (wname.size() > 4 && !parse_two_floats(wname.substr(4), fb, fc))
-            throw Error("centfrq: invalid Shannon wavelet specification '" + raw_name + "'",
+            throw Error(keel::format("centfrq: invalid Shannon wavelet specification '{}'", raw_name),
                         0, 0, "centfrq", "", "numkit:centfrq:invalidWavelet");
         return shanwavf(-20.0, 20.0, gridN, fb, fc, mr);
     }
 
-    if (wname.rfind("cmor", 0) == 0) {
+    if (wname.starts_with("cmor")) {
         double fb = 1.0, fc = 1.5;
         if (wname.size() > 4 && !parse_two_floats(wname.substr(4), fb, fc))
-            throw Error("centfrq: invalid complex Morlet wavelet specification '" + raw_name + "'",
+            throw Error(keel::format("centfrq: invalid complex Morlet wavelet specification '{}'", raw_name),
                         0, 0, "centfrq", "", "numkit:centfrq:invalidWavelet");
         return cmorwavf(-8.0, 8.0, gridN, fb, fc, mr);
     }
 
-    if (wname.rfind("fbsp", 0) == 0) {
+    if (wname.starts_with("fbsp")) {
         int m = 1;
         double fb = 1.0, fc = 1.5;
         if (wname.size() > 4 && !parse_int_two_floats(wname.substr(4), m, fb, fc))
-            throw Error("centfrq: invalid B-spline wavelet specification '" + raw_name + "'",
+            throw Error(keel::format("centfrq: invalid B-spline wavelet specification '{}'", raw_name),
                         0, 0, "centfrq", "", "numkit:centfrq:invalidWavelet");
         return fbspwavf(-20.0, 20.0, gridN, m, fb, fc, mr);
     }
 
     // Orthogonal / biorthogonal filter-bank wavelets via two-scale cascade.
     FilterBank fb = wavelet_filters(wname);
-    const bool is_bior = (wname.rfind("bior", 0) == 0 || wname.rfind("rbio", 0) == 0);
-    std::vector<double> Lo, Hi;
+    const bool is_bior = (wname.starts_with("bior") || wname.starts_with("rbio"));
+    keel::Array<double> Lo, Hi;
     if (is_bior) {
         // Decomposition wavelet psi1 uses time-reversed Lo_D and Hi_D.
-        Lo.assign(fb.Lo_D.rbegin(), fb.Lo_D.rend());
-        Hi.assign(fb.Hi_D.rbegin(), fb.Hi_D.rend());
+        Lo.resize(fb.Lo_D.size());
+        for (keel::usize i = 0; i < fb.Lo_D.size(); ++i)
+            Lo[i] = fb.Lo_D[fb.Lo_D.size() - 1 - i];
+        Hi.resize(fb.Hi_D.size());
+        for (keel::usize i = 0; i < fb.Hi_D.size(); ++i)
+            Hi[i] = fb.Hi_D[fb.Hi_D.size() - 1 - i];
     } else {
-        Lo = fb.Lo_R;
-        Hi = fb.Hi_R;
+        Lo = std::move(fb.Lo_R);
+        Hi = std::move(fb.Hi_R);
     }
 
     const bool negate_psi =
-        (wname.rfind("sym", 0) == 0 || wname.rfind("coif", 0) == 0 ||
-         wname.rfind("bior2.", 0) == 0 || wname.rfind("bior3.", 0) == 0 ||
-         wname == "bior4.4" || wname.rfind("rbio2.", 0) == 0 ||
-         wname.rfind("rbio3.", 0) == 0 || wname == "rbio4.4");
+        (wname.starts_with("sym") || wname.starts_with("coif") ||
+         wname.starts_with("bior2.") || wname.starts_with("bior3.") ||
+         wname == "bior4.4" || wname.starts_with("rbio2.") ||
+         wname.starts_with("rbio3.") || wname == "rbio4.4");
     if (negate_psi) {
         for (double &v : Hi) v = -v;
     }
 
-    std::vector<double> y = Hi;
+    keel::Array<double> y = std::move(Hi);
     for (int step = 1; step < iter; ++step) {
-        std::vector<double> up(2 * y.size() - 1, 0.0);
+        keel::Array<double> up(2 * y.size() - 1, 0.0);
         for (keel::usize k = 0; k < y.size(); ++k)
             up[2 * k] = y[k];
         y = conv_full_vec(up, Lo);
@@ -430,7 +436,7 @@ std::tuple<Value, Value> build_wavefun_psi(const std::string &raw_name,
 
 } // anonymous
 
-CentfrqResult centfrqGrid(const std::string &wname, int iter,
+CentfrqResult centfrqGrid(keel::StringRef wname, int iter,
                           bool withRecfreq,
                           keel::Allocator *mr)
 {
@@ -495,12 +501,12 @@ CentfrqResult centfrqGrid(const std::string &wname, int iter,
     return {freq, std::move(xval), std::move(recfreq)};
 }
 
-double centfrq(const std::string &wname, int iter)
+double centfrq(keel::StringRef wname, int iter)
 {
     return centfrqGrid(wname, iter, false, nullptr).freq;
 }
 
-Value scal2frq(const Value &a, const std::string &wname,
+Value scal2frq(const Value &a, keel::StringRef wname,
                double delta, keel::Allocator *mr)
 {
     scal2frq_argcheck(a, wname, delta);
@@ -514,7 +520,7 @@ Value scal2frq(const Value &a, const std::string &wname,
 
 namespace {
 
-void cwt_argcheck(const Value &x, const std::string &wname, double fs,
+void cwt_argcheck(const Value &x, keel::StringRef wname, double fs,
                   int voicesPerOctave, double timeBandwidth, double gamma,
                   const Value &freqLimits)
 {
@@ -529,11 +535,11 @@ void cwt_argcheck(const Value &x, const std::string &wname, double fs,
             throw Error("cwt: X must be finite",
                         0, 0, "cwt", "", "numkit:cwt:expectedFinite");
     }
-    std::string wl = wname;
+    keel::String wl(wname);
     for (char &c : wl)
         c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
     if (wl != "morse" && wl != "amor" && wl != "bump")
-        throw Error("cwt: WAVELET must be 'morse', 'amor', or 'bump' (got '" + wname + "')",
+        throw Error(keel::format("cwt: WAVELET must be 'morse', 'amor', or 'bump' (got '{}')", wname),
                     0, 0, "cwt", "", "numkit:cwt:invalidWavelet");
     if (!(fs > 0.0) || !std::isfinite(fs))
         throw Error("cwt: FS must be a positive finite scalar",
@@ -564,7 +570,7 @@ void cwt_argcheck(const Value &x, const std::string &wname, double fs,
 } // anonymous
 
 CwtResult cwt(const Value &x,
-              const std::string &wname,
+              keel::StringRef wname,
               double fs,
               int voicesPerOctave,
               double timeBandwidth,
@@ -575,7 +581,7 @@ CwtResult cwt(const Value &x,
 {
     cwt_argcheck(x, wname, fs, voicesPerOctave, timeBandwidth, gamma, freqLimits);
 
-    std::string wl = wname;
+    keel::String wl(wname);
     for (char &c : wl)
         c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
 
@@ -642,8 +648,8 @@ CwtResult cwt(const Value &x,
     const double nOct = std::max(0.0, std::log2(smax / s0));
     const keel::usize nScales = 1 + static_cast<keel::usize>(std::floor(nv * nOct + 1e-12));
 
-    std::vector<double> scales(nScales);
-    std::vector<double> freqs(nScales);
+    keel::Array<double> scales(nScales);
+    keel::Array<double> freqs(nScales);
     for (keel::usize j = 0; j < nScales; ++j) {
         scales[j] = s0 * std::pow(2.0, static_cast<double>(j) / nv);
         freqs[j] = (wpsi * fs) / (2.0 * M_PI * scales[j]);
@@ -669,7 +675,7 @@ CwtResult cwt(const Value &x,
     };
 
     const keel::usize kMax = Npad / 2;
-    std::vector<double> omega(kMax + 1);
+    keel::Array<double> omega(kMax + 1);
     const double dOmega = (2.0 * M_PI) / static_cast<double>(Npad);
     for (keel::usize k = 0; k <= kMax; ++k)
         omega[k] = static_cast<double>(k) * dOmega;

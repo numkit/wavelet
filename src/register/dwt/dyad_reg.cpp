@@ -17,7 +17,6 @@
 #include <numkit/value/error.hpp>
 
 #include <cctype>
-#include <string>
 
 namespace numkit::wavelet {
 
@@ -96,7 +95,8 @@ void wmaxlev_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
     if (!args[1].isChar() && !args[1].isString())
         throw Error("wmaxlev: wname must be a character vector",
                     0, 0, "wmaxlev", "", "numkit:wmaxlev:type");
-    outs[0] = wmaxlev(args[0], std::string(args[1].toString().as_ref()), ctx.engine->allocator());
+    const keel::String wname = args[1].toString();
+    outs[0] = wmaxlev(args[0], wname, ctx.engine->allocator());
 }
 
 } // namespace detail

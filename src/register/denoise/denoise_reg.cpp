@@ -8,22 +8,21 @@
 
 #include <keel/core.h>
 #include <keel/ref.h>
+#include <keel/string.h>
 #include <numkit/wavelet/denoise/denoise.hpp>
 
 #include <numkit/sys/plugin.hpp>   // CallContext, ctx.engine->resource()
 #include <numkit/value/argcheck.hpp>
 #include <numkit/value/error.hpp>
 
-#include <string>
-
 namespace numkit::wavelet {
 namespace detail {
 
-static std::string argString(const Value &v) {
+static keel::String argString(const Value &v) {
     if (!v.isChar() && !v.isString())
         throw Error("wavelet: expected string argument",
                     0, 0, "", "", "numkit:wavelet:type");
-    return std::string(v.toString().as_ref());
+    return v.toString();
 }
 
 void wthresh_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/, keel::MutArrayRef<Value> outs,
@@ -49,7 +48,7 @@ void wdenoise_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/, keel::Mut
     if (args.size() >= 2 && !args[1].isEmpty())
         level = argcheck::expectedPositiveInteger(
         argcheck::expectedReal(args[1], 2, "level", "wdenoise"), 2, "level", "wdenoise");
-    std::string wname;
+    keel::String wname;
     if (args.size() >= 3 && !args[2].isEmpty())
         wname = argString(args[2]);
     outs[0] = wdenoise(args[0], level, wname, ctx.engine->allocator());

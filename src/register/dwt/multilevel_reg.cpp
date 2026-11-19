@@ -8,8 +8,11 @@
 //
 // Phase 2b compute/register split — see project_layering_refactor memory.
 
+#include <keel/array.h>
 #include <keel/core.h>
+#include <keel/format.h>
 #include <keel/ref.h>
+#include <keel/string.h>
 #include <numkit/wavelet/dwt/multilevel.hpp>
 
 #include <numkit/sys/plugin.hpp>   // CallContext, ctx.engine->resource()
@@ -18,18 +21,16 @@
 
 #include <algorithm>
 #include <cctype>
-#include <string>
 #include <utility>
-#include <vector>
 
 namespace numkit::wavelet {
 namespace detail {
 
-static std::string argString(const Value &v) {
+static keel::String argString(const Value &v) {
     if (!v.isChar() && !v.isString())
         throw Error("wavelet: expected string argument",
                     0, 0, "", "", "numkit:wavelet:type");
-    return std::string(v.toString().as_ref());
+    return v.toString();
 }
 
 void wavedec_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/, keel::MutArrayRef<Value> outs,
@@ -60,19 +61,21 @@ void appcoef_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/, keel::MutA
 
     // Parse trailing 'mode' / Mode= N-V: only 'sym' supported.
     auto lower = [](keel::StringRef sv) {
-        std::string s(sv.data(), sv.size());
+        keel::String s(sv);
         for (auto &c : s) c = (char)std::tolower((unsigned char)c);
         return s;
     };
     auto check_mode_at = [&](keel::usize start) {
         for (keel::usize i = start; i + 1 < args.size(); i += 2) {
             if (!(args[i].isChar() || args[i].isString())) break;
-            const std::string key = lower(args[i].toString());
+            const keel::String keyRaw = args[i].toString();
+            const keel::String key = lower(keyRaw);
             if (key == "mode") {
-                const std::string m = lower(args[i + 1].toString());
+                const keel::String mRaw = args[i + 1].toString();
+                const keel::String m = lower(mRaw);
                 if (m != "sym" && m != "symh")
-                    throw Error("appcoef: only 'mode'='sym' is implemented "
-                                "(got '" + m + "')",
+                    throw Error(keel::format("appcoef: only 'mode'='sym' is implemented "
+                                             "(got '{}')", m),
                                 0, 0, "appcoef", "", "numkit:appcoef:mode_nyi");
             }
         }
@@ -81,7 +84,7 @@ void appcoef_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/, keel::MutA
     int level = -1;
     auto readVec = [](const Value &v) {
         const keel::usize n = v.numel();
-        std::vector<double> out(n);
+        keel::Array<double> out(n);
         for (keel::usize i = 0; i < n; ++i) out[i] = v.elemAsDouble(i);
         return out;
     };
@@ -96,7 +99,8 @@ void appcoef_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/, keel::MutA
             ++i;
         }
         check_mode_at(i);
-        outs[0] = appcoef(args[0], args[1], std::string(args[2].toString().as_ref()), level, mr);
+        const keel::String wname = args[2].toString();
+        outs[0] = appcoef(args[0], args[1], wname, level, mr);
     } else {
         // (C, L, Lo_R, Hi_R[, level][, 'mode', extmode])
         if (args.size() < 4 || (args[3].isChar() || args[3].isString()))
@@ -140,7 +144,7 @@ void detcoef_reg(keel::ArrayRef<Value> args, keel::usize nargout, keel::MutArray
     const bool hasCellsFlag = (args.size() >= 4)
         && (args[3].isChar() || args[3].isString())
         && [&] {
-            std::string s(args[3].toString().as_ref());
+            keel::String s = args[3].toString();
             for (auto &c : s) c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
             return s == "cells";
         }();
@@ -161,10 +165,11 @@ void detcoef_reg(keel::ArrayRef<Value> args, keel::usize nargout, keel::MutArray
 
     // detcoef(C, L, 'cells'): cell array of ALL levels 1..nMax.
     if (levArg.isChar() || levArg.isString()) {
-        std::string s(levArg.toString().as_ref());
+        const keel::String orig = levArg.toString();
+        keel::String s = orig.clone();
         for (auto &c : s) c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
         if (s != "cells")
-            throw Error("detcoef: unknown option '" + std::string(levArg.toString().as_ref()) + "'",
+            throw Error(keel::format("detcoef: unknown option '{}'", orig),
                         0, 0, "detcoef", "", "numkit:detcoef:opt");
         Value cellOut = Value::cell(1, static_cast<keel::usize>(std::max<long long>(0, maxLev)));
         for (int lev = 1; lev <= maxLev; ++lev)
@@ -211,8 +216,8 @@ void wenergy_reg(keel::ArrayRef<Value> args, keel::usize, keel::MutArrayRef<Valu
 void upcoef_reg(keel::ArrayRef<Value> args, keel::usize, keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 3, 5, "upcoef");
-    const std::string type(args[0].toString().as_ref());
-    const std::string wname(args[2].toString().as_ref());
+    const keel::String type = args[0].toString();
+    const keel::String wname = args[2].toString();
     // N = 0 is the documented "derive the level count from X" form
     // (upcoef with zero levels is the identity — see UpcoefTest).
     const int n = (args.size() >= 4)
@@ -231,8 +236,8 @@ void wpdec_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/, keel::MutArr
     argcheck::checkNargin(args.size(), 3, 5, "wpdec");
     const int n = argcheck::expectedPositiveInteger(
         argcheck::expectedReal(args[1], 2, "N", "wpdec"), 2, "N", "wpdec");
-    const std::string wname = argString(args[2]);
-    const std::string entName = (args.size() >= 4) ? argString(args[3]) : "shannon";
+    const keel::String wname = argString(args[2]);
+    const keel::String entName = (args.size() >= 4) ? argString(args[3]) : keel::String("shannon");
     const double entPar = (args.size() >= 5 && !args[4].isEmpty())
                               ? argcheck::expectedReal(args[4], 5, "P", "wpdec")
                               : 0.0;

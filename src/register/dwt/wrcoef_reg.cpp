@@ -7,8 +7,10 @@
 //
 // Phase 2b compute/register split — see project_layering_refactor memory.
 
+#include <keel/array.h>
 #include <keel/core.h>
 #include <keel/ref.h>
+#include <keel/string.h>
 #include <numkit/wavelet/dwt/multilevel.hpp>
 
 #include <numkit/sys/plugin.hpp>   // CallContext, ctx.engine->resource()
@@ -17,8 +19,6 @@
 
 #include <cctype>
 #include <cmath>
-#include <string>
-#include <vector>
 
 namespace numkit::wavelet {
 namespace detail {
@@ -31,7 +31,7 @@ void wrcoef_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
     if (!args[0].isChar() && !args[0].isString())
         throw Error("wrcoef: type must be a character vector ('a' or 'd')",
                     0, 0, "wrcoef", "", "numkit:wrcoef:type");
-    const std::string type(args[0].toString().as_ref());
+    const keel::String type = args[0].toString();
 
     auto parse_level = [](const Value &v) -> int {
         if (v.isEmpty()) return -1;
@@ -44,7 +44,7 @@ void wrcoef_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
 
     if (args[3].isChar() || args[3].isString()) {
         argcheck::checkNargin(args.size(), 4, 5, "wrcoef");
-        const std::string wname(args[3].toString().as_ref());
+        const keel::String wname = args[3].toString();
         const int n = (args.size() >= 5) ? parse_level(args[4]) : -1;
         outs[0] = wrcoef(type, args[1], args[2], wname, n,
                          ctx.engine->allocator());
@@ -56,7 +56,7 @@ void wrcoef_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
                         0, 0, "wrcoef", "", "numkit:wrcoef:filt");
         }
         auto read_vec = [](const Value &v) {
-            std::vector<double> out(v.numel());
+            keel::Array<double> out(v.numel());
             for (keel::usize i = 0; i < v.numel(); ++i) out[i] = v.elemAsDouble(i);
             return out;
         };

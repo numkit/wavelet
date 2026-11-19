@@ -26,8 +26,12 @@
 //
 // Output y is a row vector of length |x|.
 
+#include <keel/array.h>
 #include <keel/core.h>
+#include <keel/format.h>
 #include <keel/memory.h>
+#include <keel/ref.h>
+#include <keel/string.h>
 #include <numkit/wavelet/dwt/multilevel.hpp>
 #include <numkit/wavelet/dwt/dwt.hpp>
 #include <numkit/wavelet/filter/wfilters.hpp>
@@ -39,21 +43,20 @@
 
 #include <algorithm>
 #include <cctype>
-#include <string>
-#include <vector>
+#include <utility>
 
 namespace numkit::wavelet {
 
 namespace {
 
-std::vector<double> vec_from_value(const Value &v)
+keel::Array<double> vec_from_value(const Value &v)
 {
-    std::vector<double> out(v.numel());
+    keel::Array<double> out(v.numel());
     for (keel::usize i = 0; i < v.numel(); ++i) out[i] = v.elemAsDouble(i);
     return out;
 }
 
-Value row_from_vec(const std::vector<double> &v,
+Value row_from_vec(keel::ArrayRef<double> v,
                    keel::Allocator *mr)
 {
     Value r = Value::matrix(1, v.size(), ValueType::DOUBLE, mr);
@@ -61,17 +64,18 @@ Value row_from_vec(const std::vector<double> &v,
     return r;
 }
 
-std::string lower_type(std::string s)
+keel::String lower_type(keel::StringRef sv)
 {
+    keel::String s(sv);
     for (auto &ch : s)
         ch = static_cast<char>(std::tolower(static_cast<unsigned char>(ch)));
     return s;
 }
 
-std::string wrcoef_argcheck(const std::string &type, const Value &c,
-                            const Value &l, int n)
+keel::String wrcoef_argcheck(keel::StringRef type, const Value &c,
+                             const Value &l, int n)
 {
-    const std::string tl = lower_type(type);
+    keel::String tl = lower_type(type);
     if (tl != "a" && tl != "d")
         throw Error("wrcoef: type must be 'a' or 'd'",
                     0, 0, "wrcoef", "", "numkit:wrcoef:type");
@@ -88,13 +92,11 @@ std::string wrcoef_argcheck(const std::string &type, const Value &c,
 
     if (tl == "a") {
         if (effN < 0 || effN > N)
-            throw Error("wrcoef: for type='a', level must satisfy 0 <= n <= "
-                        + std::to_string(N),
+            throw Error(keel::format("wrcoef: for type='a', level must satisfy 0 <= n <= {}", N),
                         0, 0, "wrcoef", "", "numkit:wrcoef:level");
     } else { // 'd'
         if (effN < 1 || effN > N)
-            throw Error("wrcoef: for type='d', level must satisfy 1 <= n <= "
-                        + std::to_string(N),
+            throw Error(keel::format("wrcoef: for type='d', level must satisfy 1 <= n <= {}", N),
                         0, 0, "wrcoef", "", "numkit:wrcoef:level");
     }
 
@@ -107,23 +109,23 @@ std::string wrcoef_argcheck(const std::string &type, const Value &c,
     return tl;
 }
 
-std::string wrcoef_argcheck(const std::string &type, const Value &c,
-                            const Value &l,
-                            const std::vector<double> &Lo_R,
-                            const std::vector<double> &Hi_R,
-                            int n)
+keel::String wrcoef_argcheck(keel::StringRef type, const Value &c,
+                             const Value &l,
+                             keel::ArrayRef<keel::f64> Lo_R,
+                             keel::ArrayRef<keel::f64> Hi_R,
+                             int n)
 {
-    std::string tl = wrcoef_argcheck(type, c, l, n);
+    keel::String tl = wrcoef_argcheck(type, c, l, n);
     if (Lo_R.size() < 2 || Hi_R.size() != Lo_R.size())
         throw Error("wrcoef: filter length < 2 or Lo_R/Hi_R length mismatch",
                     0, 0, "wrcoef", "", "numkit:wrcoef:filt");
     return tl;
 }
 
-Value wrcoef_reconstruct_impl(const std::string &tl, const Value &c,
+Value wrcoef_reconstruct_impl(keel::StringRef tl, const Value &c,
                               const Value &l,
-                              const std::vector<double> &Lo_R,
-                              const std::vector<double> &Hi_R,
+                              keel::ArrayRef<keel::f64> Lo_R,
+                              keel::ArrayRef<keel::f64> Hi_R,
                               int n,
                               keel::Allocator *mr)
 {
@@ -140,7 +142,7 @@ Value wrcoef_reconstruct_impl(const std::string &tl, const Value &c,
     // Detail at level k (1-based, k=1 finest, k=N coarsest)
     // lives in c at L-index (1 + N - k). Compute the [start, end)
     // ranges in c for each detail.
-    std::vector<std::pair<keel::usize, keel::usize>> dRange(N + 1);   // index 1..N
+    keel::Array<std::pair<keel::usize, keel::usize>> dRange(N + 1);   // index 1..N
     {
         keel::usize off = sliceLen(0);
         for (int idxL = 1; idxL <= N; ++idxL) {
@@ -170,12 +172,14 @@ Value wrcoef_reconstruct_impl(const std::string &tl, const Value &c,
 
     keel::usize off = 0;
     const keel::usize aLen = sliceLen(0);
-    std::vector<double> running(cv.begin() + off, cv.begin() + off + aLen);
+    keel::Array<double> running;
+    running.assign(keel::ArrayRef<double>(cv.data() + off, aLen));
     off += aLen;
 
     for (int k = 0; k < N; ++k) {
         const keel::usize dLen = sliceLen(1 + k);
-        std::vector<double> detail(cv.begin() + off, cv.begin() + off + dLen);
+        keel::Array<double> detail;
+        detail.assign(keel::ArrayRef<double>(cv.data() + off, dLen));
         off += dLen;
         const keel::usize recLen = sliceLen(2 + k);
         Value cA = row_from_vec(running, mr);
@@ -189,22 +193,22 @@ Value wrcoef_reconstruct_impl(const std::string &tl, const Value &c,
 
 } // anonymous
 
-Value wrcoef(const std::string &type, const Value &c, const Value &l,
-             const std::string &wname, int n,
+Value wrcoef(keel::StringRef type, const Value &c, const Value &l,
+             keel::StringRef wname, int n,
              keel::Allocator *mr)
 {
-    const std::string tl = wrcoef_argcheck(type, c, l, n);
+    const keel::String tl = wrcoef_argcheck(type, c, l, n);
     auto fb = wavelet_filters(wname);
     return wrcoef_reconstruct_impl(tl, c, l, fb.Lo_R, fb.Hi_R, n, mr);
 }
 
-Value wrcoef(const std::string &type, const Value &c, const Value &l,
-             const std::vector<double> &Lo_R,
-             const std::vector<double> &Hi_R,
+Value wrcoef(keel::StringRef type, const Value &c, const Value &l,
+             keel::ArrayRef<keel::f64> Lo_R,
+             keel::ArrayRef<keel::f64> Hi_R,
              int n,
              keel::Allocator *mr)
 {
-    const std::string tl = wrcoef_argcheck(type, c, l, Lo_R, Hi_R, n);
+    const keel::String tl = wrcoef_argcheck(type, c, l, Lo_R, Hi_R, n);
     return wrcoef_reconstruct_impl(tl, c, l, Lo_R, Hi_R, n, mr);
 }
 

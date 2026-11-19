@@ -10,8 +10,8 @@
 
 #include <keel/core.h>
 #include <keel/memory.h>
+#include <keel/ref.h>
 #include <numkit/value/value.hpp>
-#include <string>
 #include <tuple>
 
 namespace numkit::wavelet {
@@ -142,7 +142,7 @@ struct CentfrqResult {
 /// @return       Center frequency in Hz.
 ///
 /// @see centfrqGrid, scal2frq
-keel::f64 centfrq(const std::string &wname, int iter = 8);
+keel::f64 centfrq(keel::StringRef wname, int iter = 8);
 
 /// Wavelet center frequency with grid and single-bin sinusoidal approximation.
 ///
@@ -153,7 +153,7 @@ keel::f64 centfrq(const std::string &wname, int iter = 8);
 ///                     is empty `0x0`.
 /// @param mr           Memory resource (nullptr -> process default).
 /// @return             @ref CentfrqResult `(freq, xval, recfreq)`.
-CentfrqResult centfrqGrid(const std::string &wname, int iter = 8,
+CentfrqResult centfrqGrid(keel::StringRef wname, int iter = 8,
                           bool withRecfreq = false,
                           keel::Allocator *mr = nullptr);
 
@@ -168,7 +168,7 @@ CentfrqResult centfrqGrid(const std::string &wname, int iter = 8,
 /// @return       Pseudo-frequency vector with the same shape and class as @p a.
 ///
 /// @see centfrq
-Value scal2frq(const Value &a, const std::string &wname,
+Value scal2frq(const Value &a, keel::StringRef wname,
                keel::f64 delta = 1.0,
                keel::Allocator *mr = nullptr);
 
@@ -200,7 +200,7 @@ struct CwtResult {
 /// @param mr               Memory resource (nullptr -> process default).
 /// @return                 @ref CwtResult `(cfs, f, coi)`.
 CwtResult cwt(const Value &x,
-              const std::string &wname = "morse",
+              keel::StringRef wname = "morse",
               keel::f64 fs = 1.0,
               int voicesPerOctave = 10,
               keel::f64 timeBandwidth = 60.0,

@@ -17,8 +17,11 @@
 //
 // Sizes satisfy size(A_k) = S(N-k+2, :) for k = 1..N, and size(A_N) = S(1,:).
 
+#include <keel/array.h>
 #include <keel/core.h>
+#include <keel/format.h>
 #include <keel/memory.h>
+#include <keel/ref.h>
 #include <numkit/wavelet/dwt/multilevel2.hpp>
 #include <numkit/wavelet/dwt/dwt2.hpp>
 #include <numkit/wavelet/internal/type_gates.hpp>
@@ -30,9 +33,7 @@
 
 #include <algorithm>
 #include <array>
-#include <string>
 #include <utility>
-#include <vector>
 
 namespace numkit::wavelet {
 
@@ -41,14 +42,14 @@ namespace {
 struct Sz { keel::usize rows, cols; keel::usize numel() const { return rows * cols; } };
 
 // Append every element of a band (column-major storage order) to `c`.
-void appendBand(std::vector<double> &c, const Value &band) {
+void appendBand(keel::Array<double> &c, const Value &band) {
     const keel::usize n = band.numel();
     for (keel::usize i = 0; i < n; ++i) c.push_back(band.elemAsDouble(i));
 }
 
 // Reshape a flat segment c[off, off+rows*cols) into a rows×cols matrix
 // (column-major, matching nk/MATLAB storage).
-Value reshapeSeg(const std::vector<double> &c, keel::usize off, Sz sz,
+Value reshapeSeg(keel::ArrayRef<double> c, keel::usize off, Sz sz,
                  keel::Allocator *mr) {
     Value m = Value::matrix(sz.rows, sz.cols, ValueType::DOUBLE, mr);
     double *d = m.doubleDataMut();
@@ -57,8 +58,8 @@ Value reshapeSeg(const std::vector<double> &c, keel::usize off, Sz sz,
     return m;
 }
 
-std::vector<double> vecFromValue(const Value &v) {
-    std::vector<double> out(v.numel());
+keel::Array<double> vecFromValue(const Value &v, keel::Allocator *mr = nullptr) {
+    keel::Array<double> out(v.numel(), mr);
     for (keel::usize i = 0; i < v.numel(); ++i) out[i] = v.elemAsDouble(i);
     return out;
 }
@@ -77,7 +78,7 @@ void wavedec2_argcheck(int n)
                     0, 0, "wavedec2", "", "numkit:wavedec2:level");
 }
 
-int detcoef2_argcheck(const std::string &type, const Value &C, const Value &S, int level)
+int detcoef2_argcheck(keel::StringRef type, const Value &C, const Value &S, int level)
 {
     internal::requireWaveClass(C, "detcoef2", "C", 2,
                                internal::WvClasses::AnyNumeric,
@@ -95,13 +96,13 @@ int detcoef2_argcheck(const std::string &type, const Value &C, const Value &S, i
     if (type == "h" || type == "H") return 0;
     if (type == "v" || type == "V") return 1;
     if (type == "d" || type == "D") return 2;
-    throw Error("detcoef2: type must be 'h', 'v' or 'd' (got '" + type + "')",
+    throw Error(keel::format("detcoef2: type must be 'h', 'v' or 'd' (got '{}')", type),
                 0, 0, "detcoef2", "", "numkit:detcoef2:type");
 }
 
 } // anonymous
 
-Wavedec2Result wavedec2(const Value &X, int n, const std::string &wname,
+Wavedec2Result wavedec2(const Value &X, int n, keel::StringRef wname,
                         keel::Allocator *mr)
 {
     wavedec2_argcheck(n);
@@ -110,8 +111,8 @@ Wavedec2Result wavedec2(const Value &X, int n, const std::string &wname,
 
     // Run n successive single-level dwt2 on the running approximation.
     // Stash each level's detail bands (finest = level 1 at index 0).
-    std::vector<Value> Hs(n), Vs(n), Ds(n);
-    std::vector<Sz> detSize(n);
+    keel::Array<Value> Hs(static_cast<keel::usize>(n), mr), Vs(static_cast<keel::usize>(n), mr), Ds(static_cast<keel::usize>(n), mr);
+    keel::Array<Sz> detSize(static_cast<keel::usize>(n), mr);
     Value running = X;
     Value approx;
     for (int k = 0; k < n; ++k) {
@@ -126,7 +127,7 @@ Wavedec2Result wavedec2(const Value &X, int n, const std::string &wname,
     const Sz asz{ approx.dims().rows(), approx.dims().cols() };
 
     // C = [cA_N | (cH cV cD)_N | … | (cH cV cD)_1]  (coarsest-first).
-    std::vector<double> C;
+    keel::Array<double> C(mr);
     appendBand(C, approx);
     for (int k = n - 1; k >= 0; --k) {
         appendBand(C, Hs[k]);
@@ -151,7 +152,7 @@ Wavedec2Result wavedec2(const Value &X, int n, const std::string &wname,
 // Approximation at `level` (level==N → stored cA_N; level<N → reconstruct;
 // level==0 → full image reconstruction). Reused by appcoef2 and waverec2.
 static Value appcoef2_impl(const Value &C, const Value &S,
-                           const std::string &wname, int level,
+                           keel::StringRef wname, int level,
                            keel::Allocator *mr)
 {
     const int N = static_cast<int>(S.dims().rows()) - 2;
@@ -163,7 +164,7 @@ static Value appcoef2_impl(const Value &C, const Value &S,
         throw Error("appcoef2: level out of range [0, N]",
                     0, 0, "appcoef2", "", "numkit:appcoef2:level");
 
-    auto Cv = vecFromValue(C);
+    auto Cv = vecFromValue(C, mr);
 
     // running = cA_N (first prod(S(1,:)) entries).
     const Sz asz = sRow(S, 0);
@@ -190,19 +191,19 @@ static Value appcoef2_impl(const Value &C, const Value &S,
     return running;
 }
 
-Value waverec2(const Value &C, const Value &S, const std::string &wname,
+Value waverec2(const Value &C, const Value &S, keel::StringRef wname,
                keel::Allocator *mr)
 {
     return appcoef2_impl(C, S, wname, /*level=*/0, mr);
 }
 
-Value appcoef2(const Value &C, const Value &S, const std::string &wname,
+Value appcoef2(const Value &C, const Value &S, keel::StringRef wname,
                int level, keel::Allocator *mr)
 {
     return appcoef2_impl(C, S, wname, level, mr);
 }
 
-Value detcoef2(const std::string &type, const Value &C, const Value &S,
+Value detcoef2(keel::StringRef type, const Value &C, const Value &S,
                int level, keel::Allocator *mr)
 {
     const int which = detcoef2_argcheck(type, C, S, level);
@@ -223,9 +224,9 @@ Value detcoef2(const std::string &type, const Value &C, const Value &S,
     for (keel::usize i = 0; i < dsz.numel(); ++i) {
         const keel::usize src = off + i;
         if (src >= C.numel())
-            throw Error("detcoef2: C is too short for the sizes in S "
-                        "(needed " + std::to_string(off + dsz.numel())
-                        + " elements, got " + std::to_string(C.numel()) + ").",
+            throw Error(keel::format("detcoef2: C is too short for the sizes in S "
+                                     "(needed {} elements, got {}).",
+                                     off + dsz.numel(), C.numel()),
                         0, 0, "detcoef2", "", "numkit:detcoef2:size");
         if (cplx) out.complexDataMut()[i] = C.complexElem(src);
         else internal::storeElem(out, i, C.elemAsDouble(src));

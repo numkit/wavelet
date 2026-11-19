@@ -27,7 +27,9 @@
 //   * Output orientation: vector-shaped a returns column; matrix
 //     returns matrix (columns reconstructed independently).
 
+#include <keel/array.h>
 #include <keel/core.h>
+#include <keel/format.h>
 #include <keel/memory.h>
 #include <keel/complex.h>
 #include <numkit/wavelet/dwt/ihaart.hpp>
@@ -39,8 +41,6 @@
 #include <numkit/value/error.hpp>
 
 #include <cmath>
-#include <string>
-#include <vector>
 
 namespace numkit::wavelet {
 
@@ -83,7 +83,7 @@ void ihaar_step_cplx(const keel::c64 *a, const double *d, keel::usize H, keel::c
 //     `zero_out` is true the returned vector is zero-filled (used to
 //     suppress the finest K bands when `level > 0`).
 struct DetailLevel {
-    std::vector<double> data;
+    keel::Array<double> data;
     keel::usize rows = 0;
     keel::usize cols = 0;
 };
@@ -171,8 +171,8 @@ keel::usize ihaart_argcheck(const Value &aV, const Value &dV, int level, bool in
                     "with value >= 0",
                     0, 0, "ihaart", "", "numkit:ihaart:level");
     if (level >= static_cast<int>(Nlevels))
-        throw Error("ihaart: expected input number 3, LEVEL, to be a scalar "
-                    "with value < " + std::to_string(Nlevels),
+        throw Error(keel::format("ihaart: expected input number 3, LEVEL, to be a scalar "
+                                 "with value < {}", Nlevels),
                     0, 0, "ihaart", "", "numkit:ihaart:level");
     if (integer && aV.isComplex())
         throw Error("ihaart: integer mode is not supported for complex data",
@@ -201,8 +201,8 @@ Value ihaart(const Value &aV, const Value &dV, int level, bool integer,
     const ValueType vt = aIsComplex ? ValueType::COMPLEX : ValueType::DOUBLE;
 
     // Working buffer: starts as `a`, doubles each level (column-major).
-    std::vector<double>  curR;
-    std::vector<keel::c64> curC;
+    keel::Array<double>  curR(mr);
+    keel::Array<keel::c64> curC(mr);
     if (aIsComplex) {
         curC.resize(aLen * ncols);
         for (keel::usize c = 0; c < ncols; ++c)
@@ -224,22 +224,22 @@ Value ihaart(const Value &aV, const Value &dV, int level, bool integer,
         DetailLevel det = grab_level(dV, isCell, idx, curLen, ncols, zero);
 
         const keel::usize outLen = curLen * 2;
-        std::vector<double>  newR;
-        std::vector<keel::c64> newC;
+        keel::Array<double>  newR(mr);
+        keel::Array<keel::c64> newC(mr);
         if (aIsComplex) {
             newC.resize(outLen * ncols);
             for (keel::usize c = 0; c < ncols; ++c)
                 ihaar_step_cplx(curC.data() + c * curLen,
                                 det.data.data() + c * curLen, curLen,
                                 newC.data() + c * outLen);
-            curC.swap(newC);
+            curC = keel::move(newC);
         } else {
             newR.resize(outLen * ncols);
             for (keel::usize c = 0; c < ncols; ++c)
                 ihaar_step_real(curR.data() + c * curLen,
                                 det.data.data() + c * curLen, curLen,
                                 newR.data() + c * outLen, integer);
-            curR.swap(newR);
+            curR = keel::move(newR);
         }
         curLen = outLen;
     }

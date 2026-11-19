@@ -9,7 +9,7 @@
 #pragma once
 
 #include <keel/memory.h>
-#include <string>
+#include <keel/ref.h>
 #include <numkit/value/value.hpp>
 
 namespace numkit::wavelet {
@@ -63,8 +63,8 @@ Value wkeep(const Value &x, const Value &len,
 /// @return      The extended signal.
 /// @throws Error on an unknown `type`/`mode`/`side` or negative `lf`.
 /// @see wkeep
-Value wextend(const Value &type, const std::string &mode, const Value &x,
-              const Value &lf, const std::string &side = "b",
+Value wextend(const Value &type, keel::StringRef mode, const Value &x,
+              const Value &lf, keel::StringRef side = "b",
               keel::Allocator *mr = nullptr);
 
 

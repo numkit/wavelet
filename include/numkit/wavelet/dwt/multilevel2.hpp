@@ -5,8 +5,8 @@
 #pragma once
 
 #include <keel/memory.h>
+#include <keel/ref.h>
 #include <numkit/value/value.hpp>
-#include <string>
 
 namespace numkit::wavelet {
 
@@ -35,14 +35,14 @@ struct Wavedec2Result {
 /// @param mr     Memory resource (nullptr → process default).
 /// @return       @ref Wavedec2Result.
 /// @see waverec2, appcoef2, detcoef2
-Wavedec2Result wavedec2(const Value &X, int n, const std::string &wname,
+Wavedec2Result wavedec2(const Value &X, int n, keel::StringRef wname,
                         keel::Allocator *mr = nullptr);
 
 /// Full 2-D multilevel reconstruction (`waverec2(C, S, wname)`), i.e. the
 /// approximation at level 0. Inverts @ref wavedec2 via repeated @ref idwt2.
 ///
 /// @see wavedec2, appcoef2
-Value waverec2(const Value &C, const Value &S, const std::string &wname,
+Value waverec2(const Value &C, const Value &S, keel::StringRef wname,
                keel::Allocator *mr = nullptr);
 
 /// Extract / reconstruct the approximation coefficients at `level`
@@ -52,7 +52,7 @@ Value waverec2(const Value &C, const Value &S, const std::string &wname,
 /// reconstruction. Default `level = -1` → the coarsest level `N`.
 ///
 /// @see wavedec2, waverec2
-Value appcoef2(const Value &C, const Value &S, const std::string &wname,
+Value appcoef2(const Value &C, const Value &S, keel::StringRef wname,
                int level = -1, keel::Allocator *mr = nullptr);
 
 /// Extract a 2-D detail sub-band (`detcoef2(type, C, S, level)`).
@@ -64,7 +64,7 @@ Value appcoef2(const Value &C, const Value &S, const std::string &wname,
 /// @param mr     Memory resource.
 /// @return       The requested detail band, shaped to its 2-D size.
 /// @see wavedec2
-Value detcoef2(const std::string &type, const Value &C, const Value &S,
+Value detcoef2(keel::StringRef type, const Value &C, const Value &S,
                int level, keel::Allocator *mr = nullptr);
 
 

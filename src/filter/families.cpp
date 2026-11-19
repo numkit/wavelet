@@ -24,8 +24,11 @@
 // "MATLAB Lo_D" and reverses it to obtain MATLAB Lo_R, matching the
 // rest of MATLAB's documented output.
 
+#include <keel/array.h>
 #include <keel/core.h>
+#include <keel/format.h>
 #include <keel/memory.h>
+#include <keel/ref.h>
 #include <numkit/wavelet/filter/families.hpp>
 #include <numkit/wavelet/filter/wfilters.hpp>
 
@@ -38,8 +41,6 @@
 
 #include <algorithm>
 #include <cmath>
-#include <string>
-#include <vector>
 
 namespace numkit::wavelet {
 
@@ -48,7 +49,7 @@ namespace {
 const double SQRT2 = 1.41421356237309504880;
 const double INV_SQRT2 = 0.70710678118654752440;
 
-Value rowVec(keel::Allocator *mr, const std::vector<double> &v)
+Value rowVec(keel::Allocator *mr, keel::ArrayRef<double> v)
 {
     Value r = Value::matrix(1, v.size(), ValueType::DOUBLE, mr);
     if (!v.empty()) std::copy(v.begin(), v.end(), r.doubleDataMut());
@@ -59,32 +60,32 @@ Value rowVec(keel::Allocator *mr, const std::vector<double> &v)
 // 2026-05-08: with the wfilters Lo_D/Lo_R label fix, fb.Lo_R is now the
 // MATLAB Lo_R directly (was MATLAB Lo_D under nk's old swapped
 // labels). No reversal needed anymore.
-Value family_scaling(keel::Allocator *mr, const std::string &name)
+Value family_scaling(keel::Allocator *mr, keel::StringRef name)
 {
     auto fb = wavelet_filters(name);   // throws on unsupported family
-    std::vector<double> v = fb.Lo_R;
+    keel::Array<double> v = std::move(fb.Lo_R);
     for (auto &x : v) x *= INV_SQRT2;
     return rowVec(mr, v);
 }
 
-void dbwavf_argcheck(const std::string &name)
+void dbwavf_argcheck(keel::StringRef name)
 {
-    if (name.rfind("db", 0) != 0 && name != "haar")
-        throw Error("dbwavf: name must be 'haar' or 'dbN' (got '" + name + "')",
+    if (!name.starts_with("db") && name != "haar")
+        throw Error(keel::format("dbwavf: name must be 'haar' or 'dbN' (got '{}')", name),
                     0, 0, "dbwavf", "", "numkit:dbwavf:name");
 }
 
-void coifwavf_argcheck(const std::string &name)
+void coifwavf_argcheck(keel::StringRef name)
 {
-    if (name.rfind("coif", 0) != 0)
-        throw Error("coifwavf: name must be 'coifK' (got '" + name + "')",
+    if (!name.starts_with("coif"))
+        throw Error(keel::format("coifwavf: name must be 'coifK' (got '{}')", name),
                     0, 0, "coifwavf", "", "numkit:coifwavf:name");
 }
 
-void symwavf_argcheck(const std::string &name)
+void symwavf_argcheck(keel::StringRef name)
 {
-    if (name.rfind("sym", 0) != 0)
-        throw Error("symwavf: name must be 'symN' (got '" + name + "')",
+    if (!name.starts_with("sym"))
+        throw Error(keel::format("symwavf: name must be 'symN' (got '{}')", name),
                     0, 0, "symwavf", "", "numkit:symwavf:name");
 }
 
@@ -99,19 +100,19 @@ void orthfilt_argcheck(const Value &W)
 
 // ── Public C++ API (see filter/families.hpp) ──────────────────────────
 
-Value dbwavf(const std::string &name, keel::Allocator *mr)
+Value dbwavf(keel::StringRef name, keel::Allocator *mr)
 {
     dbwavf_argcheck(name);
     return family_scaling(mr, name);
 }
 
-Value coifwavf(const std::string &name, keel::Allocator *mr)
+Value coifwavf(keel::StringRef name, keel::Allocator *mr)
 {
     coifwavf_argcheck(name);
     return family_scaling(mr, name);
 }
 
-Value symwavf(const std::string &name, keel::Allocator *mr)
+Value symwavf(keel::StringRef name, keel::Allocator *mr)
 {
     symwavf_argcheck(name);
     return family_scaling(mr, name);
@@ -122,7 +123,7 @@ OrthfiltResult orthfilt(const Value &W, keel::Allocator *mr)
     orthfilt_argcheck(W);
     const keel::usize N = W.numel();
 
-    std::vector<double> Lo_R(N), Lo_D(N), Hi_R(N), Hi_D(N);
+    keel::Array<double> Lo_R(N), Lo_D(N), Hi_R(N), Hi_D(N);
     for (keel::usize k = 0; k < N; ++k)
         Lo_R[k] = W.elemAsDouble(k) * SQRT2;
     for (keel::usize k = 0; k < N; ++k)

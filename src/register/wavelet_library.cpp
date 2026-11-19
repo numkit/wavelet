@@ -4,11 +4,11 @@
 // Namespace: wavelet.<sub>.<name>
 
 #include <keel/core.h>
+#include <keel/format.h>
 #include <keel/ref.h>
 #include <numkit/wavelet/library.hpp>
 
 #include <numkit/sys/plugin.hpp>
-#include <string>
 #include <utility>
 
 namespace numkit::wavelet::detail {
@@ -88,7 +88,7 @@ namespace numkit {
 void WaveletLibrary::install(PluginContext &engine)
 {
     auto reg = [&](const char *sub, const char *name, ExternalFunc fn) {
-        engine.registerFunction(std::string("wavelet.") + sub, name, std::move(fn));
+        engine.registerFunction(keel::format("wavelet.{}", sub), name, std::move(fn));
         // compat.* registration removed — bare-name resolver replaces it
     };
 

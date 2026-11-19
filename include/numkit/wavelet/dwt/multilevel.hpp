@@ -10,10 +10,9 @@
 
 #include <keel/core.h>
 #include <keel/memory.h>
+#include <keel/ref.h>
 #include <numkit/value/value.hpp>
-#include <string>
 #include <utility>
-#include <vector>
 
 namespace numkit::wavelet {
 
@@ -45,7 +44,7 @@ namespace numkit::wavelet {
 ///
 /// @see waverec, appcoef, detcoef, wrcoef
 std::pair<Value, Value>
-wavedec(const Value &x, int n, const std::string &wname,
+wavedec(const Value &x, int n, keel::StringRef wname,
         keel::Allocator *mr = nullptr);
 
 /// Inverse of @ref wavedec.
@@ -61,7 +60,7 @@ wavedec(const Value &x, int n, const std::string &wname,
 /// @throws       Error if `length(L) < 3` or C/L sizes are inconsistent.
 ///
 /// @see wavedec
-Value waverec(const Value &C, const Value &L, const std::string &wname,
+Value waverec(const Value &C, const Value &L, keel::StringRef wname,
               keel::Allocator *mr = nullptr);
 
 /// Extract approximation coefficients at a given level (`appcoef`).
@@ -81,7 +80,7 @@ Value waverec(const Value &C, const Value &L, const std::string &wname,
 /// @throws       Error on out-of-range level.
 ///
 /// @see detcoef, wrcoef
-Value appcoef(const Value &C, const Value &L, const std::string &wname,
+Value appcoef(const Value &C, const Value &L, keel::StringRef wname,
               int level,
               keel::Allocator *mr = nullptr);
 
@@ -102,8 +101,8 @@ Value appcoef(const Value &C, const Value &L, const std::string &wname,
 ///
 /// @see appcoef
 Value appcoef_with_filters_pub(const Value &C, const Value &L,
-                               const std::vector<keel::f64> &Lo_R,
-                               const std::vector<keel::f64> &Hi_R,
+                               keel::ArrayRef<keel::f64> Lo_R,
+                               keel::ArrayRef<keel::f64> Hi_R,
                                int level,
                                keel::Allocator *mr = nullptr);
 
@@ -152,15 +151,15 @@ Value detcoef(const Value &C, const Value &L, int level,
 /// @throws       Error on bad type, level out of range, or C/L mismatch.
 ///
 /// @see appcoef, detcoef, waverec
-Value wrcoef(const std::string &type, const Value &c, const Value &l,
-             const std::string &wname, int n = -1,
+Value wrcoef(keel::StringRef type, const Value &c, const Value &l,
+             keel::StringRef wname, int n = -1,
              keel::Allocator *mr = nullptr);
 
 /// Single-band reconstruction with explicit synthesis filters
 /// (`wrcoef(type, c, l, Lo_R, Hi_R[, n])`).
-Value wrcoef(const std::string &type, const Value &c, const Value &l,
-             const std::vector<keel::f64> &Lo_R,
-             const std::vector<keel::f64> &Hi_R,
+Value wrcoef(keel::StringRef type, const Value &c, const Value &l,
+             keel::ArrayRef<keel::f64> Lo_R,
+             keel::ArrayRef<keel::f64> Hi_R,
              int n = -1,
              keel::Allocator *mr = nullptr);
 
@@ -208,7 +207,7 @@ WenergyResult wenergy(const Value &C, const Value &L,
 /// @return       Reconstructed row vector.
 /// @throws       Error on a bad `type`, negative `n`, or unknown wavelet.
 /// @see wrcoef, waverec, detcoef
-Value upcoef(const std::string &type, const Value &X, const std::string &wname,
+Value upcoef(keel::StringRef type, const Value &X, keel::StringRef wname,
              int n, long long len = -1, keel::Allocator *mr = nullptr);
 
 /// Result of @ref wpsplt (`[T, cA, cD] = wpsplt(T, node)`).
@@ -238,8 +237,8 @@ struct BesttreeResult {
 /// @param entPar   Optional entropy parameter (default 0.0).
 /// @param mr       Memory resource (nullptr -> process default).
 /// @return         Wavelet packet tree struct.
-Value wpdec(const Value &x, int n, const std::string &wname,
-            const std::string &entName = "shannon", keel::f64 entPar = 0.0,
+Value wpdec(const Value &x, int n, keel::StringRef wname,
+            keel::StringRef entName = "shannon", keel::f64 entPar = 0.0,
             keel::Allocator *mr = nullptr);
 
 /// Extract wavelet packet node coefficients (`X = wpcoef(T[, node])`).

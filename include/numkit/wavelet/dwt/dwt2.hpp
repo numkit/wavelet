@@ -5,8 +5,8 @@
 #pragma once
 
 #include <keel/memory.h>
+#include <keel/ref.h>
 #include <numkit/value/value.hpp>
-#include <string>
 
 namespace numkit::wavelet {
 
@@ -46,7 +46,7 @@ struct Dwt2Result {
 /// @endcode
 ///
 /// @see idwt2, dwt
-Dwt2Result dwt2(const Value &X, const std::string &wname,
+Dwt2Result dwt2(const Value &X, keel::StringRef wname,
                 keel::Allocator *mr = nullptr);
 
 /// 2-D inverse single-level wavelet transform.
@@ -69,7 +69,7 @@ Dwt2Result dwt2(const Value &X, const std::string &wname,
 /// @see dwt2
 Value idwt2(const Value &cA, const Value &cH,
             const Value &cV, const Value &cD,
-            const std::string &wname,
+            keel::StringRef wname,
             long long outRows /* = -1 */, long long outCols /* = -1 */,
             keel::Allocator *mr = nullptr);
 

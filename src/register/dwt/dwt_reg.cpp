@@ -9,8 +9,11 @@
 //
 // Phase 2b compute/register split — see project_layering_refactor memory.
 
+#include <keel/array.h>
 #include <keel/core.h>
+#include <keel/format.h>
 #include <keel/ref.h>
+#include <keel/string.h>
 #include <numkit/wavelet/dwt/dwt.hpp>
 
 #include <numkit/sys/plugin.hpp>   // CallContext, ctx.engine->resource()
@@ -18,24 +21,15 @@
 #include <numkit/value/error.hpp>
 
 #include <cctype>
-#include <string>
 #include <tuple>
-#include <vector>
 
 namespace numkit::wavelet {
 namespace detail {
 
-static std::string argString(const Value &v) {
-    if (!v.isChar() && !v.isString())
-        throw Error("dwt/idwt: expected a string for wavelet name",
-                    0, 0, "", "", "numkit:wavelet:type");
-    return std::string(v.toString().as_ref());
-}
-
 // Read a Value (numeric vector) into a flat double buffer.
-static std::vector<double> readVec(const Value &v) {
+static keel::Array<double> readVec(const Value &v, keel::Allocator *mr) {
     const keel::usize n = v.numel();
-    std::vector<double> out(n);
+    keel::Array<double> out(n, mr);
     for (keel::usize i = 0; i < n; ++i) out[i] = v.elemAsDouble(i);
     return out;
 }
@@ -46,18 +40,19 @@ static std::vector<double> readVec(const Value &v) {
 static bool parse_mode_nv(keel::ArrayRef<Value> args, keel::usize start,
                           const char *fn) {
     auto lower = [](keel::StringRef sv) {
-        std::string s(sv.data(), sv.size());
+        keel::String s(sv);
         for (auto &c : s) c = (char)std::tolower((unsigned char)c);
         return s;
     };
     for (keel::usize i = start; i + 1 < args.size(); i += 2) {
         if (!(args[i].isChar() || args[i].isString())) break;
-        const std::string key = lower(args[i].toString());
+        const keel::String rawKey = args[i].toString();
+        const keel::String key = lower(rawKey);
         if (key == "mode") {
-            const std::string m = lower(args[i + 1].toString());
+            const keel::String rawMode = args[i + 1].toString();
+            const keel::String m = lower(rawMode);
             if (m != "sym" && m != "symh") {
-                throw Error(std::string(fn) + ": only 'mode'='sym' is "
-                            "implemented (got '" + m + "')",
+                throw Error(keel::format("{}: only 'mode'='sym' is implemented (got '{}')", fn, m),
                             0, 0, fn, "", "numkit:wavelet:mode_nyi");
             }
         }
@@ -74,7 +69,8 @@ void dwt_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/, keel::MutArray
     if (args[1].isChar() || args[1].isString()) {
         // dwt(x, wname[, 'mode', extmode])
         parse_mode_nv(args, 2, "dwt");
-        std::tie(cA, cD) = dwt(args[0], std::string(args[1].toString().as_ref()), mr);
+        const keel::String wname = args[1].toString();
+        std::tie(cA, cD) = dwt(args[0], wname, mr);
     } else {
         // dwt(x, Lo_D, Hi_D[, 'mode', extmode])
         if (args.size() < 3 || (args[2].isChar() || args[2].isString()))
@@ -82,7 +78,7 @@ void dwt_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/, keel::MutArray
                         0, 0, "dwt", "", "numkit:dwt:nargin");
         parse_mode_nv(args, 3, "dwt");
         std::tie(cA, cD) = dwt_with_filters_pub(args[0],
-                                                readVec(args[1]), readVec(args[2]),
+                                                readVec(args[1], mr), readVec(args[2], mr),
                                                 mr);
     }
     if (outs.size() >= 1) outs[0] = cA;
@@ -98,7 +94,7 @@ void idwt_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/, keel::MutArra
 
     if (args[2].isChar() || args[2].isString()) {
         // idwt(cA, cD, wname[, len][, 'mode', extmode])
-        const std::string wname(args[2].toString().as_ref());
+        const keel::String wname = args[2].toString();
         keel::usize i = 3;
         // Optional positional `len` (numeric scalar) BEFORE any N-V.
         if (i < args.size() && args[i].numel() == 1
@@ -122,7 +118,7 @@ void idwt_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/, keel::MutArra
         }
         parse_mode_nv(args, i, "idwt");
         outs[0] = idwt_with_filters_pub(args[0], args[1],
-                                        readVec(args[2]), readVec(args[3]),
+                                        readVec(args[2], mr), readVec(args[3], mr),
                                         len, mr);
     }
 }

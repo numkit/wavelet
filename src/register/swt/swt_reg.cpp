@@ -7,8 +7,11 @@
 //
 // Phase 2b compute/register split — see project_layering_refactor memory.
 
+#include <keel/array.h>
 #include <keel/core.h>
+#include <keel/format.h>
 #include <keel/ref.h>
+#include <keel/string.h>
 #include <numkit/wavelet/swt/swt.hpp>
 
 #include <numkit/sys/plugin.hpp>   // CallContext, ctx.engine->resource()
@@ -16,27 +19,25 @@
 #include <numkit/value/error.hpp>
 
 #include <cmath>
-#include <string>
 #include <utility>
-#include <vector>
 
 namespace numkit::wavelet {
 namespace detail {
 
-static std::string argString(const Value &v) {
+static keel::String argString(const Value &v) {
     if (!v.isChar() && !v.isString())
         throw Error("wavelet: expected string argument",
                     0, 0, "", "", "numkit:wavelet:type");
-    return std::string(v.toString().as_ref());
+    return v.toString();
 }
 
-static std::vector<double> extractFilterVec(const Value &v, const char *fn) {
+static keel::Array<double> extractFilterVec(const Value &v, const char *fn) {
     if (!v.isNumeric() || v.isEmpty() || v.type() == ValueType::COMPLEX ||
         (v.dims().rows() != 1 && v.dims().cols() != 1))
-        throw Error(std::string(fn) + ": expected real numeric filter vector",
-                    0, 0, fn, "", std::string("numkit:") + fn + ":filter");
+        throw Error(keel::format("{}: expected real numeric filter vector", fn),
+                    0, 0, fn, "", keel::format("numkit:{}:filter", fn));
     const keel::usize n = v.numel();
-    std::vector<double> out(n);
+    keel::Array<double> out(n);
     for (keel::usize i = 0; i < n; ++i) out[i] = v.elemAsDouble(i);
     return out;
 }
@@ -123,7 +124,7 @@ void modwt_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/, keel::MutArr
         ? static_cast<int>(std::floor(std::log2(static_cast<double>(N))))
         : 1;
 
-    std::string wname = "sym4";
+    keel::String wname("sym4");
     int lev = default_lev;
     if (args.size() >= 2) {
         if (args[1].isChar() || args[1].isString()) {

@@ -13,7 +13,9 @@
 // them to dwt / idwt, and stitch the results back into MxN matrices.
 
 #include <keel/core.h>
+#include <keel/format.h>
 #include <keel/memory.h>
+#include <keel/ref.h>
 #include <keel/complex.h>
 #include <numkit/wavelet/dwt/dwt2.hpp>
 #include <numkit/wavelet/dwt/dwt.hpp>
@@ -27,7 +29,6 @@
 #include <algorithm>
 #include <array>
 #include <utility>
-#include <vector>
 
 namespace numkit::wavelet {
 
@@ -35,7 +36,7 @@ namespace {
 
 // Apply 1-D dwt to every row of X. Returns (Lo, Hi), each M × outCols.
 std::pair<Value, Value>
-dwt_rows(const Value &X, const std::string &wname,
+dwt_rows(const Value &X, keel::StringRef wname,
          keel::Allocator *mr)
 {
     const keel::usize M = X.dims().rows();
@@ -79,7 +80,7 @@ dwt_rows(const Value &X, const std::string &wname,
 
 // Apply 1-D dwt to every column of X. Returns (Lo, Hi), each outRows × N.
 std::pair<Value, Value>
-dwt_cols(const Value &X, const std::string &wname,
+dwt_cols(const Value &X, keel::StringRef wname,
          keel::Allocator *mr)
 {
     const keel::usize M = X.dims().rows();
@@ -122,7 +123,7 @@ dwt_cols(const Value &X, const std::string &wname,
 // Inverse: combine a (lo, hi) pair into a single matrix by running
 // 1-D idwt along each column, with target length outRows.
 Value idwt_cols(const Value &Lo, const Value &Hi,
-                const std::string &wname,
+                keel::StringRef wname,
                 keel::usize outRows,
                 keel::Allocator *mr)
 {
@@ -152,7 +153,7 @@ Value idwt_cols(const Value &Lo, const Value &Hi,
 
 // Inverse along rows, target length outCols.
 Value idwt_rows(const Value &Lo, const Value &Hi,
-                const std::string &wname,
+                keel::StringRef wname,
                 keel::usize outCols,
                 keel::Allocator *mr)
 {
@@ -192,16 +193,15 @@ void idwt2_argcheck(const Value &cA, const Value &cH,
     for (int k = 1; k < 4; ++k) {
         if (coefs[k]->dims().rows() != cA.dims().rows()
             || coefs[k]->dims().cols() != cA.dims().cols())
-            throw Error("idwt2: cA, cH, cV and cD must have the same size "
-                        "(got " + internal::shapeOf(cA) + " and "
-                        + internal::shapeOf(*coefs[k]) + ").",
+            throw Error(keel::format("idwt2: cA, cH, cV and cD must have the same size (got {} and {}).",
+                                     internal::shapeOf(cA), internal::shapeOf(*coefs[k])),
                         0, 0, "idwt2", "", "numkit:idwt2:size");
     }
 }
 
 } // anonymous
 
-Dwt2Result dwt2(const Value &X, const std::string &wname,
+Dwt2Result dwt2(const Value &X, keel::StringRef wname,
                 keel::Allocator *mr)
 {
     // Pass 1: rows (each row → Lo + Hi halves, each M × outN).
@@ -219,7 +219,7 @@ Dwt2Result dwt2(const Value &X, const std::string &wname,
 
 Value idwt2(const Value &cA, const Value &cH,
             const Value &cV, const Value &cD,
-            const std::string &wname,
+            keel::StringRef wname,
             long long outRows, long long outCols,
             keel::Allocator *mr)
 {
@@ -300,9 +300,8 @@ Value idwt2(const Value &cA, const Value &cH,
         const keel::usize keepC = outCols >= 0
             ? static_cast<keel::usize>(outCols) : natC;
         if (keepR > natR || keepC > natC)
-            throw Error("idwt2: input 6 (SIZ) exceeds the natural "
-                        "reconstruction size " + std::to_string(natR)
-                        + "x" + std::to_string(natC) + ".",
+            throw Error(keel::format("idwt2: input 6 (SIZ) exceeds the natural "
+                                     "reconstruction size {}x{}.", natR, natC),
                         0, 0, "idwt2", "", "numkit:idwt2:size");
         const keel::usize r0 = (natR - keepR) / 2;
         const keel::usize c0 = (natC - keepC) / 2;

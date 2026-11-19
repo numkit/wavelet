@@ -9,31 +9,31 @@
 
 #include <keel/core.h>
 #include <keel/ref.h>
+#include <keel/string.h>
 #include <numkit/wavelet/filter/wfilters.hpp>
 
 #include <numkit/sys/plugin.hpp>   // CallContext, ctx.engine->resource()
 #include <numkit/value/argcheck.hpp>
 #include <numkit/value/error.hpp>
 
-#include <string>
 #include <utility>
 
 namespace numkit::wavelet {
 namespace detail {
 
-static std::string argString(const Value &v) {
+static keel::String argString(const Value &v) {
     if (!v.isChar() && !v.isString())
         throw Error("wavelet: expected a string argument",
                     0, 0, "", "", "numkit:wavelet:type");
-    return std::string(v.toString().as_ref());
+    return v.toString();
 }
 
 void wfilters_reg(keel::ArrayRef<Value> args, keel::usize nargout, keel::MutArrayRef<Value> outs,
                   CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 1, 2, "wfilters");
-    const std::string name = argString(args[0]);
-    std::string kind;
+    const keel::String name = argString(args[0]);
+    keel::String kind;
     if (args.size() >= 2) kind = argString(args[1]);
 
     auto *mr = ctx.engine->allocator();

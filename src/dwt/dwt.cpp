@@ -15,8 +15,10 @@
 //   * Sum the two reconstructions.
 //   * Crop the centre `len` samples (default `len = 2*la - Lf + 2`).
 
+#include <keel/array.h>
 #include <keel/core.h>
 #include <keel/memory.h>
+#include <keel/ref.h>
 #include <numkit/wavelet/dwt/dwt.hpp>
 #include <numkit/wavelet/filter/wfilters.hpp>
 
@@ -27,7 +29,6 @@
 
 #include <algorithm>
 #include <cmath>
-#include <vector>
 
 namespace numkit::wavelet {
 
@@ -37,8 +38,8 @@ namespace {
 // each side. For x = [a b c d] and pad = 3:
 //   ext = [c b a | a b c d | d c b]
 // (the boundary sample is included in the reflection, hence "whole-point").
-std::vector<double> sym_extend(const double *x, keel::usize N, keel::usize pad) {
-    std::vector<double> y(N + 2 * pad);
+keel::Array<double> sym_extend(const double *x, keel::usize N, keel::usize pad, keel::Allocator *mr) {
+    keel::Array<double> y(N + 2 * pad, mr);
     for (keel::usize i = 0; i < pad; ++i) {
         // left: index pad-1-i mirrors x[i]
         y[pad - 1 - i] = (i < N) ? x[i] : x[N - 1];
@@ -51,11 +52,12 @@ std::vector<double> sym_extend(const double *x, keel::usize N, keel::usize pad) 
 }
 
 // Full convolution: y[n] = sum_k a[k] * b[n-k].
-std::vector<double> conv_full(const std::vector<double> &a,
-                              const std::vector<double> &b) {
-    if (a.empty() || b.empty()) return {};
+keel::Array<double> conv_full(keel::ArrayRef<double> a,
+                              keel::ArrayRef<double> b,
+                              keel::Allocator *mr) {
+    if (a.empty() || b.empty()) return keel::Array<double>(mr);
     const keel::usize out = a.size() + b.size() - 1;
-    std::vector<double> y(out, 0.0);
+    keel::Array<double> y(out, 0.0, mr);
     for (keel::usize i = 0; i < a.size(); ++i) {
         const double ai = a[i];
         for (keel::usize j = 0; j < b.size(); ++j)
@@ -64,24 +66,24 @@ std::vector<double> conv_full(const std::vector<double> &a,
     return y;
 }
 
-FilterBank dwt_argcheck(const std::string &wname) {
+FilterBank dwt_argcheck(keel::StringRef wname) {
     return wavelet_filters(wname);
 }
 
-void dwt_argcheck(const std::vector<double> &Lo_D,
-                  const std::vector<double> &Hi_D) {
+void dwt_argcheck(keel::ArrayRef<double> Lo_D,
+                  keel::ArrayRef<double> Hi_D) {
     const keel::usize Lf = Lo_D.size();
     if (Lf < 2 || Hi_D.size() != Lf)
         throw Error("dwt: filter length < 2 or Lo_D/Hi_D length mismatch",
                     0, 0, "dwt", "", "numkit:dwt:filt");
 }
 
-FilterBank idwt_argcheck(const std::string &wname) {
+FilterBank idwt_argcheck(keel::StringRef wname) {
     return wavelet_filters(wname);
 }
 
-void idwt_argcheck(const std::vector<double> &Lo_R,
-                   const std::vector<double> &Hi_R) {
+void idwt_argcheck(keel::ArrayRef<double> Lo_R,
+                   keel::ArrayRef<double> Hi_R) {
     const keel::usize Lf = Lo_R.size();
     if (Lf < 2 || Hi_R.size() != Lf)
         throw Error("idwt: filter length < 2 or Lo_R/Hi_R length mismatch",
@@ -95,8 +97,8 @@ void idwt_argcheck(const std::vector<double> &Lo_R,
 // `dwt(x, Lo_D, Hi_D)` custom-filter path.
 static std::pair<Value, Value>
 dwt_with_filters(const Value &x,
-                 const std::vector<double> &Lo_D,
-                 const std::vector<double> &Hi_D,
+                 keel::ArrayRef<double> Lo_D,
+                 keel::ArrayRef<double> Hi_D,
                  keel::Allocator *mr)
 {
     dwt_argcheck(Lo_D, Hi_D);
@@ -106,26 +108,26 @@ dwt_with_filters(const Value &x,
     if (N == 0)
         return {Value::matrix(1, 0, ValueType::DOUBLE, mr),
                 Value::matrix(1, 0, ValueType::DOUBLE, mr)};
-    std::vector<double> xv(N);
+    keel::Array<double> xv(N, mr);
     for (keel::usize i = 0; i < N; ++i) xv[i] = x.elemAsDouble(i);
 
     const keel::usize pad = Lf - 1;
-    auto ext = sym_extend(xv.data(), N, pad);
+    auto ext = sym_extend(xv.data(), N, pad, mr);
 
     // Output length per band per MATLAB doc:
     //   Llen = floor((N - 1) / 2) + Lf / 2     (Lf even for orthogonal)
     // which equals floor((N + Lf - 1) / 2).
     const keel::usize outLen = (N + Lf - 1) / 2;
 
-    auto convAndDown = [&](const std::vector<double> &h) {
-        auto y = conv_full(ext, h);
+    auto convAndDown = [&](keel::ArrayRef<double> h) {
+        auto y = conv_full(ext, h, mr);
         // 2026-05-08 wavelet/dwt fix: aligned with MATLAB
         // R2025b convention (Mallat 1989). After symmetric extension
         // and full conv with the analysis filter, MATLAB downsamples
         // taking samples at indices [Lf-1, Lf+1, Lf+3, ...] — offset
         // Lf-1, NOT Lf. Pairs with the new idwt crop offset to keep
         // round-trips exact under MATLAB labelling.
-        std::vector<double> z;
+        keel::Array<double> z(mr);
         z.reserve(outLen);
         for (keel::usize k = 0; k < outLen; ++k) {
             const keel::usize idx = (Lf - 1) + 2 * k + 1;  // Lf, Lf+2, ... (1-indexed Lf, Lf+2)
@@ -137,7 +139,7 @@ dwt_with_filters(const Value &x,
     auto a = convAndDown(Lo_D);
     auto d = convAndDown(Hi_D);
 
-    auto pack = [&](const std::vector<double> &v) {
+    auto pack = [&](keel::ArrayRef<double> v) {
         Value r = Value::matrix(1, v.size(), ValueType::DOUBLE, mr);
         if (!v.empty()) std::copy(v.begin(), v.end(), r.doubleDataMut());
         return r;
@@ -147,7 +149,7 @@ dwt_with_filters(const Value &x,
 
 // Public entry: wname → look up filters via wfilters, dispatch to helper.
 std::pair<Value, Value>
-dwt(const Value &x, const std::string &wname,
+dwt(const Value &x, keel::StringRef wname,
     keel::Allocator *mr)
 {
     auto fb = dwt_argcheck(wname);
@@ -157,8 +159,8 @@ dwt(const Value &x, const std::string &wname,
 // Cross-TU access for the custom-filter dwt form (used by dwt_reg.cpp).
 std::pair<Value, Value>
 dwt_with_filters_pub(const Value &x,
-                     const std::vector<double> &Lo_D,
-                     const std::vector<double> &Hi_D,
+                     keel::ArrayRef<double> Lo_D,
+                     keel::ArrayRef<double> Hi_D,
                      keel::Allocator *mr)
 {
     dwt_argcheck(Lo_D, Hi_D);
@@ -167,8 +169,8 @@ dwt_with_filters_pub(const Value &x,
 
 // Internal entry: takes Lo_R / Hi_R directly.
 Value idwt_with_filters(const Value &cA, const Value &cD,
-                        const std::vector<double> &Lo_R,
-                        const std::vector<double> &Hi_R,
+                        keel::ArrayRef<double> Lo_R,
+                        keel::ArrayRef<double> Hi_R,
                         long long len,
                         keel::Allocator *mr)
 {
@@ -184,7 +186,7 @@ Value idwt_with_filters(const Value &cA, const Value &cD,
     // forward dwt's "drop first 2*(Lf-1) samples then take evens"
     // downsampling, it makes the round-trip exact.
     auto upsample = [&](const Value &v) {
-        std::vector<double> u(2 * L, 0.0);
+        keel::Array<double> u(2 * L, 0.0, mr);
         for (keel::usize i = 0; i < v.numel(); ++i) u[2 * i + 1] = v.elemAsDouble(i);
         return u;
     };
@@ -193,12 +195,12 @@ Value idwt_with_filters(const Value &cA, const Value &cD,
     auto upD = upsample(cD);
 
     // Convolve with synthesis filters (full).
-    auto yA = conv_full(upA, Lo_R);
-    auto yD = conv_full(upD, Hi_R);
+    auto yA = conv_full(upA, Lo_R, mr);
+    auto yD = conv_full(upD, Hi_R, mr);
 
     // Sum (lengths match: 2*L + Lf - 1).
     const keel::usize M = yA.size();
-    std::vector<double> y(M, 0.0);
+    keel::Array<double> y(M, 0.0, mr);
     for (keel::usize i = 0; i < M; ++i) y[i] = yA[i] + yD[i];
 
     // Length rule probed against R2025b (idwt.m → upsconv1.m →
@@ -242,7 +244,7 @@ Value idwt_with_filters(const Value &cA, const Value &cD,
 
 // Public entry: wname → look up filters via wfilters, dispatch to helper.
 Value idwt(const Value &cA, const Value &cD,
-           const std::string &wname,
+           keel::StringRef wname,
            long long len,
            keel::Allocator *mr)
 {
@@ -253,8 +255,8 @@ Value idwt(const Value &cA, const Value &cD,
 // Cross-TU access for appcoef (custom-filter form needs to call this
 // from toolboxes/wavelet/src/dwt/multilevel.cpp).
 Value idwt_with_filters_pub(const Value &cA, const Value &cD,
-                            const std::vector<double> &Lo_R,
-                            const std::vector<double> &Hi_R,
+                            keel::ArrayRef<double> Lo_R,
+                            keel::ArrayRef<double> Hi_R,
                             long long len,
                             keel::Allocator *mr)
 {
