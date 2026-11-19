@@ -352,7 +352,7 @@ static keel::Array<T> extend1D(keel::ArrayRef<T> xv,
     const keel::ArrayRef<T> mid = (mode == "per") ? src.as_ref() : xv;
     const long long Mlen = static_cast<long long>(mid.size());
     keel::Array<T> out;
-    out.reserve(static_cast<keel::usize>(leftN + Mlen + rightN));
+    out.reserve(leftN + Mlen + rightN);
     for (long long i = 0; i < leftN; ++i) out.push_back(sampleLeft(i));
     for (long long i = 0; i < Mlen;  ++i) out.push_back(mid[static_cast<keel::usize>(i)]);
     for (long long i = 0; i < rightN; ++i) out.push_back(sampleRight(i));

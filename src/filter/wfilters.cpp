@@ -33,7 +33,6 @@ namespace numkit::wavelet {
 
 namespace {
 
-const double SQRT2 = 1.41421356237309504880;
 const double INV_SQRT2 = 0.70710678118654752440;
 
 // Lo_R (synthesis scaling filter) for each family, to ~17 significant

@@ -111,8 +111,8 @@ Wavedec2Result wavedec2(const Value &X, int n, keel::StringRef wname,
 
     // Run n successive single-level dwt2 on the running approximation.
     // Stash each level's detail bands (finest = level 1 at index 0).
-    keel::Array<Value> Hs(static_cast<keel::usize>(n), mr), Vs(static_cast<keel::usize>(n), mr), Ds(static_cast<keel::usize>(n), mr);
-    keel::Array<Sz> detSize(static_cast<keel::usize>(n), mr);
+    keel::Array<Value> Hs(n, mr), Vs(static_cast<keel::usize>(n), mr), Ds(static_cast<keel::usize>(n), mr);
+    keel::Array<Sz> detSize(n, mr);
     Value running = X;
     Value approx;
     for (int k = 0; k < n; ++k) {

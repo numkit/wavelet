@@ -167,7 +167,7 @@ HaartResult haart(const Value &x, int level, bool integer,
     keel::usize inLen = colLen;
 
     keel::Array<Value> details(mr);
-    details.reserve(static_cast<keel::usize>(lev));
+    details.reserve(lev);
     HaartResult R;
 
     for (int k = 0; k < lev; ++k) {
