@@ -89,7 +89,7 @@ void idwt_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/, keel::MutArra
 {
     argcheck::checkNargin(args.size(), 3, 7, "idwt");
     auto *mr = ctx.engine->allocator();
-    long long len = -1;
+    keel::i64 len = -1;
 
     if (args[2].isChar() || args[2].isString()) {
         // idwt(cA, cD, wname[, len][, 'mode', extmode])
@@ -98,7 +98,7 @@ void idwt_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/, keel::MutArra
         // Optional positional `len` (numeric scalar) BEFORE any N-V.
         if (i < args.size() && args[i].numel() == 1
             && !(args[i].isChar() || args[i].isString())) {
-            len = (long long)args[i].toScalar();
+            len = (keel::i64)args[i].toScalar();
             ++i;
         }
         parse_mode_nv(args, i, "idwt");
@@ -112,7 +112,7 @@ void idwt_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/, keel::MutArra
         keel::usize i = 4;
         if (i < args.size() && args[i].numel() == 1
             && !(args[i].isChar() || args[i].isString())) {
-            len = (long long)args[i].toScalar();
+            len = (keel::i64)args[i].toScalar();
             ++i;
         }
         parse_mode_nv(args, i, "idwt");

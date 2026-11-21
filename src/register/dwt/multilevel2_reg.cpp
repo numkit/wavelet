@@ -52,7 +52,7 @@ void appcoef2_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/, keel::Mut
 {
     argcheck::checkNargin(args.size(), 3, 4, "appcoef2");
     auto *mr = ctx.engine->allocator();
-    int level = -1;   // default = coarsest
+    keel::i32 level = -1;   // default = coarsest
     if (args.size() >= 4 && !args[3].isEmpty()
         && !(args[3].isChar() || args[3].isString()))
         level = argcheck::expectedPositiveInteger(
@@ -68,7 +68,7 @@ void detcoef2_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/, keel::Mut
     keel::String type = argString(args[0]);
     keel::String lt = type.clone();
     for (auto &c : lt) c = keel::to_ascii_lower(c);
-    const int level = argcheck::expectedPositiveInteger(
+    const keel::i32 level = argcheck::expectedPositiveInteger(
         argcheck::expectedReal(args[3], 4, "level", "detcoef2"), 4, "level", "detcoef2");
 
     if (lt == "all") {

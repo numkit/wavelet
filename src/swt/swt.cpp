@@ -47,7 +47,7 @@ namespace numkit::wavelet {
 
 namespace {
 
-void swtAD_argcheck(const Value &x, int n,
+void swtAD_argcheck(const Value &x, keel::i32 n,
                     keel::ArrayRef<keel::f64> Lo_D,
                     keel::ArrayRef<keel::f64> Hi_D)
 {
@@ -66,7 +66,7 @@ void swtAD_argcheck(const Value &x, int n,
     }
 }
 
-void modwt_argcheck(int n)
+void modwt_argcheck(keel::i32 n)
 {
     if (n < 1)
         throw Error("modwt: level must be ≥ 1",
@@ -88,7 +88,7 @@ void imodwt_argcheck(const Value &swc)
 
 } // anonymous
 
-std::pair<Value, Value> swtAD(const Value &x, int n,
+std::pair<Value, Value> swtAD(const Value &x, keel::i32 n,
                               keel::ArrayRef<keel::f64> Lo_D,
                               keel::ArrayRef<keel::f64> Hi_D,
                               keel::Allocator *mr)
@@ -114,14 +114,14 @@ std::pair<Value, Value> swtAD(const Value &x, int n,
     return {std::move(swa), std::move(swd)};
 }
 
-std::pair<Value, Value> swtAD(const Value &x, int n, keel::StringRef wname,
+std::pair<Value, Value> swtAD(const Value &x, keel::i32 n, keel::StringRef wname,
                               keel::Allocator *mr)
 {
     auto fb = wavelet_filters(wname);
     return swtAD(x, n, fb.Lo_D, fb.Hi_D, mr);
 }
 
-Value swt(const Value &x, int n, keel::ArrayRef<keel::f64> Lo_D,
+Value swt(const Value &x, keel::i32 n, keel::ArrayRef<keel::f64> Lo_D,
           keel::ArrayRef<keel::f64> Hi_D, keel::Allocator *mr)
 {
     if (n < 1)
@@ -145,7 +145,7 @@ Value swt(const Value &x, int n, keel::ArrayRef<keel::f64> Lo_D,
     return out;
 }
 
-Value swt(const Value &x, int n, keel::StringRef wname, keel::Allocator *mr)
+Value swt(const Value &x, keel::i32 n, keel::StringRef wname, keel::Allocator *mr)
 {
     auto fb = wavelet_filters(wname);
     return swt(x, n, fb.Lo_D, fb.Hi_D, mr);
@@ -348,7 +348,7 @@ Value iswt(const Value &swa, const Value &swd, keel::StringRef wname,
 // Unlike SWT, MODWT does NOT require N to divide 2ⁿ — the transform
 // is shift-invariant and works for any N.
 
-Value modwt(const Value &x, int n, keel::StringRef wname, keel::Allocator *mr)
+Value modwt(const Value &x, keel::i32 n, keel::StringRef wname, keel::Allocator *mr)
 {
     modwt_argcheck(n);
     const keel::usize N = x.numel();

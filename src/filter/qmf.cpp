@@ -96,7 +96,7 @@ Value wrev(const Value &x, keel::Allocator *mr)
 // qmf: quadrature mirror filter. y(k) = (-1)^(k-1) * x(N-k+1) for p == 0
 // (default); the whole result is negated for p == 1.
 //   qmf([1 2 3 4]) -> [4 -3 2 -1]; qmf([1 2 3 4], 1) -> [-4 3 -2 1].
-Value qmf(const Value &x, int p, keel::Allocator *mr)
+Value qmf(const Value &x, keel::i32 p, keel::Allocator *mr)
 {
     keel::usize rows, cols;
     readShape(x, rows, cols);

@@ -47,7 +47,7 @@ void qmf_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
              keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 1, 2, "qmf");
-    int p = 0;
+    keel::i32 p = 0;
     if (args.size() >= 2)
         p = argcheck::expectedInteger(
         argcheck::expectedReal(args[1], 2, "p", "qmf"), 2, "p", "qmf");

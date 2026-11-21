@@ -76,7 +76,7 @@ keel::String wentropy_argcheck(keel::StringRef type, keel::f64 param)
 {
     keel::String t(type);
     std::transform(t.begin(), t.end(), t.begin(),
-                   [](unsigned char c) { return keel::to_ascii_lower(c); });
+                   [](keel::u8 c) { return keel::to_ascii_lower(c); });
     if (t == "norm") {
         if (param < 1.0)
             throw Error("wentropy: 'norm' exponent P must be >= 1",
@@ -94,7 +94,7 @@ keel::String ddencmp_argcheck(keel::StringRef opt, keel::StringRef type)
     auto lower = [](keel::StringRef sv) {
         keel::String s(sv);
         std::transform(s.begin(), s.end(), s.begin(),
-                       [](unsigned char c) { return keel::to_ascii_lower(c); });
+                       [](keel::u8 c) { return keel::to_ascii_lower(c); });
         return s;
     };
     keel::String o = lower(opt);
@@ -186,7 +186,7 @@ Value wnoisest(const Value &C, const Value &L, const Value &S, keel::Allocator *
     keel::f64 *od = out.doubleDataMut();
 
     for (keel::usize i = 0; i < k; ++i) {
-        const int level = keel::as<int>(S.elemAsDouble(i));
+        const keel::i32 level = keel::as<keel::i32>(S.elemAsDouble(i));
         Value cD = detcoef(C, L, level, mr);
         auto v = vecFromValue(cD, mr);
         od[i] = keel::wavelet::noise_sigma_mad(keel::ArrayRef<keel::f64>(v.data(), v.size()), mr);
@@ -194,7 +194,7 @@ Value wnoisest(const Value &C, const Value &L, const Value &S, keel::Allocator *
     return out;
 }
 
-Value wdenoise(const Value &x, int level, keel::StringRef wname, keel::Allocator *mr)
+Value wdenoise(const Value &x, keel::i32 level, keel::StringRef wname, keel::Allocator *mr)
 {
     const keel::usize N = x.numel();
     if (N < 2) {

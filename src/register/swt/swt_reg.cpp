@@ -46,7 +46,7 @@ void swt_reg(keel::ArrayRef<Value> args, keel::usize nargout, keel::MutArrayRef<
              CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 3, 4, "swt");
-    const int lev = argcheck::expectedPositiveInteger(
+    const keel::i32 lev = argcheck::expectedPositiveInteger(
         argcheck::expectedReal(args[1], 2, "level", "swt"), 2, "level", "swt");
     auto *mr = ctx.engine->allocator();
     if (args.size() == 4) {
@@ -120,12 +120,12 @@ void modwt_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/, keel::MutArr
     auto *mr = ctx.engine->allocator();
     const Value &x = args[0];
     const keel::usize N = x.numel();
-    const int default_lev = (N >= 2)
-        ? keel::as<int>(std::floor(std::log2(keel::as<keel::f64>(N))))
+    const keel::i32 default_lev = (N >= 2)
+        ? keel::as<keel::i32>(std::floor(std::log2(keel::as<keel::f64>(N))))
         : 1;
 
     keel::String wname("sym4");
-    int lev = default_lev;
+    keel::i32 lev = default_lev;
     if (args.size() >= 2) {
         if (args[1].isChar() || args[1].isString()) {
             wname = args[1].toString();

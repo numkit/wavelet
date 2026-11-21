@@ -42,7 +42,7 @@ inline keel::String shapeOf(const Value &v)
 {
     const Dims &d = v.dims();
     keel::String s = keel::format("{}", d.dim(0));
-    for (int k = 1; k < d.ndim(); ++k) {
+    for (keel::i32 k = 1; k < d.ndim(); ++k) {
         keel::format_into(s, "x{}", d.dim(k));
     }
     return s;
@@ -50,14 +50,14 @@ inline keel::String shapeOf(const Value &v)
 
 /// Per-entry accepted-class masks, each named after its probe family.
 namespace WvClasses {
-inline constexpr unsigned FloatOnly   = 1u << 0;   ///< meyeraux, ihaart a/d (double, single)
-inline constexpr unsigned IntWavelet  = 1u << 1;   ///< iswt (double, single, all ints; logical rejected)
-inline constexpr unsigned AnyNumeric  = 1u << 2;   ///< detcoef2 S, idwt2 coefficients (incl. logical)
-inline constexpr unsigned AnyWithChar = 1u << 3;   ///< wrev, wkeep x (any numeric + char passthrough)
+inline constexpr keel::u32 FloatOnly   = 1u << 0;   ///< meyeraux, ihaart a/d (double, single)
+inline constexpr keel::u32 IntWavelet  = 1u << 1;   ///< iswt (double, single, all ints; logical rejected)
+inline constexpr keel::u32 AnyNumeric  = 1u << 2;   ///< detcoef2 S, idwt2 coefficients (incl. logical)
+inline constexpr keel::u32 AnyWithChar = 1u << 3;   ///< wrev, wkeep x (any numeric + char passthrough)
 }   // namespace WvClasses
 
 /// True when v's base class (complexity aside) is inside mask.
-inline bool classAllowed(const Value &v, unsigned mask)
+inline bool classAllowed(const Value &v, keel::u32 mask)
 {
     const ValueType t = v.type();
     if (t == ValueType::EMPTY)
@@ -81,7 +81,7 @@ inline bool classAllowed(const Value &v, unsigned mask)
 }
 
 /// Human listing of a mask's classes (message text).
-inline keel::StringRef describeClasses(unsigned mask)
+inline keel::StringRef describeClasses(keel::u32 mask)
 {
     if (mask == WvClasses::FloatOnly)
         return "double or single";
@@ -97,8 +97,8 @@ inline keel::StringRef describeClasses(unsigned mask)
 /// unless allowComplex (the entry's reference computes complex values —
 /// the caller handles the complex path or voices its own stub).
 inline void requireWaveClass(const Value &v, keel::StringRef fn,
-                             keel::StringRef argName, int argNum,
-                             unsigned mask, bool allowComplex = false)
+                             keel::StringRef argName, keel::i32 argNum,
+                             keel::u32 mask, bool allowComplex = false)
 {
     const ValueType t = v.type();
     if (t == ValueType::COMPLEX && !allowComplex)
@@ -117,7 +117,7 @@ inline void requireWaveClass(const Value &v, keel::StringRef fn,
 /// @brief Nonempty gate (meyeraux, iswt): the reference rejects empty
 /// arrays with expectedNonempty.
 inline void requireNonempty(const Value &v, keel::StringRef fn,
-                            keel::StringRef argName, int argNum)
+                            keel::StringRef argName, keel::i32 argNum)
 {
     if (v.numel() > 0)
         return;
@@ -134,7 +134,7 @@ inline void storeElem(Value &out, keel::usize i, keel::f64 x)
     switch (out.type()) {
         case ValueType::SINGLE:   out.singleDataMut()[i] = keel::as<keel::f32>(x); break;
         case ValueType::LOGICAL:  out.logicalDataMut()[i] = x != 0.0 ? 1 : 0; break;
-        case ValueType::CHAR:     out.charDataMut()[i] = keel::as<char>(keel::as<int>(x)); break;
+        case ValueType::CHAR:     out.charDataMut()[i] = keel::as<char>(keel::as<keel::i32>(x)); break;
         case ValueType::INT8: {
             const keel::f64 r = std::round(x);
             const keel::f64 c = r < -128.0 ? -128.0 : (r > 127.0 ? 127.0 : r);

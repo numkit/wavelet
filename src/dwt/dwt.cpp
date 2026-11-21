@@ -91,7 +91,7 @@ dwt_with_filters_pub(const Value &x,
 Value idwt_with_filters(const Value &cA, const Value &cD,
                         keel::ArrayRef<keel::f64> Lo_R,
                         keel::ArrayRef<keel::f64> Hi_R,
-                        long long len,
+                        keel::i64 len,
                         keel::Allocator *mr)
 {
     idwt_argcheck(Lo_R, Hi_R);
@@ -122,7 +122,7 @@ Value idwt_with_filters(const Value &cA, const Value &cD,
 
 Value idwt(const Value &cA, const Value &cD,
            keel::StringRef wname,
-           long long len,
+           keel::i64 len,
            keel::Allocator *mr)
 {
     auto fb = idwt_argcheck(wname);
@@ -132,7 +132,7 @@ Value idwt(const Value &cA, const Value &cD,
 Value idwt_with_filters_pub(const Value &cA, const Value &cD,
                             keel::ArrayRef<keel::f64> Lo_R,
                             keel::ArrayRef<keel::f64> Hi_R,
-                            long long len,
+                            keel::i64 len,
                             keel::Allocator *mr)
 {
     idwt_argcheck(Lo_R, Hi_R);

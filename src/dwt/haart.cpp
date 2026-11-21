@@ -48,9 +48,9 @@ namespace numkit::wavelet {
 
 namespace {
 
-int max_haar_level(keel::usize N)
+keel::i32 max_haar_level(keel::usize N)
 {
-    return keel::as<int>(keel::wavelet::haar_max_level(N));
+    return keel::as<keel::i32>(keel::wavelet::haar_max_level(N));
 }
 
 void haar_step_real(const keel::f64 *x, keel::usize inLen, keel::f64 *a, keel::f64 *d,
@@ -102,7 +102,7 @@ Buf load_x(const Value &x, bool /*integer_mode*/)
     return b;
 }
 
-void haart_argcheck(const Value &x, int level, bool integer)
+void haart_argcheck(const Value &x, keel::i32 level, bool integer)
 {
     if (level < 0)
         throw Error("haart: expected LEVEL to be positive",
@@ -119,8 +119,8 @@ void haart_argcheck(const Value &x, int level, bool integer)
         throw Error("haart: the data length must be even. Consider replicating "
                     "for an even length signal, or removing the last element.",
                     0, 0, "haart", "", "numkit:haart:even");
-    const int max_lev = max_haar_level(colLen);
-    const int lev = (level == 0) ? max_lev : level;
+    const keel::i32 max_lev = max_haar_level(colLen);
+    const keel::i32 lev = (level == 0) ? max_lev : level;
     if (lev > max_lev)
         throw Error(keel::format("haart: expected LEVEL to be a scalar with value <= {}", max_lev),
                     0, 0, "haart", "", "numkit:haart:level");
@@ -133,7 +133,7 @@ void haart_argcheck(const Value &x, int level, bool integer)
 
 // ── Public C++ API (see dwt/haart.hpp) ────────────────────────────────
 
-HaartResult haart(const Value &x, int level, bool integer,
+HaartResult haart(const Value &x, keel::i32 level, bool integer,
                   keel::Allocator *mr)
 {
     haart_argcheck(x, level, integer);
@@ -142,8 +142,8 @@ HaartResult haart(const Value &x, int level, bool integer,
     const keel::usize colLen = buf.colLen;
     const keel::usize ncols  = buf.ncols;
 
-    const int max_lev = max_haar_level(colLen);
-    const int lev = (level == 0) ? max_lev : level;
+    const keel::i32 max_lev = max_haar_level(colLen);
+    const keel::i32 lev = (level == 0) ? max_lev : level;
 
     const ValueType vt = buf.isComplex ? ValueType::COMPLEX : ValueType::DOUBLE;
     keel::Array<keel::f64>  curR = keel::move(buf.real);
@@ -154,7 +154,7 @@ HaartResult haart(const Value &x, int level, bool integer,
     details.reserve(lev);
     HaartResult R;
 
-    for (int k = 0; k < lev; ++k) {
+    for (keel::i32 k = 0; k < lev; ++k) {
         const keel::usize H = inLen / 2;
         Value aMat = Value::matrix(H, ncols, vt, mr);
         Value dMat = Value::matrix(H, ncols, vt, mr);
@@ -189,7 +189,7 @@ HaartResult haart(const Value &x, int level, bool integer,
         R.d = std::move(details[0]);              // plain matrix
     } else {
         Value cellOut = Value::cell(keel::as<keel::usize>(lev), 1, mr);
-        for (int k = 0; k < lev; ++k)
+        for (keel::i32 k = 0; k < lev; ++k)
             cellOut.cellAt(keel::as<keel::usize>(k)) = std::move(details[k]);
         R.d = std::move(cellOut);                 // d{1} is finest
     }

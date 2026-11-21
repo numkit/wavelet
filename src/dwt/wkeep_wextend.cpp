@@ -65,7 +65,7 @@ keel::String lower(keel::StringRef sv)
 // A whole LEN value that is a nonnegative integer in [0, N]; the probed
 // reference returns X UNCHANGED for anything else (negative, too big,
 // non-integer) instead of erroring.
-bool validKeepLen(keel::f64 n, long long N)
+bool validKeepLen(keel::f64 n, keel::i64 N)
 {
     return n >= 0.0 && n <= keel::as<keel::f64>(N) && n == std::floor(n);
 }
@@ -109,31 +109,31 @@ Value wkeep(const Value &x, const Value &len, const Value &opt,
         // sub-matrix form. Invalid values return x unchanged.
         const keel::f64 l0 = len.elemAsDouble(0);
         const keel::f64 l1 = len.elemAsDouble(1);
-        long long R, C;
+        keel::i64 R, C;
         if (xIsVector) {
             if (cols > 1 || (rows == 1 && cols == 1)) {   // row-like
-                if (!validKeepLen(l1, keel::as<long long>(N)))
+                if (!validKeepLen(l1, keel::as<keel::i64>(N)))
                     return internal::copyInClass(x, mr);
-                R = 1; C = keel::as<long long>(l1);
+                R = 1; C = keel::as<keel::i64>(l1);
             } else {                                       // column
-                if (!validKeepLen(l0, keel::as<long long>(N)))
+                if (!validKeepLen(l0, keel::as<keel::i64>(N)))
                     return internal::copyInClass(x, mr);
-                R = keel::as<long long>(l0); C = 1;
+                R = keel::as<keel::i64>(l0); C = 1;
             }
         } else {
-            if (!validKeepLen(l0, keel::as<long long>(rows))
-                || !validKeepLen(l1, keel::as<long long>(cols)))
+            if (!validKeepLen(l0, keel::as<keel::i64>(rows))
+                || !validKeepLen(l1, keel::as<keel::i64>(cols)))
                 return internal::copyInClass(x, mr);
-            R = keel::as<long long>(l0);
-            C = keel::as<long long>(l1);
+            R = keel::as<keel::i64>(l0);
+            C = keel::as<keel::i64>(l1);
         }
         if (R < 0 || C < 0)
             return internal::copyInClass(x, mr);
 
-        long long fr1, fc1;  // 1-based corners
+        keel::i64 fr1, fc1;  // 1-based corners
         if (!opt.isEmpty() && opt.numel() == 2) {
-            fr1 = keel::as<long long>(opt.elemAsDouble(0));
-            fc1 = keel::as<long long>(opt.elemAsDouble(1));
+            fr1 = keel::as<keel::i64>(opt.elemAsDouble(0));
+            fc1 = keel::as<keel::i64>(opt.elemAsDouble(1));
         } else if (!opt.isEmpty() && !opt.isChar() && !opt.isString()) {
             // A scalar FIRST on a 2-element L: the reference bails with
             // its generic invalid-argument diagnostic.
@@ -142,12 +142,12 @@ Value wkeep(const Value &x, const Value &len, const Value &opt,
                         0, 0, "wkeep", "", "numkit:wkeep:opt");
         } else {
             // Central — same formula as 1-D: floor((N - n) / 2) + 1.
-            fr1 = keel::as<long long>((rows - keel::as<keel::usize>(R)) / 2) + 1;
-            fc1 = keel::as<long long>((cols - keel::as<keel::usize>(C)) / 2) + 1;
+            fr1 = keel::as<keel::i64>((rows - keel::as<keel::usize>(R)) / 2) + 1;
+            fc1 = keel::as<keel::i64>((cols - keel::as<keel::usize>(C)) / 2) + 1;
         }
         if (fr1 < 1 || fc1 < 1 ||
-            fr1 + R - 1 > keel::as<long long>(rows) ||
-            fc1 + C - 1 > keel::as<long long>(cols))
+            fr1 + R - 1 > keel::as<keel::i64>(rows) ||
+            fc1 + C - 1 > keel::as<keel::i64>(cols))
             throw Error("wkeep: requested window is out of range.",
                         0, 0, "wkeep", "", "numkit:wkeep:range");
 
@@ -158,9 +158,9 @@ Value wkeep(const Value &x, const Value &len, const Value &opt,
                                        keel::as<keel::usize>(C), x.type(), mr);
         if (cplx && x.isSingleComplex()) y.setSingleComplex(true);
         if (R == 0 || C == 0) return y;
-        for (long long c = 0; c < C; ++c) {
+        for (keel::i64 c = 0; c < C; ++c) {
             const keel::usize srcC = keel::as<keel::usize>(fc1 - 1 + c);
-            for (long long r = 0; r < R; ++r) {
+            for (keel::i64 r = 0; r < R; ++r) {
                 const keel::usize srcR = keel::as<keel::usize>(fr1 - 1 + r);
                 const keel::usize src = srcC * rows + srcR;
                 const keel::usize dst = keel::as<keel::usize>(c) * keel::as<keel::usize>(R)
@@ -179,21 +179,21 @@ Value wkeep(const Value &x, const Value &len, const Value &opt,
                                  internal::shapeOf(len)),
                     0, 0, "wkeep", "", "numkit:wkeep:inputType");
     const keel::f64 nD = len.elemAsDouble(0);
-    if (!validKeepLen(nD, keel::as<long long>(N)))
+    if (!validKeepLen(nD, keel::as<keel::i64>(N)))
         return internal::copyInClass(x, mr);
-    const long long n = keel::as<long long>(nD);
+    const keel::i64 n = keel::as<keel::i64>(nD);
 
-    long long start1 = 1;                                  // 1-based start
+    keel::i64 start1 = 1;                                  // 1-based start
     if (!opt.isEmpty()) {
         if (opt.isChar() || opt.isString()) {
             const keel::String optStr = opt.toString();
             const keel::String s = lower(optStr);
             if (s == "c" || s == "central" || s == "centered" || s == "centred")
-                start1 = keel::as<long long>((N - keel::as<keel::usize>(n)) / 2) + 1;
+                start1 = keel::as<keel::i64>((N - keel::as<keel::usize>(n)) / 2) + 1;
             else if (s == "l")
                 start1 = 1;
             else if (s == "r")
-                start1 = keel::as<long long>(N) - n + 1;
+                start1 = keel::as<keel::i64>(N) - n + 1;
             else
                 throw Error(keel::format("wkeep: unknown option '{}' "
                                          "(expected 'c', 'l', 'r' or a numeric start)", s),
@@ -204,12 +204,12 @@ Value wkeep(const Value &x, const Value &len, const Value &opt,
                 throw Error("wkeep: optional argument FIRST must be an "
                             "integer start index.",
                             0, 0, "wkeep", "", "numkit:wkeep:opt");
-            start1 = keel::as<long long>(f);
+            start1 = keel::as<keel::i64>(f);
         }
     } else {
-        start1 = keel::as<long long>((N - keel::as<keel::usize>(n)) / 2) + 1;
+        start1 = keel::as<keel::i64>((N - keel::as<keel::usize>(n)) / 2) + 1;
     }
-    if (start1 < 1 || start1 + n - 1 > keel::as<long long>(N))
+    if (start1 < 1 || start1 + n - 1 > keel::as<keel::i64>(N))
         throw Error("wkeep: requested window is out of range.",
                     0, 0, "wkeep", "", "numkit:wkeep:range");
 
@@ -221,7 +221,7 @@ Value wkeep(const Value &x, const Value &len, const Value &opt,
                    : Value::matrix(outRows, outCols, x.type(), mr);
     if (cplx && x.isSingleComplex()) y.setSingleComplex(true);
     if (n == 0) return y;
-    for (long long k = 0; k < n; ++k) {
+    for (keel::i64 k = 0; k < n; ++k) {
         const keel::usize src = keel::as<keel::usize>(start1 - 1 + k);
         if (cplx) y.complexDataMut()[k] = x.complexElem(src);
         else internal::storeElem(y, keel::as<keel::usize>(k), x.elemAsDouble(src));
@@ -264,18 +264,18 @@ namespace detail {
 // permutation/linear-combination core on double and Complex buffers.
 template <typename T>
 static keel::Array<T> extend1D(keel::ArrayRef<T> xv,
-                               long long lf, char side,
+                               keel::i64 lf, char side,
                                keel::StringRef mode)
 {
-    const long long N = keel::as<long long>(xv.size());
+    const keel::i64 N = keel::as<keel::i64>(xv.size());
     if (lf < 0) lf = 0;
     // For 'per' the data segment is the (possibly edge-padded) version of x.
     keel::Array<T> src;
     src.assign(xv);
     if (mode == "per" && (N % 2) == 1 && N > 0) src.push_back(xv[keel::as<keel::usize>(N - 1)]);
-    const long long M = keel::as<long long>(src.size());
+    const keel::i64 M = keel::as<keel::i64>(src.size());
 
-    auto sampleLeft = [&](long long k) -> T {
+    auto sampleLeft = [&](keel::i64 k) -> T {
         // k = 0..lf-1, with k=0 = furthest from data (output[0]).
         if (mode == "sym" || mode == "symh") {
             return xv[keel::as<keel::usize>(lf - 1 - k)];
@@ -283,7 +283,7 @@ static keel::Array<T> extend1D(keel::ArrayRef<T> xv,
         if (mode == "symw") {
             // pre = [x(lf+1), …, x(2)] in 1-based → indices [lf, lf-1, …, 1] 0-based.
             // For output position k (0..lf-1), src idx = lf - k.
-            const long long idx = lf - k;
+            const keel::i64 idx = lf - k;
             return (idx < N) ? xv[keel::as<keel::usize>(idx)] : xv[keel::as<keel::usize>(N - 1)];
         }
         if (mode == "asym" || mode == "asymh") {
@@ -292,7 +292,7 @@ static keel::Array<T> extend1D(keel::ArrayRef<T> xv,
         if (mode == "asymw") {
             // 2·x(1) - x(j) where j is the symw index (1-based j = lf+1-k = lf-k+1).
             // 0-based: idx = lf - k.
-            const long long idx = lf - k;
+            const keel::i64 idx = lf - k;
             const T xj = (idx < N) ? xv[keel::as<keel::usize>(idx)] : xv[keel::as<keel::usize>(N - 1)];
             return T(2) * xv[0] - xj;
         }
@@ -312,21 +312,21 @@ static keel::Array<T> extend1D(keel::ArrayRef<T> xv,
         }
         return T(0);  // zpd
     };
-    auto sampleRight = [&](long long k) -> T {
+    auto sampleRight = [&](keel::i64 k) -> T {
         // k = 0..lf-1, k=0 = closest to data.
         if (mode == "sym" || mode == "symh") {
             return xv[keel::as<keel::usize>(N - 1 - k)];
         }
         if (mode == "symw") {
             // post = [x(N-1), …, x(N-lf)] in 1-based → indices [N-2, N-3, …, N-lf-1] 0-based.
-            const long long idx = N - 2 - k;
+            const keel::i64 idx = N - 2 - k;
             return (idx >= 0) ? xv[keel::as<keel::usize>(idx)] : xv[0];
         }
         if (mode == "asym" || mode == "asymh") {
             return -xv[keel::as<keel::usize>(N - 1 - k)];
         }
         if (mode == "asymw") {
-            const long long idx = N - 2 - k;
+            const keel::i64 idx = N - 2 - k;
             const T xj = (idx >= 0) ? xv[keel::as<keel::usize>(idx)] : xv[0];
             return T(2) * xv[keel::as<keel::usize>(N - 1)] - xj;
         }
@@ -347,23 +347,23 @@ static keel::Array<T> extend1D(keel::ArrayRef<T> xv,
         return T(0);
     };
 
-    const long long leftN  = (side == 'r') ? 0 : lf;
-    const long long rightN = (side == 'l') ? 0 : lf;
+    const keel::i64 leftN  = (side == 'r') ? 0 : lf;
+    const keel::i64 rightN = (side == 'l') ? 0 : lf;
     const keel::ArrayRef<T> mid = (mode == "per") ? src.as_ref() : xv;
-    const long long Mlen = keel::as<long long>(mid.size());
+    const keel::i64 Mlen = keel::as<keel::i64>(mid.size());
     keel::Array<T> out;
     out.reserve(leftN + Mlen + rightN);
-    for (long long i = 0; i < leftN; ++i) out.push_back(sampleLeft(i));
-    for (long long i = 0; i < Mlen;  ++i) out.push_back(mid[keel::as<keel::usize>(i)]);
-    for (long long i = 0; i < rightN; ++i) out.push_back(sampleRight(i));
+    for (keel::i64 i = 0; i < leftN; ++i) out.push_back(sampleLeft(i));
+    for (keel::i64 i = 0; i < Mlen;  ++i) out.push_back(mid[keel::as<keel::usize>(i)]);
+    for (keel::i64 i = 0; i < rightN; ++i) out.push_back(sampleRight(i));
     return out;
 }
 
 // Explicit instantiations for the two buffer flavours wextend uses.
 template keel::Array<keel::f64> extend1D<keel::f64>(keel::ArrayRef<keel::f64>,
-                                              long long, char, keel::StringRef);
+                                              keel::i64, char, keel::StringRef);
 template keel::Array<keel::c64> extend1D<keel::c64>(keel::ArrayRef<keel::c64>,
-                                                    long long, char, keel::StringRef);
+                                                    keel::i64, char, keel::StringRef);
 
 } // namespace detail
 
@@ -384,7 +384,7 @@ char parseLocChar(char c)
 // Read LF: a scalar nonnegative integer, or a [rows cols] pair for the
 // 2-D forms. Non-integer / complex / negative values reject.
 void parseExtLf(const Value &lf, const char *fn,
-                long long &lfRows, long long &lfCols, bool twoDim)
+                keel::i64 &lfRows, keel::i64 &lfCols, bool twoDim)
 {
     if (lf.type() == ValueType::COMPLEX)
         throw Error(keel::format("{}: input 4 (L) must be a nonnegative "
@@ -402,8 +402,8 @@ void parseExtLf(const Value &lf, const char *fn,
         if (a != std::floor(a) || b != std::floor(b))
             throw Error(keel::format("{}: input 4 (L) must be an integer.", fn),
                         0, 0, fn, "", keel::format("numkit:{}:expectedInteger", fn));
-        lfRows = keel::as<long long>(a);
-        lfCols = keel::as<long long>(b);
+        lfRows = keel::as<keel::i64>(a);
+        lfCols = keel::as<keel::i64>(b);
         return;
     }
     if (lf.numel() != 1)
@@ -417,14 +417,14 @@ void parseExtLf(const Value &lf, const char *fn,
     if (v != std::floor(v))
         throw Error(keel::format("{}: input 4 (L) must be an integer.", fn),
                     0, 0, fn, "", keel::format("numkit:{}:expectedInteger", fn));
-    lfRows = lfCols = keel::as<long long>(v);
+    lfRows = lfCols = keel::as<keel::i64>(v);
 }
 
 void wextend_argcheck(const Value &type, keel::StringRef modeRaw,
                       const Value &x, const Value &lf,
-                      int &dim, bool &extRows, bool &extCols,
+                      keel::i32 &dim, bool &extRows, bool &extCols,
                       keel::String &mode,
-                      long long &lfRows, long long &lfCols)
+                      keel::i64 &lfRows, keel::i64 &lfCols)
 {
     dim = 0;
     extRows = true;
@@ -440,7 +440,7 @@ void wextend_argcheck(const Value &type, keel::StringRef modeRaw,
             throw Error("wextend: TYPE must be 1, '1d', 2, '2d', 'ar' or 'ac'",
                         0, 0, "wextend", "", "numkit:wextend:dim");
     } else if (type.numel() == 1 && !type.isCell() && !type.isStruct()) {
-        const int t = keel::as<int>(type.elemAsDouble(0));
+        const keel::i32 t = keel::as<keel::i32>(type.elemAsDouble(0));
         if (t != 1 && t != 2)
             throw Error("wextend: TYPE must be 1, '1d', 2, '2d', 'ar' or 'ac'",
                         0, 0, "wextend", "", "numkit:wextend:dim");
@@ -484,11 +484,11 @@ Value wextend(const Value &type, keel::StringRef modeRaw, const Value &x,
               const Value &lf, keel::StringRef sideRaw,
               keel::Allocator *mr)
 {
-    int dim = 0;
+    keel::i32 dim = 0;
     bool extRows = true;
     bool extCols = true;
     keel::String mode;
-    long long lfRows = 0, lfCols = 0;
+    keel::i64 lfRows = 0, lfCols = 0;
     wextend_argcheck(type, modeRaw, x, lf, dim, extRows, extCols,
                      mode, lfRows, lfCols);
 
@@ -549,8 +549,8 @@ Value wextend(const Value &type, keel::StringRef modeRaw, const Value &x,
     const bool cplx = x.type() == ValueType::COMPLEX;
     const char sideR = sideRows == 'n' ? 0 : sideRows;
     const char sideC = sideCols == 'n' ? 0 : sideCols;
-    const long long lfR = sideR ? lfRows : 0;
-    const long long lfC = sideC ? lfCols : 0;
+    const keel::i64 lfR = sideR ? lfRows : 0;
+    const keel::i64 lfC = sideC ? lfCols : 0;
 
     if (!cplx) {
         keel::Array<keel::f64> data(rows * cols);

@@ -41,11 +41,11 @@ void idwt2_argcheck(const Value &cA, const Value &cH,
 {
     const Value *coefs[4] = {&cA, &cH, &cV, &cD};
     const char *names[4] = {"cA", "cH", "cV", "cD"};
-    for (int k = 0; k < 4; ++k)
+    for (keel::i32 k = 0; k < 4; ++k)
         internal::requireWaveClass(*coefs[k], "idwt2", names[k], k + 1,
                                    internal::WvClasses::AnyNumeric,
                                    /*allowComplex=*/true);
-    for (int k = 1; k < 4; ++k) {
+    for (keel::i32 k = 1; k < 4; ++k) {
         if (coefs[k]->dims().rows() != cA.dims().rows()
             || coefs[k]->dims().cols() != cA.dims().cols())
             throw Error(keel::format("idwt2: cA, cH, cV and cD must have the same size (got {} and {}).",
@@ -90,7 +90,7 @@ Dwt2Result dwt2(const Value &X, keel::StringRef wname,
 Value idwt2(const Value &cA, const Value &cH,
             const Value &cV, const Value &cD,
             keel::StringRef wname,
-            long long outRows, long long outCols,
+            keel::i64 outRows, keel::i64 outCols,
             keel::Allocator *mr)
 {
     idwt2_argcheck(cA, cH, cV, cD);
@@ -130,7 +130,7 @@ Value idwt2(const Value &cA, const Value &cH,
     const keel::usize nBand = rows * cols;
     auto runPart = [&](bool imag) {
         keel::Array<keel::f64> b[4];
-        for (int k = 0; k < 4; ++k) {
+        for (keel::i32 k = 0; k < 4; ++k) {
             b[k] = keel::Array<keel::f64>(nBand, 0.0, mr);
             if (!imag) {
                 for (keel::usize i = 0; i < nBand; ++i) b[k][i] = coefs[k]->elemAsDouble(i);

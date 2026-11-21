@@ -38,7 +38,7 @@ Value wrev(const Value &x, keel::Allocator *mr = nullptr);
 /// @param mr  Memory resource (nullptr → process default).
 /// @return    Quadrature mirror filter, same shape as `x`.
 /// @see wrev
-Value qmf(const Value &x, int p = 0, keel::Allocator *mr = nullptr);
+Value qmf(const Value &x, keel::i32 p = 0, keel::Allocator *mr = nullptr);
 
 
 /// @}

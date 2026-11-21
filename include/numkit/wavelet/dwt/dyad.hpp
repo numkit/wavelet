@@ -30,7 +30,7 @@ namespace numkit::wavelet {
 /// @param mr    Memory resource (nullptr → process default).
 /// @return      Downsampled array.
 /// @see dyadup
-Value dyaddown(const Value &x, int odd = 0, char type = 'c',
+Value dyaddown(const Value &x, keel::i32 odd = 0, char type = 'c',
                keel::Allocator *mr = nullptr);
 
 /// @brief Dyadic upsampling with zero insertion — `y = dyadup(x, odd, type)`.
@@ -46,7 +46,7 @@ Value dyaddown(const Value &x, int odd = 0, char type = 'c',
 /// @param mr    Memory resource (nullptr → process default).
 /// @return      Upsampled array.
 /// @see dyaddown
-Value dyadup(const Value &x, int odd = 1, char type = 'c',
+Value dyadup(const Value &x, keel::i32 odd = 1, char type = 'c',
              keel::Allocator *mr = nullptr);
 
 /// @brief Maximum wavelet decomposition level — `L = wmaxlev(N, wname)`.

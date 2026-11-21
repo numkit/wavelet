@@ -31,19 +31,19 @@ void wrcoef_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
                     0, 0, "wrcoef", "", "numkit:wrcoef:type");
     const keel::String type = args[0].toString();
 
-    auto parse_level = [](const Value &v) -> int {
+    auto parse_level = [](const Value &v) -> keel::i32 {
         if (v.isEmpty()) return -1;
         const keel::f64 nd = v.toScalar();
         if (nd < 0.0 || nd != std::floor(nd))
             throw Error("wrcoef: level n must be a non-negative integer",
                         0, 0, "wrcoef", "", "numkit:wrcoef:level");
-        return keel::as<int>(nd);
+        return keel::as<keel::i32>(nd);
     };
 
     if (args[3].isChar() || args[3].isString()) {
         argcheck::checkNargin(args.size(), 4, 5, "wrcoef");
         const keel::String wname = args[3].toString();
-        const int n = (args.size() >= 5) ? parse_level(args[4]) : -1;
+        const keel::i32 n = (args.size() >= 5) ? parse_level(args[4]) : -1;
         outs[0] = wrcoef(type, args[1], args[2], wname, n,
                          ctx.engine->allocator());
     } else {
@@ -58,7 +58,7 @@ void wrcoef_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
             for (keel::usize i = 0; i < v.numel(); ++i) out[i] = v.elemAsDouble(i);
             return out;
         };
-        const int n = (args.size() >= 6) ? parse_level(args[5]) : -1;
+        const keel::i32 n = (args.size() >= 6) ? parse_level(args[5]) : -1;
         outs[0] = wrcoef(type, args[1], args[2],
                          read_vec(args[3]), read_vec(args[4]), n,
                          ctx.engine->allocator());

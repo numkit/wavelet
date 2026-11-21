@@ -45,7 +45,7 @@ void idwt2_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/, keel::MutArr
                CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 5, 6, "idwt2");
-    long long outRows = -1, outCols = -1;
+    keel::i64 outRows = -1, outCols = -1;
     if (args.size() >= 6 && !args[5].isEmpty()) {
         // sx form, probed R2025b: a length-2 vector [rows cols] (single
         // fine); a scalar sx is NOT accepted; a char sx is ignored (the
@@ -61,8 +61,8 @@ void idwt2_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/, keel::MutArr
                         "[rows cols] size vector.",
                         0, 0, "idwt2", "", "numkit:idwt2:size");
         } else if (sx.numel() >= 2) {
-            outRows = keel::as<long long>(sx.elemAsDouble(0));
-            outCols = keel::as<long long>(sx.elemAsDouble(1));
+            outRows = keel::as<keel::i64>(sx.elemAsDouble(0));
+            outCols = keel::as<keel::i64>(sx.elemAsDouble(1));
         }
     }
     outs[0] = idwt2(args[0], args[1], args[2], args[3],

@@ -83,7 +83,7 @@ Value wnoisest(const Value &C, const Value &L, const Value &S,
 /// @endcode
 ///
 /// @see wthresh, wnoisest, wavedec
-Value wdenoise(const Value &x, int level, keel::StringRef wname,
+Value wdenoise(const Value &x, keel::i32 level, keel::StringRef wname,
                keel::Allocator *mr = nullptr);
 
 /// Entropy of a coefficient vector (`E = wentropy(X, T[, P])`).

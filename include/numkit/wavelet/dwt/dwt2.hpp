@@ -70,7 +70,7 @@ Dwt2Result dwt2(const Value &X, keel::StringRef wname,
 Value idwt2(const Value &cA, const Value &cH,
             const Value &cV, const Value &cD,
             keel::StringRef wname,
-            long long outRows /* = -1 */, long long outCols /* = -1 */,
+            keel::i64 outRows /* = -1 */, keel::i64 outCols /* = -1 */,
             keel::Allocator *mr = nullptr);
 
 

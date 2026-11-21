@@ -95,7 +95,7 @@ cmorwavf(keel::f64 lb, keel::f64 ub, keel::usize N, keel::f64 fb, keel::f64 fc,
 ///
 /// @see cmorwavf, shanwavf
 std::tuple<Value, Value>
-fbspwavf(keel::f64 lb, keel::f64 ub, keel::usize N, int m, keel::f64 fb, keel::f64 fc,
+fbspwavf(keel::f64 lb, keel::f64 ub, keel::usize N, keel::i32 m, keel::f64 fb, keel::f64 fc,
          keel::Allocator *mr = nullptr);
 
 /// Real Gaussian wavelet of order p (`[psi, x] = gauswavf(LB, UB, N, p)`).
@@ -107,7 +107,7 @@ fbspwavf(keel::f64 lb, keel::f64 ub, keel::usize N, int m, keel::f64 fb, keel::f
 ///
 /// @see cgauwavf
 std::tuple<Value, Value>
-gauswavf(keel::f64 lb, keel::f64 ub, keel::usize N, int p,
+gauswavf(keel::f64 lb, keel::f64 ub, keel::usize N, keel::i32 p,
          keel::Allocator *mr = nullptr);
 
 /// Complex Gaussian wavelet of order p (`[psi, x] = cgauwavf(LB, UB, N, p)`).
@@ -118,7 +118,7 @@ gauswavf(keel::f64 lb, keel::f64 ub, keel::usize N, int p,
 ///
 /// @see gauswavf
 std::tuple<Value, Value>
-cgauwavf(keel::f64 lb, keel::f64 ub, keel::usize N, int p,
+cgauwavf(keel::f64 lb, keel::f64 ub, keel::usize N, keel::i32 p,
          keel::Allocator *mr = nullptr);
 
 /// Result of @ref centfrqGrid (`[freq, xval, recfreq] = centfrq(wname, iter[, 'plot'])`).
@@ -142,7 +142,7 @@ struct CentfrqResult {
 /// @return       Center frequency in Hz.
 ///
 /// @see centfrqGrid, scal2frq
-keel::f64 centfrq(keel::StringRef wname, int iter = 8);
+keel::f64 centfrq(keel::StringRef wname, keel::i32 iter = 8);
 
 /// Wavelet center frequency with grid and single-bin sinusoidal approximation.
 ///
@@ -153,7 +153,7 @@ keel::f64 centfrq(keel::StringRef wname, int iter = 8);
 ///                     is empty `0x0`.
 /// @param mr           Memory resource (nullptr -> process default).
 /// @return             @ref CentfrqResult `(freq, xval, recfreq)`.
-CentfrqResult centfrqGrid(keel::StringRef wname, int iter = 8,
+CentfrqResult centfrqGrid(keel::StringRef wname, keel::i32 iter = 8,
                           bool withRecfreq = false,
                           keel::Allocator *mr = nullptr);
 
@@ -202,7 +202,7 @@ struct CwtResult {
 CwtResult cwt(const Value &x,
               keel::StringRef wname = "morse",
               keel::f64 fs = 1.0,
-              int voicesPerOctave = 10,
+              keel::i32 voicesPerOctave = 10,
               keel::f64 timeBandwidth = 60.0,
               keel::f64 gamma = 3.0,
               bool extendSignal = true,

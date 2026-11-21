@@ -20,7 +20,7 @@ namespace numkit::wavelet {
 
 namespace {
 
-char dyad_argcheck(const Value & /*x*/, int /*odd*/, char type)
+char dyad_argcheck(const Value & /*x*/, keel::i32 /*odd*/, char type)
 {
     const char c = keel::to_ascii_lower(type);
     if (c != 'c' && c != 'r' && c != 'm')
@@ -53,11 +53,11 @@ void outShape(keel::usize inRows, keel::usize inCols, keel::usize outN,
     else                            { outRows = 1;   outCols = outN; }
 }
 
-inline keel::usize outLenDown(keel::usize N, int odd)
+inline keel::usize outLenDown(keel::usize N, keel::i32 odd)
 {
     return (odd == 0) ? (N / 2) : ((N + 1) / 2);
 }
-inline keel::usize outLenUp(keel::usize N, int odd)
+inline keel::usize outLenUp(keel::usize N, keel::i32 odd)
 {
     if (N == 0) return 0;
     return (odd == 0) ? (2 * N - 1) : (2 * N + 1);
@@ -71,7 +71,7 @@ inline bool isMatrix(keel::usize rows, keel::usize cols)
 
 // ── Public C++ API (see dwt/dyad.hpp) ─────────────────────────────────
 
-Value dyaddown(const Value &x, int odd, char type,
+Value dyaddown(const Value &x, keel::i32 odd, char type,
                keel::Allocator *mr)
 {
     type = dyad_argcheck(x, odd, type);
@@ -132,7 +132,7 @@ Value dyaddown(const Value &x, int odd, char type,
     return y;
 }
 
-Value dyadup(const Value &x, int odd, char type,
+Value dyadup(const Value &x, keel::i32 odd, char type,
              keel::Allocator *mr)
 {
     type = dyad_argcheck(x, odd, type);

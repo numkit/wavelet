@@ -39,7 +39,7 @@ struct HaartResult {
 /// @return         @ref HaartResult `{ a, d }`.
 /// @throws Error on empty/odd-length input, `level` above the maximum, or
 ///         `integer == true` with complex input.
-HaartResult haart(const Value &x, int level = 0, bool integer = false,
+HaartResult haart(const Value &x, keel::i32 level = 0, bool integer = false,
                   keel::Allocator *mr = nullptr);
 
 

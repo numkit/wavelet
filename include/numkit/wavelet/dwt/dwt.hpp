@@ -80,7 +80,7 @@ dwt_with_filters_pub(const Value &x,
 /// @see dwt, idwt_with_filters_pub
 Value idwt(const Value &cA, const Value &cD,
            keel::StringRef wname,
-           long long len /* = -1 */,
+           keel::i64 len /* = -1 */,
            keel::Allocator *mr = nullptr);
 
 /// Internal entry: idwt with explicit synthesis filters.
@@ -102,7 +102,7 @@ Value idwt(const Value &cA, const Value &cD,
 Value idwt_with_filters_pub(const Value &cA, const Value &cD,
                             keel::ArrayRef<keel::f64> Lo_R,
                             keel::ArrayRef<keel::f64> Hi_R,
-                            long long len,
+                            keel::i64 len,
                             keel::Allocator *mr = nullptr);
 
 

@@ -30,7 +30,7 @@ void haart_reg(keel::ArrayRef<Value> args, keel::usize nargout,
     argcheck::checkNargin(args.size(), 1, 3, "haart");
     // Parse level (positive integer) + integerflag string here for
     // script-quality errors, then delegate to the public haart().
-    int level = 0;  // 0 -> auto (max level), resolved inside haart()
+    keel::i32 level = 0;  // 0 -> auto (max level), resolved inside haart()
     if (args.size() >= 2 && !args[1].isEmpty()) {
         const keel::f64 lvld = args[1].toScalar();
         if (!(lvld > 0.0))
@@ -39,7 +39,7 @@ void haart_reg(keel::ArrayRef<Value> args, keel::usize nargout,
         if (lvld != std::floor(lvld))
             throw Error("haart: expected LEVEL to be an integer",
                         0, 0, "haart", "", "numkit:haart:level");
-        level = keel::as<int>(lvld);
+        level = keel::as<keel::i32>(lvld);
     }
 
     bool integer_mode = false;
@@ -68,7 +68,7 @@ void ihaart_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
     argcheck::checkNargin(args.size(), 2, 4, "ihaart");
     // Lax positional parse: level (number) and/or integerflag (string), in
     // any order. The level < Nlevels range check is done inside ihaart().
-    int level = 0;
+    keel::i32 level = 0;
     bool integer_mode = false;
     for (keel::usize i = 2; i < args.size(); ++i) {
         const Value &arg = args[i];
@@ -90,7 +90,7 @@ void ihaart_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
             if (lvld != std::floor(lvld))
                 throw Error("ihaart: expected LEVEL to be an integer",
                             0, 0, "ihaart", "", "numkit:ihaart:level");
-            level = keel::as<int>(lvld);
+            level = keel::as<keel::i32>(lvld);
         }
     }
     outs[0] = ihaart(args[0], args[1], level, integer_mode,

@@ -101,7 +101,7 @@ void fbspwavf_reg(keel::ArrayRef<Value> args, keel::usize nargout,
     const keel::f64 ub = args[1].toScalar();
     const keel::usize N  = keel::as<keel::usize>(argcheck::expectedPositiveInteger(
         argcheck::expectedReal(args[2], 3, "N", "fbspwavf"), 3, "N", "fbspwavf"));
-    const int    m  = argcheck::expectedPositiveInteger(
+    const keel::i32    m  = argcheck::expectedPositiveInteger(
         argcheck::expectedReal(args[3], 4, "m", "fbspwavf"), 4, "m", "fbspwavf");
     const keel::f64 fb = args[4].toScalar();
     const keel::f64 fc = args[5].toScalar();
@@ -118,7 +118,7 @@ void centfrq_reg(keel::ArrayRef<Value> args, keel::usize nargout,
         throw Error("centfrq: WNAME must be a string or char vector",
                     0, 0, "centfrq", "", "numkit:centfrq:invalidWavelet");
     const keel::String wname = args[0].toString();
-    int iter = 8;
+    keel::i32 iter = 8;
     if (args.size() >= 2 && !args[1].isEmpty()) {
         iter = argcheck::expectedPositiveInteger(
             argcheck::expectedReal(args[1], 2, "ITER", "centfrq"),
@@ -158,7 +158,7 @@ void cwt_reg(keel::ArrayRef<Value> args, keel::usize nargout,
     argcheck::checkNargin(args.size(), 1, 13, "cwt");
     keel::String wname("morse");
     keel::f64 fs = 1.0;
-    int voicesPerOctave = 10;
+    keel::i32 voicesPerOctave = 10;
     keel::f64 timeBandwidth = 60.0;
     keel::f64 gamma = 3.0;
     bool extendSignal = true;
@@ -182,7 +182,7 @@ void cwt_reg(keel::ArrayRef<Value> args, keel::usize nargout,
         }
     }
     if (idx < args.size() && args[idx].isNumeric() && args[idx].numel() == 1) {
-        fs = argcheck::expectedReal(args[idx], keel::as<int>(idx + 1), "FS", "cwt");
+        fs = argcheck::expectedReal(args[idx], keel::as<keel::i32>(idx + 1), "FS", "cwt");
         ++idx;
     }
 
@@ -198,10 +198,10 @@ void cwt_reg(keel::ArrayRef<Value> args, keel::usize nargout,
         const Value &val = args[idx + 1];
         if (key == "voicesperoctave") {
             voicesPerOctave = argcheck::expectedPositiveInteger(
-                argcheck::expectedReal(val, keel::as<int>(idx + 2), "VoicesPerOctave", "cwt"),
-                keel::as<int>(idx + 2), "VoicesPerOctave", "cwt");
+                argcheck::expectedReal(val, keel::as<keel::i32>(idx + 2), "VoicesPerOctave", "cwt"),
+                keel::as<keel::i32>(idx + 2), "VoicesPerOctave", "cwt");
         } else if (key == "timebandwidth") {
-            timeBandwidth = argcheck::expectedReal(val, keel::as<int>(idx + 2), "TimeBandwidth", "cwt");
+            timeBandwidth = argcheck::expectedReal(val, keel::as<keel::i32>(idx + 2), "TimeBandwidth", "cwt");
         } else if (key == "waveletparameters") {
             if (!val.isNumeric() || val.isComplex() || val.numel() != 2)
                 throw Error("cwt: WaveletParameters must be a 2-element real vector [gamma, TimeBandwidth]",

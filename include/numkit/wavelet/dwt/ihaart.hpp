@@ -36,7 +36,7 @@ namespace numkit::wavelet {
 /// @throws Error on empty `a`/`d`, complex `d`, `level` outside
 ///         `[0, Nlevels)`, or `integer == true` with complex `a`.
 /// @see haart
-Value ihaart(const Value &a, const Value &d, int level = 0,
+Value ihaart(const Value &a, const Value &d, keel::i32 level = 0,
              bool integer = false, keel::Allocator *mr = nullptr);
 
 

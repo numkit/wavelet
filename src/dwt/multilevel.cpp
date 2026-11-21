@@ -51,7 +51,7 @@ keel::Array<keel::f64> vecFromValue(const Value &v, keel::Allocator *mr = nullpt
     return out;
 }
 
-void wavedec_argcheck(int n)
+void wavedec_argcheck(keel::i32 n)
 {
     if (n < 1)
         throw Error("wavedec: level must be ≥ 1",
@@ -65,13 +65,13 @@ void waverec_argcheck(const Value &L)
                     0, 0, "waverec", "", "numkit:waverec:size");
 }
 
-void detcoef_argcheck(const Value &L, int level)
+void detcoef_argcheck(const Value &L, keel::i32 level)
 {
     const keel::usize Lcount = L.numel();
     if (Lcount < 3)
         throw Error("detcoef: L too short",
                     0, 0, "detcoef", "", "numkit:detcoef:size");
-    const int nMax = keel::as<int>(Lcount) - 2;
+    const keel::i32 nMax = keel::as<keel::i32>(Lcount) - 2;
     if (level < 1 || level > nMax)
         throw Error("detcoef: level out of range",
                     0, 0, "detcoef", "", "numkit:detcoef:level");
@@ -84,7 +84,7 @@ void wenergy_argcheck(const Value &L)
                     0, 0, "wenergy", "", "numkit:wenergy:L");
 }
 
-void upcoef_argcheck(keel::StringRef type, int n)
+void upcoef_argcheck(keel::StringRef type, keel::i32 n)
 {
     if (type != "a" && type != "d")
         throw Error("upcoef: type must be 'a' (approximation) or 'd' (detail)",
@@ -94,7 +94,7 @@ void upcoef_argcheck(keel::StringRef type, int n)
                     0, 0, "upcoef", "", "numkit:upcoef:N");
 }
 
-void wpdec_argcheck(const Value &x, int n)
+void wpdec_argcheck(const Value &x, keel::i32 n)
 {
     if (!x.isNumeric() || x.isComplex() || x.isEmpty() ||
         x.dims().ndims() > 2 || (x.dims().rows() > 1 && x.dims().cols() > 1)) {
@@ -137,7 +137,7 @@ keel::Array<keel::usize> readL(const Value &L, keel::Allocator *mr)
 } // anonymous
 
 std::pair<Value, Value>
-wavedec(const Value &x, int n, keel::StringRef wname,
+wavedec(const Value &x, keel::i32 n, keel::StringRef wname,
         keel::Allocator *mr)
 {
     wavedec_argcheck(n);
@@ -156,7 +156,7 @@ Value waverec(const Value &C, const Value &L, keel::StringRef wname,
 {
     waverec_argcheck(L);
     const keel::usize Lcount = L.numel();
-    const int n = keel::as<int>(Lcount) - 2;
+    const keel::i32 n = keel::as<keel::i32>(Lcount) - 2;
     auto lv = readL(L, mr);
     auto Cv = vecFromValue(C, mr);
 
@@ -164,7 +164,7 @@ Value waverec(const Value &C, const Value &L, keel::StringRef wname,
     if (off > Cv.size())
         throw Error("waverec: C/L mismatch (approx)",
                     0, 0, "waverec", "", "numkit:waverec:bounds");
-    for (int k = 0; k < n; ++k) {
+    for (keel::i32 k = 0; k < n; ++k) {
         off += lv[1 + keel::as<keel::usize>(k)];
         if (off > Cv.size())
             throw Error("waverec: C/L mismatch (detail)",
@@ -179,14 +179,14 @@ Value waverec(const Value &C, const Value &L, keel::StringRef wname,
 static Value appcoef_with_filters(const Value &C, const Value &L,
                                   keel::ArrayRef<keel::f64> Lo_R,
                                   keel::ArrayRef<keel::f64> Hi_R,
-                                  int level,
+                                  keel::i32 level,
                                   keel::Allocator *mr)
 {
     const keel::usize Lcount = L.numel();
     if (Lcount < 3)
         throw Error("appcoef: L too short",
                     0, 0, "appcoef", "", "numkit:appcoef:size");
-    const int nMax = keel::as<int>(Lcount) - 2;
+    const keel::i32 nMax = keel::as<keel::i32>(Lcount) - 2;
     if (level < 0) level = nMax;
     if (level < 0 || level > nMax)
         throw Error("appcoef: level out of range",
@@ -199,7 +199,7 @@ static Value appcoef_with_filters(const Value &C, const Value &L,
 }
 
 Value appcoef(const Value &C, const Value &L, keel::StringRef wname,
-              int level,
+              keel::i32 level,
               keel::Allocator *mr)
 {
     auto fb = wavelet_filters(wname);
@@ -209,23 +209,23 @@ Value appcoef(const Value &C, const Value &L, keel::StringRef wname,
 Value appcoef_with_filters_pub(const Value &C, const Value &L,
                                keel::ArrayRef<keel::f64> Lo_R,
                                keel::ArrayRef<keel::f64> Hi_R,
-                               int level,
+                               keel::i32 level,
                                keel::Allocator *mr)
 {
     return appcoef_with_filters(C, L, Lo_R, Hi_R, level, mr);
 }
 
-Value detcoef(const Value &C, const Value &L, int level,
+Value detcoef(const Value &C, const Value &L, keel::i32 level,
               keel::Allocator *mr)
 {
     detcoef_argcheck(L, level);
     const keel::usize Lcount = L.numel();
-    const int nMax = keel::as<int>(Lcount) - 2;
+    const keel::i32 nMax = keel::as<keel::i32>(Lcount) - 2;
     auto lv = readL(L, mr);
     auto Cv = vecFromValue(C, mr);
 
     keel::usize off = lv[0];
-    for (int k = 0; k < nMax - level; ++k) off += lv[1 + keel::as<keel::usize>(k)];
+    for (keel::i32 k = 0; k < nMax - level; ++k) off += lv[1 + keel::as<keel::usize>(k)];
     const keel::usize dLen = lv[keel::as<keel::usize>(nMax - level + 1)];
     if (off + dLen > Cv.size())
         throw Error("detcoef: C/L bounds",
@@ -254,7 +254,7 @@ WenergyResult wenergy(const Value &C, const Value &L,
 }
 
 Value upcoef(keel::StringRef type, const Value &X, keel::StringRef wname,
-             int n, long long len, keel::Allocator *mr)
+             keel::i32 n, keel::i64 len, keel::Allocator *mr)
 {
     upcoef_argcheck(type, n);
     auto fb = lookup_keel_fb(wname, mr);
@@ -309,7 +309,7 @@ keel::usize parse_wp_node(const Value &node, const char *fn)
 
 } // anonymous
 
-Value wpdec(const Value &x, int n, keel::StringRef wname,
+Value wpdec(const Value &x, keel::i32 n, keel::StringRef wname,
             keel::StringRef entName, keel::f64 entPar,
             keel::Allocator *mr)
 {
@@ -400,7 +400,7 @@ Value wprec(const Value &tree, keel::Allocator *mr)
         const keel::usize right = 2 * k + 2;
         if (left < numNodes && right < numNodes &&
             !rec[left].isEmpty() && !rec[right].isEmpty()) {
-            const long long targetLen = keel::as<long long>(rec[k].numel());
+            const keel::i64 targetLen = keel::as<keel::i64>(rec[k].numel());
             Value r = idwt(rec[left], rec[right], wname, targetLen, mr);
             if (isCol && r.dims().rows() == 1 && r.dims().cols() > 1)
                 r = r.reshape(r.dims().cols(), 1, mr);
@@ -432,7 +432,7 @@ WpspltResult wpsplt(const Value &tree, const Value &node,
 
     const keel::usize left = 2 * idx + 1;
     const keel::usize right = 2 * idx + 2;
-    int depth = keel::as<int>(tree.field("depth").toScalar());
+    keel::i32 depth = keel::as<keel::i32>(tree.field("depth").toScalar());
     keel::usize newTotal = oldNodes.numel();
     while (right >= newTotal) {
         ++depth;

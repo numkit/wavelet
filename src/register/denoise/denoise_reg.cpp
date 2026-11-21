@@ -44,7 +44,7 @@ void wdenoise_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/, keel::Mut
                   CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 1, 3, "wdenoise");
-    int level = -1;
+    keel::i32 level = -1;
     if (args.size() >= 2 && !args[1].isEmpty())
         level = argcheck::expectedPositiveInteger(
         argcheck::expectedReal(args[1], 2, "level", "wdenoise"), 2, "level", "wdenoise");

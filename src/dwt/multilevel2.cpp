@@ -46,21 +46,21 @@ void readS(const Value &S, keel::Array<keel::usize> &s_rows, keel::Array<keel::u
     }
 }
 
-void wavedec2_argcheck(int n)
+void wavedec2_argcheck(keel::i32 n)
 {
     if (n < 1)
         throw Error("wavedec2: level must be >= 1",
                     0, 0, "wavedec2", "", "numkit:wavedec2:level");
 }
 
-int detcoef2_argcheck(keel::StringRef type, const Value &C, const Value &S, int level)
+keel::i32 detcoef2_argcheck(keel::StringRef type, const Value &C, const Value &S, keel::i32 level)
 {
     internal::requireWaveClass(C, "detcoef2", "C", 2,
                                internal::WvClasses::AnyNumeric,
                                /*allowComplex=*/true);
     internal::requireWaveClass(S, "detcoef2", "S", 3,
                                internal::WvClasses::AnyNumeric);
-    const int N = keel::as<int>(S.dims().rows()) - 2;
+    const keel::i32 N = keel::as<keel::i32>(S.dims().rows()) - 2;
     if (N < 1)
         throw Error("detcoef2: S must have at least 3 rows (1 level)",
                     0, 0, "detcoef2", "", "numkit:detcoef2:size");
@@ -77,7 +77,7 @@ int detcoef2_argcheck(keel::StringRef type, const Value &C, const Value &S, int 
 
 } // anonymous
 
-Wavedec2Result wavedec2(const Value &X, int n, keel::StringRef wname,
+Wavedec2Result wavedec2(const Value &X, keel::i32 n, keel::StringRef wname,
                         keel::Allocator *mr)
 {
     wavedec2_argcheck(n);
@@ -101,10 +101,10 @@ Wavedec2Result wavedec2(const Value &X, int n, keel::StringRef wname,
 }
 
 static Value appcoef2_impl(const Value &C, const Value &S,
-                           keel::StringRef wname, int level,
+                           keel::StringRef wname, keel::i32 level,
                            keel::Allocator *mr)
 {
-    const int N = keel::as<int>(S.dims().rows()) - 2;
+    const keel::i32 N = keel::as<keel::i32>(S.dims().rows()) - 2;
     if (N < 1)
         throw Error("appcoef2: S must have at least 3 rows (1 level)",
                     0, 0, "appcoef2", "", "numkit:appcoef2:size");
@@ -132,16 +132,16 @@ Value waverec2(const Value &C, const Value &S, keel::StringRef wname,
 }
 
 Value appcoef2(const Value &C, const Value &S, keel::StringRef wname,
-               int level, keel::Allocator *mr)
+               keel::i32 level, keel::Allocator *mr)
 {
     return appcoef2_impl(C, S, wname, level, mr);
 }
 
 Value detcoef2(keel::StringRef type, const Value &C, const Value &S,
-               int level, keel::Allocator *mr)
+               keel::i32 level, keel::Allocator *mr)
 {
-    const int which = detcoef2_argcheck(type, C, S, level);
-    const int N = keel::as<int>(S.dims().rows()) - 2;
+    const keel::i32 which = detcoef2_argcheck(type, C, S, level);
+    const keel::i32 N = keel::as<keel::i32>(S.dims().rows()) - 2;
     const keel::usize R = S.dims().rows();
 
     auto sRow = [&](keel::usize i) -> std::pair<keel::usize, keel::usize> {
@@ -151,7 +151,7 @@ Value detcoef2(keel::StringRef type, const Value &C, const Value &S,
 
     auto [aR, aC] = sRow(0);
     keel::usize off = aR * aC;
-    for (int lev = N; lev > level; --lev) {
+    for (keel::i32 lev = N; lev > level; --lev) {
         auto [dR, dC] = sRow(keel::as<keel::usize>(N - lev + 1));
         off += 3 * dR * dC;
     }

@@ -43,7 +43,7 @@ void cmorwavf_argcheck(keel::f64 /*lb*/, keel::f64 /*ub*/, keel::usize /*N*/, ke
                     0, 0, "cmorwavf", "", "numkit:cmorwavf:fc");
 }
 
-void fbspwavf_argcheck(keel::f64 /*lb*/, keel::f64 /*ub*/, keel::usize /*N*/, int m, keel::f64 fb, keel::f64 fc)
+void fbspwavf_argcheck(keel::f64 /*lb*/, keel::f64 /*ub*/, keel::usize /*N*/, keel::i32 m, keel::f64 fb, keel::f64 fc)
 {
     if (m < 1)
         throw Error("fbspwavf: order m must be >= 1",
@@ -63,7 +63,7 @@ void meyeraux_argcheck(const Value &x)
                                internal::WvClasses::FloatOnly);
 }
 
-void centfrq_argcheck(keel::StringRef wname, int iter)
+void centfrq_argcheck(keel::StringRef wname, keel::i32 iter)
 {
     if (wname.empty())
         throw Error("centfrq: wavelet name must be a non-empty string",
@@ -99,7 +99,7 @@ void scal2frq_argcheck(const Value &a, keel::StringRef wname, keel::f64 delta)
 }
 
 keel::wavelet::CwtWavelet cwt_argcheck(const Value &x, keel::StringRef wname, keel::f64 fs,
-                                       int voicesPerOctave, keel::f64 timeBandwidth, keel::f64 gamma,
+                                       keel::i32 voicesPerOctave, keel::f64 timeBandwidth, keel::f64 gamma,
                                        const Value &freqLimits)
 {
     if (!x.isNumeric() || x.isComplex())
@@ -203,7 +203,7 @@ cmorwavf(keel::f64 lb, keel::f64 ub, keel::usize N, keel::f64 fb, keel::f64 fc, 
 }
 
 std::tuple<Value, Value>
-fbspwavf(keel::f64 lb, keel::f64 ub, keel::usize N, int m, keel::f64 fb, keel::f64 fc, keel::Allocator *mr)
+fbspwavf(keel::f64 lb, keel::f64 ub, keel::usize N, keel::i32 m, keel::f64 fb, keel::f64 fc, keel::Allocator *mr)
 {
     fbspwavf_argcheck(lb, ub, N, m, fb, fc);
     Value xv = Value::matrix(1, N, ValueType::DOUBLE, mr);
@@ -233,7 +233,7 @@ Value meyeraux(const Value &x, keel::Allocator *mr)
     return out;
 }
 
-CentfrqResult centfrqGrid(keel::StringRef wname, int iter,
+CentfrqResult centfrqGrid(keel::StringRef wname, keel::i32 iter,
                           bool withRecfreq,
                           keel::Allocator *mr)
 {
@@ -264,7 +264,7 @@ CentfrqResult centfrqGrid(keel::StringRef wname, int iter,
     return {r.freq, std::move(xval), std::move(recfreq)};
 }
 
-keel::f64 centfrq(keel::StringRef wname, int iter)
+keel::f64 centfrq(keel::StringRef wname, keel::i32 iter)
 {
     return centfrqGrid(wname, iter, false, nullptr).freq;
 }
@@ -284,7 +284,7 @@ Value scal2frq(const Value &a, keel::StringRef wname,
 CwtResult cwt(const Value &x,
               keel::StringRef wname,
               keel::f64 fs,
-              int voicesPerOctave,
+              keel::i32 voicesPerOctave,
               keel::f64 timeBandwidth,
               keel::f64 gamma,
               bool extendSignal,

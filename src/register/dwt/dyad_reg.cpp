@@ -21,7 +21,7 @@ namespace {
 
 // Parse trailing args of dyaddown / dyadup — accepts (X, evenodd[, type])
 // in any positional order (MATLAB's lax parsing). `type` is 'c' / 'r' / 'm'.
-void parseDyadArgs(keel::ArrayRef<Value> args, int defaultOdd, int &odd, char &type)
+void parseDyadArgs(keel::ArrayRef<Value> args, keel::i32 defaultOdd, keel::i32 &odd, char &type)
 {
     odd = defaultOdd;
     type = 'c';   // matrix default; harmless on the vector path (ignored).
@@ -32,8 +32,8 @@ void parseDyadArgs(keel::ArrayRef<Value> args, int defaultOdd, int &odd, char &t
             type = s.data()[0];
         } else {
             odd = (argcheck::expectedInteger(
-                argcheck::expectedReal(args[i], int(i) + 1, "odd", "dyadup"),
-                int(i) + 1, "odd", "dyadup") != 0) ? 1 : 0;
+                argcheck::expectedReal(args[i], keel::i32(i) + 1, "odd", "dyadup"),
+                keel::i32(i) + 1, "odd", "dyadup") != 0) ? 1 : 0;
         }
     }
 }
@@ -53,7 +53,7 @@ void dyaddown_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
                   keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 1, 3, "dyaddown");
-    int odd; char type;
+    keel::i32 odd; char type;
     parseDyadArgs(args, /*defaultOdd=*/0, odd, type);
     outs[0] = dyaddown(args[0], odd, type, ctx.engine->allocator());
 }
@@ -70,7 +70,7 @@ void dyadup_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
                 keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 1, 3, "dyadup");
-    int odd; char type;
+    keel::i32 odd; char type;
     parseDyadArgs(args, /*defaultOdd=*/1, odd, type);
     outs[0] = dyadup(args[0], odd, type, ctx.engine->allocator());
 }

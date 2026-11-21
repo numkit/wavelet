@@ -114,7 +114,7 @@ DetailLevel grab_level(const Value &d, bool isCell, keel::usize idx,
     return L;
 }
 
-keel::usize ihaart_argcheck(const Value &aV, const Value &dV, int level, bool integer)
+keel::usize ihaart_argcheck(const Value &aV, const Value &dV, keel::i32 level, bool integer)
 {
     if (aV.numel() == 0)
         throw Error("ihaart: expected input number 1, A, to be nonempty",
@@ -159,7 +159,7 @@ keel::usize ihaart_argcheck(const Value &aV, const Value &dV, int level, bool in
         throw Error("ihaart: expected input number 3, LEVEL, to be a scalar "
                     "with value >= 0",
                     0, 0, "ihaart", "", "numkit:ihaart:level");
-    if (level >= keel::as<int>(Nlevels))
+    if (level >= keel::as<keel::i32>(Nlevels))
         throw Error(keel::format("ihaart: expected input number 3, LEVEL, to be a scalar "
                                  "with value < {}", Nlevels),
                     0, 0, "ihaart", "", "numkit:ihaart:level");
@@ -173,7 +173,7 @@ keel::usize ihaart_argcheck(const Value &aV, const Value &dV, int level, bool in
 
 // ── Public C++ API (see dwt/ihaart.hpp) ───────────────────────────────
 
-Value ihaart(const Value &aV, const Value &dV, int level, bool integer,
+Value ihaart(const Value &aV, const Value &dV, keel::i32 level, bool integer,
              keel::Allocator *mr)
 {
     const keel::usize Nlevels = ihaart_argcheck(aV, dV, level, integer);
@@ -207,7 +207,7 @@ Value ihaart(const Value &aV, const Value &dV, int level, bool integer,
 
     // Reconstruct coarsest -> finest. For cells d{1} is finest, so
     // iterating L = Nlevels down to 1 uses detail at index (L-1).
-    for (int L = keel::as<int>(Nlevels); L >= 1; --L) {
+    for (keel::i32 L = keel::as<keel::i32>(Nlevels); L >= 1; --L) {
         const keel::usize idx = keel::as<keel::usize>(L - 1);     // 0..Nlevels-1
         const bool zero = (idx < keel::as<keel::usize>(level));
         DetailLevel det = grab_level(dV, isCell, idx, curLen, ncols, zero);
