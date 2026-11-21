@@ -169,7 +169,7 @@ Value detcoef2(keel::StringRef type, const Value &C, const Value &S,
         keel::Array<keel::usize> sr(mr), sc(mr);
         readS(S, sr, sc);
         auto r = keel::wavelet::detcoef2(
-            static_cast<keel::wavelet::Detail2D>(which),
+            keel::from_underlying<keel::wavelet::Detail2D>(which),
             keel::ArrayRef<keel::f64>(C.doubleData(), C.numel()),
             sr, sc, keel::as<keel::i32>(level), mr);
         Value out = Value::matrix(r.rows, r.cols, ValueType::DOUBLE, mr);
