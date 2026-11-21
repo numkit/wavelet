@@ -20,7 +20,7 @@ namespace numkit::wavelet {
 
 namespace {
 
-Value vecToRow(keel::ArrayRef<double> v, keel::Allocator *mr) {
+Value vecToRow(keel::ArrayRef<keel::f64> v, keel::Allocator *mr) {
     Value r = Value::matrix(1, v.size(), ValueType::DOUBLE, mr);
     if (!v.empty()) std::copy(v.begin(), v.end(), r.doubleDataMut());
     return r;

@@ -32,7 +32,7 @@ void haart_reg(keel::ArrayRef<Value> args, keel::usize nargout,
     // script-quality errors, then delegate to the public haart().
     int level = 0;  // 0 -> auto (max level), resolved inside haart()
     if (args.size() >= 2 && !args[1].isEmpty()) {
-        const double lvld = args[1].toScalar();
+        const keel::f64 lvld = args[1].toScalar();
         if (!(lvld > 0.0))
             throw Error("haart: expected LEVEL to be positive",
                         0, 0, "haart", "", "numkit:haart:level");
@@ -82,7 +82,7 @@ void ihaart_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
                 throw Error(keel::format("ihaart: integerflag must be 'noninteger' or 'integer' (got '{}')", flag),
                             0, 0, "ihaart", "", "numkit:ihaart:flag");
         } else {
-            const double lvld = arg.toScalar();
+            const keel::f64 lvld = arg.toScalar();
             if (!(lvld >= 0.0))
                 throw Error("ihaart: expected input number 3, LEVEL, to be a "
                             "scalar with value >= 0",

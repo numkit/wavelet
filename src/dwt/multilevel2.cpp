@@ -90,13 +90,13 @@ Wavedec2Result wavedec2(const Value &X, int n, keel::StringRef wname,
     auto r = keel::wavelet::wavedec2(xv, M, N, keel::as<keel::i32>(n), fb, mr);
     const keel::usize R = r.s_rows.size();
     Value S = Value::matrix(R, 2, ValueType::DOUBLE, mr);
-    double *sd = S.doubleDataMut();
+    keel::f64 *sd = S.doubleDataMut();
     for (keel::usize i = 0; i < R; ++i) {
-        sd[i] = keel::as<double>(r.s_rows[i]);
-        sd[R + i] = keel::as<double>(r.s_cols[i]);
+        sd[i] = keel::as<keel::f64>(r.s_rows[i]);
+        sd[R + i] = keel::as<keel::f64>(r.s_cols[i]);
     }
     Value c = Value::matrix(1, r.c.size(), ValueType::DOUBLE, mr);
-    if (!r.c.empty()) std::memcpy(c.doubleDataMut(), r.c.data(), r.c.size() * sizeof(double));
+    if (!r.c.empty()) std::memcpy(c.doubleDataMut(), r.c.data(), r.c.size() * sizeof(keel::f64));
     return { std::move(c), std::move(S) };
 }
 
@@ -121,7 +121,7 @@ static Value appcoef2_impl(const Value &C, const Value &S,
 
     auto r = keel::wavelet::appcoef2(cv, sr, sc, fb, keel::as<keel::i32>(level), mr);
     Value m = Value::matrix(r.rows, r.cols, ValueType::DOUBLE, mr);
-    if (!r.out.empty()) std::memcpy(m.doubleDataMut(), r.out.data(), r.out.size() * sizeof(double));
+    if (!r.out.empty()) std::memcpy(m.doubleDataMut(), r.out.data(), r.out.size() * sizeof(keel::f64));
     return m;
 }
 
@@ -173,7 +173,7 @@ Value detcoef2(keel::StringRef type, const Value &C, const Value &S,
             keel::ArrayRef<keel::f64>(C.doubleData(), C.numel()),
             sr, sc, keel::as<keel::i32>(level), mr);
         Value out = Value::matrix(r.rows, r.cols, ValueType::DOUBLE, mr);
-        if (!r.out.empty()) std::memcpy(out.doubleDataMut(), r.out.data(), r.out.size() * sizeof(double));
+        if (!r.out.empty()) std::memcpy(out.doubleDataMut(), r.out.data(), r.out.size() * sizeof(keel::f64));
         return out;
     }
 

@@ -136,7 +136,7 @@ Value swt(const Value &x, int n, keel::ArrayRef<keel::f64> Lo_D,
     const keel::usize H = keel::as<keel::usize>(n);
     Value out = Value::matrix(keel::as<keel::usize>(n + 1), N,
                               ValueType::DOUBLE, mr);
-    double *od = out.doubleDataMut();
+    keel::f64 *od = out.doubleDataMut();
     for (keel::usize r = 0; r < H; ++r)
         for (keel::usize c = 0; c < N; ++c)
             od[c * (H + 1) + r] = swd.elemAsDouble(c * H + r);
@@ -196,8 +196,8 @@ Value iswtPhase(Value aRow, const Value &dSrc, keel::usize n,
 
     // upconvLOC: dyadup(x,0,1) → 'per' extend by lf/2 → full conv →
     // keep l samples from 0-based index lf-1 (wkeep1(y,l,lf)).
-    auto upconvv = [&](keel::ArrayRef<double> x,
-                       keel::ArrayRef<double> f, keel::usize l) {
+    auto upconvv = [&](keel::ArrayRef<keel::f64> x,
+                       keel::ArrayRef<keel::f64> f, keel::usize l) {
         const keel::usize m = x.size();
         const keel::usize un = 2 * m;             // always even → no odd-dup
         if (ext > un)
@@ -207,32 +207,32 @@ Value iswtPhase(Value aRow, const Value &dSrc, keel::usize n,
                                      un, ext, N, H),
                         0, 0, "iswt", "", "numkit:iswt:badsubscript");
         const keel::usize en = un + 2 * ext;
-        keel::Array<double> e(en, 0.0);
+        keel::Array<keel::f64> e(en, 0.0);
         for (keel::usize i = 0; i < m; ++i) e[ext + 2 * i] = x[i];
         for (keel::usize i = 0; i < ext; ++i) {
             e[i] = e[ext + ((i + un) - (ext % un)) % un];  // wrap back
             e[ext + un + i] = e[ext + (i % un)];           // wrap fwd
         }
-        keel::Array<double> c(en + lf - 1, 0.0);
+        keel::Array<keel::f64> c(en + lf - 1, 0.0);
         for (keel::usize i = 0; i < en; ++i) {
-            const double v = e[i];
+            const keel::f64 v = e[i];
             if (v == 0.0) continue;         // dyadup zeros contribute 0
             for (keel::usize j = 0; j < lf; ++j) c[i + j] += v * f[j];
         }
-        keel::Array<double> out(l, 0.0);
+        keel::Array<keel::f64> out(l, 0.0);
         for (keel::usize i = 0; i < l; ++i) out[i] = c[lf - 1 + i];
         return out;
     };
 
     // idwtLOC: sum of the two band reconstructions; shift=-1 rotates
     // right by one ([y(end), y(1:end-1)]).
-    auto idwtLOCv = [&](keel::ArrayRef<double> xa,
-                        keel::ArrayRef<double> xd,
+    auto idwtLOCv = [&](keel::ArrayRef<keel::f64> xa,
+                        keel::ArrayRef<keel::f64> xd,
                         keel::usize l, bool shift) {
         auto y1 = upconvv(xa, LoR, l);
         auto y2 = upconvv(xd, HiR, l);
         if (shift) {
-            const double last = y1[l - 1] + y2[l - 1];
+            const keel::f64 last = y1[l - 1] + y2[l - 1];
             for (keel::usize i = l; i > 1; --i) y1[i - 1] = y1[i - 2] + y2[i - 2];
             y1[0] = last;
         } else {
@@ -246,10 +246,10 @@ Value iswtPhase(Value aRow, const Value &dSrc, keel::usize n,
         for (keel::usize first = 1; first <= step; ++first) {
             const keel::usize lon = (N - first) / step + 1;
             const keel::usize mE = (lon + 1) / 2, mO = lon / 2;
-            keel::Array<double> ae(mE), de(mE), ao(mO), doo(mO);
+            keel::Array<keel::f64> ae(mE), de(mE), ao(mO), doo(mO);
             for (keel::usize j = 0; j < lon; ++j) {
                 const keel::usize col = first - 1 + j * step;
-                const double dv = dSrc.elemAsDouble(col * H + (k - 1));
+                const keel::f64 dv = dSrc.elemAsDouble(col * H + (k - 1));
                 if (j % 2 == 0) { ae[j / 2] = a.elemAsDouble(col); de[j / 2] = dv; }
                 else            { ao[j / 2] = a.elemAsDouble(col); doo[j / 2] = dv; }
             }

@@ -58,8 +58,8 @@ void gauswavf_reg(keel::ArrayRef<Value> args, keel::usize nargout,
                   keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 3, 4, "gauswavf");
-    const double lb = args[0].toScalar();
-    const double ub = args[1].toScalar();
+    const keel::f64 lb = args[0].toScalar();
+    const keel::f64 ub = args[1].toScalar();
     const keel::usize N  = keel::as<keel::usize>(argcheck::expectedPositiveInteger(
         argcheck::expectedReal(args[2], 3, "N", "gauswavf"), 3, "N", "gauswavf"));
     int p = 1;
@@ -73,8 +73,8 @@ void cgauwavf_reg(keel::ArrayRef<Value> args, keel::usize nargout,
                   keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 3, 4, "cgauwavf");
-    const double lb = args[0].toScalar();
-    const double ub = args[1].toScalar();
+    const keel::f64 lb = args[0].toScalar();
+    const keel::f64 ub = args[1].toScalar();
     const keel::usize N  = keel::as<keel::usize>(argcheck::expectedPositiveInteger(
         argcheck::expectedReal(args[2], 3, "N", "cgauwavf"), 3, "N", "cgauwavf"));
     int p = 1;

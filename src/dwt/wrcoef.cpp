@@ -92,7 +92,7 @@ Value wrcoef_reconstruct_impl(keel::StringRef tl, const Value &c,
 
     auto rec = keel::wavelet::wrcoef(tl == "d", cv, lv, Lo_R, Hi_R, keel::as<keel::i32>(n), mr);
     Value r = Value::matrix(1, rec.size(), ValueType::DOUBLE, mr);
-    if (!rec.empty()) std::memcpy(r.doubleDataMut(), rec.data(), rec.size() * sizeof(double));
+    if (!rec.empty()) std::memcpy(r.doubleDataMut(), rec.data(), rec.size() * sizeof(keel::f64));
     return r;
 }
 

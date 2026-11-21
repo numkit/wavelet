@@ -26,9 +26,9 @@ namespace numkit::wavelet {
 namespace detail {
 
 // Read a Value (numeric vector) into a flat double buffer.
-static keel::Array<double> readVec(const Value &v, keel::Allocator *mr) {
+static keel::Array<keel::f64> readVec(const Value &v, keel::Allocator *mr) {
     const keel::usize n = v.numel();
-    keel::Array<double> out(n, mr);
+    keel::Array<keel::f64> out(n, mr);
     for (keel::usize i = 0; i < n; ++i) out[i] = v.elemAsDouble(i);
     return out;
 }

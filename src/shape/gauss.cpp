@@ -14,14 +14,14 @@ namespace numkit::wavelet {
 
 namespace {
 
-void gauswavf_argcheck(double /*lb*/, double /*ub*/, keel::usize /*N*/, int p)
+void gauswavf_argcheck(keel::f64 /*lb*/, keel::f64 /*ub*/, keel::usize /*N*/, int p)
 {
     if (p < 1)
         throw Error("gauswavf: derivative order p must be ≥ 1",
                     0, 0, "gauswavf", "", "numkit:gauswavf:p");
 }
 
-void cgauwavf_argcheck(double /*lb*/, double /*ub*/, keel::usize /*N*/, int p)
+void cgauwavf_argcheck(keel::f64 /*lb*/, keel::f64 /*ub*/, keel::usize /*N*/, int p)
 {
     if (p < 1)
         throw Error("cgauwavf: derivative order p must be ≥ 1",
@@ -31,7 +31,7 @@ void cgauwavf_argcheck(double /*lb*/, double /*ub*/, keel::usize /*N*/, int p)
 } // anonymous
 
 std::tuple<Value, Value>
-gauswavf(double lb, double ub, keel::usize N, int p, keel::Allocator *mr)
+gauswavf(keel::f64 lb, keel::f64 ub, keel::usize N, int p, keel::Allocator *mr)
 {
     gauswavf_argcheck(lb, ub, N, p);
     Value xv = Value::matrix(1, N, ValueType::DOUBLE, mr);
@@ -45,7 +45,7 @@ gauswavf(double lb, double ub, keel::usize N, int p, keel::Allocator *mr)
 }
 
 std::tuple<Value, Value>
-cgauwavf(double lb, double ub, keel::usize N, int p, keel::Allocator *mr)
+cgauwavf(keel::f64 lb, keel::f64 ub, keel::usize N, int p, keel::Allocator *mr)
 {
     cgauwavf_argcheck(lb, ub, N, p);
     Value xv = Value::matrix(1, N, ValueType::DOUBLE, mr);

@@ -33,7 +33,7 @@ void wrcoef_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
 
     auto parse_level = [](const Value &v) -> int {
         if (v.isEmpty()) return -1;
-        const double nd = v.toScalar();
+        const keel::f64 nd = v.toScalar();
         if (nd < 0.0 || nd != std::floor(nd))
             throw Error("wrcoef: level n must be a non-negative integer",
                         0, 0, "wrcoef", "", "numkit:wrcoef:level");
@@ -54,7 +54,7 @@ void wrcoef_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
                         0, 0, "wrcoef", "", "numkit:wrcoef:filt");
         }
         auto read_vec = [](const Value &v) {
-            keel::Array<double> out(v.numel());
+            keel::Array<keel::f64> out(v.numel());
             for (keel::usize i = 0; i < v.numel(); ++i) out[i] = v.elemAsDouble(i);
             return out;
         };

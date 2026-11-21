@@ -60,9 +60,9 @@ void wfilters_reg(keel::ArrayRef<Value> args, keel::usize nargout, keel::MutArra
                                        : r.Hi_R;     // 'h'
         const keel::usize Lf = (keel::usize)a.numel();
         Value M = Value::matrix(2, Lf, ValueType::DOUBLE, mr);
-        double *mp = M.doubleDataMut();
-        const double *ap = a.doubleData();
-        const double *bp = b.doubleData();
+        keel::f64 *mp = M.doubleDataMut();
+        const keel::f64 *ap = a.doubleData();
+        const keel::f64 *bp = b.doubleData();
         for (keel::usize k = 0; k < Lf; ++k) {
             mp[k * 2 + 0] = ap[k];
             mp[k * 2 + 1] = bp[k];

@@ -65,9 +65,9 @@ keel::String lower(keel::StringRef sv)
 // A whole LEN value that is a nonnegative integer in [0, N]; the probed
 // reference returns X UNCHANGED for anything else (negative, too big,
 // non-integer) instead of erroring.
-bool validKeepLen(double n, long long N)
+bool validKeepLen(keel::f64 n, long long N)
 {
-    return n >= 0.0 && n <= keel::as<double>(N) && n == std::floor(n);
+    return n >= 0.0 && n <= keel::as<keel::f64>(N) && n == std::floor(n);
 }
 
 void wkeep_argcheck(const Value &x, const Value &len)
@@ -107,8 +107,8 @@ Value wkeep(const Value &x, const Value &len, const Value &opt,
         // non-singleton dimension applies (R for a column, C for a row —
         // the other is ignored entirely); for a matrix it is the [R C]
         // sub-matrix form. Invalid values return x unchanged.
-        const double l0 = len.elemAsDouble(0);
-        const double l1 = len.elemAsDouble(1);
+        const keel::f64 l0 = len.elemAsDouble(0);
+        const keel::f64 l1 = len.elemAsDouble(1);
         long long R, C;
         if (xIsVector) {
             if (cols > 1 || (rows == 1 && cols == 1)) {   // row-like
@@ -178,7 +178,7 @@ Value wkeep(const Value &x, const Value &len, const Value &opt,
                                  "[R C] pair (got a {} array).",
                                  internal::shapeOf(len)),
                     0, 0, "wkeep", "", "numkit:wkeep:inputType");
-    const double nD = len.elemAsDouble(0);
+    const keel::f64 nD = len.elemAsDouble(0);
     if (!validKeepLen(nD, keel::as<long long>(N)))
         return internal::copyInClass(x, mr);
     const long long n = keel::as<long long>(nD);
@@ -199,7 +199,7 @@ Value wkeep(const Value &x, const Value &len, const Value &opt,
                                          "(expected 'c', 'l', 'r' or a numeric start)", s),
                             0, 0, "wkeep", "", "numkit:wkeep:opt");
         } else {
-            const double f = opt.elemAsDouble(0);
+            const keel::f64 f = opt.elemAsDouble(0);
             if (f != std::floor(f))
                 throw Error("wkeep: optional argument FIRST must be an "
                             "integer start index.",
@@ -302,7 +302,7 @@ static keel::Array<T> extend1D(keel::ArrayRef<T> xv,
         if (mode == "sp1" || mode == "spd") {
             // Linear extrapolation using slope x(2) - x(1).
             const T slope = (N >= 2) ? (xv[1] - xv[0]) : T(0);
-            return xv[0] - T(keel::as<double>(lf - k)) * slope;
+            return xv[0] - T(keel::as<keel::f64>(lf - k)) * slope;
         }
         if (mode == "per") {
             return src[keel::as<keel::usize>(M - lf + k)];
@@ -336,7 +336,7 @@ static keel::Array<T> extend1D(keel::ArrayRef<T> xv,
         if (mode == "sp1" || mode == "spd") {
             const T slope = (N >= 2) ? (xv[keel::as<keel::usize>(N - 1)]
                                         - xv[keel::as<keel::usize>(N - 2)]) : T(0);
-            return xv[keel::as<keel::usize>(N - 1)] + T(keel::as<double>(k + 1)) * slope;
+            return xv[keel::as<keel::usize>(N - 1)] + T(keel::as<keel::f64>(k + 1)) * slope;
         }
         if (mode == "per") {
             return src[keel::as<keel::usize>(k)];
@@ -360,7 +360,7 @@ static keel::Array<T> extend1D(keel::ArrayRef<T> xv,
 }
 
 // Explicit instantiations for the two buffer flavours wextend uses.
-template keel::Array<double> extend1D<double>(keel::ArrayRef<double>,
+template keel::Array<keel::f64> extend1D<keel::f64>(keel::ArrayRef<keel::f64>,
                                               long long, char, keel::StringRef);
 template keel::Array<keel::c64> extend1D<keel::c64>(keel::ArrayRef<keel::c64>,
                                                     long long, char, keel::StringRef);
@@ -394,8 +394,8 @@ void parseExtLf(const Value &lf, const char *fn,
         throw Error(keel::format("{}: input 4 (L) must be numeric.", fn),
                     0, 0, fn, "", keel::format("numkit:{}:expectedInteger", fn));
     if (lf.numel() == 2 && twoDim) {
-        const double a = lf.elemAsDouble(0);
-        const double b = lf.elemAsDouble(1);
+        const keel::f64 a = lf.elemAsDouble(0);
+        const keel::f64 b = lf.elemAsDouble(1);
         if (a < 0 || b < 0)
             throw Error(keel::format("{}: input 4 (L) must be nonnegative.", fn),
                         0, 0, fn, "", keel::format("numkit:{}:expectedNonnegative", fn));
@@ -410,7 +410,7 @@ void parseExtLf(const Value &lf, const char *fn,
         throw Error(keel::format("{}: input 4 (L) must be a scalar "
                                  "nonnegative integer.", fn),
                     0, 0, fn, "", keel::format("numkit:{}:expectedInteger", fn));
-    const double v = lf.elemAsDouble(0);
+    const keel::f64 v = lf.elemAsDouble(0);
     if (v < 0)
         throw Error(keel::format("{}: input 4 (L) must be nonnegative.", fn),
                     0, 0, fn, "", keel::format("numkit:{}:expectedNonnegative", fn));
@@ -529,9 +529,9 @@ Value wextend(const Value &type, keel::StringRef modeRaw, const Value &x,
             std::copy(ext.begin(), ext.end(), y.complexDataMut());
             return y;
         }
-        keel::Array<double> xv(N);
+        keel::Array<keel::f64> xv(N);
         for (keel::usize i = 0; i < N; ++i) xv[i] = x.elemAsDouble(i);
-        keel::Array<double> ext = detail::extend1D<double>(xv, lfRows, side, mode);
+        keel::Array<keel::f64> ext = detail::extend1D<keel::f64>(xv, lfRows, side, mode);
         outN = ext.size();
         keel::usize outRows, outCols;
         outShape(col, outN, outRows, outCols);
@@ -553,18 +553,18 @@ Value wextend(const Value &type, keel::StringRef modeRaw, const Value &x,
     const long long lfC = sideC ? lfCols : 0;
 
     if (!cplx) {
-        keel::Array<double> data(rows * cols);
+        keel::Array<keel::f64> data(rows * cols);
         for (keel::usize r = 0; r < rows; ++r)
             for (keel::usize c = 0; c < cols; ++c)
                 data[r * cols + c] = x.elemAsDouble(c * rows + r);
 
         if (extRows && lfR > 0 && cols > 0) {
-            keel::Array<keel::Array<double>> ext_col;
+            keel::Array<keel::Array<keel::f64>> ext_col;
             ext_col.reserve(cols);
-            keel::Array<double> col_v(rows);
+            keel::Array<keel::f64> col_v(rows);
             for (keel::usize c = 0; c < cols; ++c) {
                 for (keel::usize r = 0; r < rows; ++r) col_v[r] = data[r * cols + c];
-                ext_col.push_back(detail::extend1D<double>(col_v, lfR, sideR, mode));
+                ext_col.push_back(detail::extend1D<keel::f64>(col_v, lfR, sideR, mode));
             }
             const keel::usize newRows = ext_col[0].size();
             data.resize(newRows * cols);
@@ -574,11 +574,11 @@ Value wextend(const Value &type, keel::StringRef modeRaw, const Value &x,
             rows = newRows;
         }
         if (extCols && lfC > 0 && rows > 0) {
-            keel::Array<keel::Array<double>> ext_row;
+            keel::Array<keel::Array<keel::f64>> ext_row;
             ext_row.reserve(rows);
             for (keel::usize r = 0; r < rows; ++r)
-                ext_row.push_back(detail::extend1D<double>(
-                    keel::ArrayRef<double>(data.data() + r * cols, cols),
+                ext_row.push_back(detail::extend1D<keel::f64>(
+                    keel::ArrayRef<keel::f64>(data.data() + r * cols, cols),
                     lfC, sideC, mode));
             const keel::usize newCols = ext_row[0].size();
             data.resize(rows * newCols);

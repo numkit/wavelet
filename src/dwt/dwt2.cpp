@@ -58,7 +58,7 @@ Value packMatrix(const keel::Array<keel::f64> &buf, keel::usize rows, keel::usiz
                  keel::Allocator *mr)
 {
     Value m = Value::matrix(rows, cols, ValueType::DOUBLE, mr);
-    if (!buf.empty()) std::memcpy(m.doubleDataMut(), buf.data(), buf.size() * sizeof(double));
+    if (!buf.empty()) std::memcpy(m.doubleDataMut(), buf.data(), buf.size() * sizeof(keel::f64));
     return m;
 }
 
@@ -147,9 +147,9 @@ Value idwt2(const Value &cA, const Value &cH,
     if (!anyCplx) {
         if (anySngl) {
             Value s = Value::matrix(resR.rows, resR.cols, ValueType::SINGLE, mr);
-            float *sd = s.singleDataMut();
+            keel::f32 *sd = s.singleDataMut();
             for (keel::usize i = 0; i < resR.out.size(); ++i)
-                sd[i] = keel::as<float>(resR.out[i]);
+                sd[i] = keel::as<keel::f32>(resR.out[i]);
             return s;
         }
         return packMatrix(resR.out, resR.rows, resR.cols, mr);

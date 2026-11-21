@@ -85,7 +85,7 @@ Value dyaddown(const Value &x, int odd, char type,
         outShape(rows, cols, outN, outRows, outCols);
         Value y = Value::matrix(outRows, outCols, ValueType::DOUBLE, mr);
         if (outN == 0) return y;
-        double *yd = y.doubleDataMut();
+        keel::f64 *yd = y.doubleDataMut();
         const keel::usize start = (odd == 0) ? 1 : 0;
         for (keel::usize k = 0; k < outN; ++k)
             yd[k] = x.elemAsDouble(start + 2 * k);
@@ -105,7 +105,7 @@ Value dyaddown(const Value &x, int odd, char type,
 
     Value y = Value::matrix(resR, resC, ValueType::DOUBLE, mr);
     if (resR == 0 || resC == 0) return y;
-    double *yd = y.doubleDataMut();
+    keel::f64 *yd = y.doubleDataMut();
 
     if (type == 'c') {
         for (keel::usize kc = 0; kc < outC; ++kc) {
@@ -146,7 +146,7 @@ Value dyadup(const Value &x, int odd, char type,
         outShape(rows, cols, outN, outRows, outCols);
         Value y = Value::matrix(outRows, outCols, ValueType::DOUBLE, mr);
         if (outN == 0) return y;
-        double *yd = y.doubleDataMut();
+        keel::f64 *yd = y.doubleDataMut();
         const keel::usize start = (odd == 0) ? 0 : 1;
         for (keel::usize k = 0; k < outN; ++k) yd[k] = 0.0;
         for (keel::usize i = 0; i < N; ++i)
@@ -166,7 +166,7 @@ Value dyadup(const Value &x, int odd, char type,
     else { resR = outR; resC = outC; }
     Value y = Value::matrix(resR, resC, ValueType::DOUBLE, mr);
     if (resR == 0 || resC == 0) return y;
-    double *yd = y.doubleDataMut();
+    keel::f64 *yd = y.doubleDataMut();
     for (keel::usize i = 0; i < resR * resC; ++i) yd[i] = 0.0;
 
     if (type == 'c') {
@@ -200,9 +200,9 @@ Value wmaxlev(const Value &N, keel::StringRef wname,
     wmaxlev_argcheck(N, wname);
     // Accept scalar N or a 1×k vector; use min(N) as the effective length.
     const keel::usize k = N.numel();
-    double Nmin = N.elemAsDouble(0);
+    keel::f64 Nmin = N.elemAsDouble(0);
     for (keel::usize i = 1; i < k; ++i) {
-        const double v = N.elemAsDouble(i);
+        const keel::f64 v = N.elemAsDouble(i);
         if (v < Nmin) Nmin = v;
     }
 
@@ -213,7 +213,7 @@ Value wmaxlev(const Value &N, keel::StringRef wname,
                     0, 0, "wmaxlev", "", "numkit:wmaxlev:filter");
 
     const keel::usize nmin_u = (Nmin > 0.0) ? keel::as<keel::usize>(Nmin) : 0;
-    const double L = keel::as<double>(keel::wavelet::wmaxlev(nmin_u, Lf));
+    const keel::f64 L = keel::as<keel::f64>(keel::wavelet::wmaxlev(nmin_u, Lf));
     return Value::scalar(L, mr);
 }
 

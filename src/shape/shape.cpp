@@ -23,7 +23,7 @@ namespace numkit::wavelet {
 
 namespace {
 
-void shanwavf_argcheck(double /*lb*/, double /*ub*/, keel::usize /*N*/, double fb, double fc)
+void shanwavf_argcheck(keel::f64 /*lb*/, keel::f64 /*ub*/, keel::usize /*N*/, keel::f64 fb, keel::f64 fc)
 {
     if (!(fb > 0.0) || !std::isfinite(fb))
         throw Error("shanwavf: bandwidth FB must be positive and finite",
@@ -33,7 +33,7 @@ void shanwavf_argcheck(double /*lb*/, double /*ub*/, keel::usize /*N*/, double f
                     0, 0, "shanwavf", "", "numkit:shanwavf:fc");
 }
 
-void cmorwavf_argcheck(double /*lb*/, double /*ub*/, keel::usize /*N*/, double fb, double fc)
+void cmorwavf_argcheck(keel::f64 /*lb*/, keel::f64 /*ub*/, keel::usize /*N*/, keel::f64 fb, keel::f64 fc)
 {
     if (!(fb > 0.0) || !std::isfinite(fb))
         throw Error("cmorwavf: bandwidth FB must be positive and finite",
@@ -43,7 +43,7 @@ void cmorwavf_argcheck(double /*lb*/, double /*ub*/, keel::usize /*N*/, double f
                     0, 0, "cmorwavf", "", "numkit:cmorwavf:fc");
 }
 
-void fbspwavf_argcheck(double /*lb*/, double /*ub*/, keel::usize /*N*/, int m, double fb, double fc)
+void fbspwavf_argcheck(keel::f64 /*lb*/, keel::f64 /*ub*/, keel::usize /*N*/, int m, keel::f64 fb, keel::f64 fc)
 {
     if (m < 1)
         throw Error("fbspwavf: order m must be >= 1",
@@ -74,7 +74,7 @@ void centfrq_argcheck(keel::StringRef wname, int iter)
                     0, 0, "centfrq", "", "numkit:centfrq:invalidIter");
 }
 
-void scal2frq_argcheck(const Value &a, keel::StringRef wname, double delta)
+void scal2frq_argcheck(const Value &a, keel::StringRef wname, keel::f64 delta)
 {
     internal::requireNonempty(a, "scal2frq", "A", 1);
     if (a.type() != ValueType::DOUBLE && a.type() != ValueType::SINGLE)
@@ -85,7 +85,7 @@ void scal2frq_argcheck(const Value &a, keel::StringRef wname, double delta)
         throw Error("scal2frq: A must be a 1-D vector of positive scales",
                     0, 0, "scal2frq", "", "numkit:scal2frq:invalidScales");
     for (keel::usize i = 0; i < a.numel(); ++i) {
-        const double v = a.elemAsDouble(i);
+        const keel::f64 v = a.elemAsDouble(i);
         if (!std::isfinite(v) || v <= 0.0)
             throw Error("scal2frq: all scales in A must be finite and positive",
                         0, 0, "scal2frq", "", "numkit:scal2frq:invalidScales");
@@ -98,8 +98,8 @@ void scal2frq_argcheck(const Value &a, keel::StringRef wname, double delta)
                     0, 0, "scal2frq", "", "numkit:scal2frq:invalidDelta");
 }
 
-keel::wavelet::CwtWavelet cwt_argcheck(const Value &x, keel::StringRef wname, double fs,
-                                       int voicesPerOctave, double timeBandwidth, double gamma,
+keel::wavelet::CwtWavelet cwt_argcheck(const Value &x, keel::StringRef wname, keel::f64 fs,
+                                       int voicesPerOctave, keel::f64 timeBandwidth, keel::f64 gamma,
                                        const Value &freqLimits)
 {
     if (!x.isNumeric() || x.isComplex())
@@ -141,8 +141,8 @@ keel::wavelet::CwtWavelet cwt_argcheck(const Value &x, keel::StringRef wname, do
         if (!freqLimits.isNumeric() || freqLimits.isComplex() || freqLimits.numel() != 2)
             throw Error("cwt: FrequencyLimits must be a 2-element real vector [fmin, fmax]",
                         0, 0, "cwt", "", "numkit:cwt:invalidFrequencyLimits");
-        const double fmin = freqLimits.elemAsDouble(0);
-        const double fmax = freqLimits.elemAsDouble(1);
+        const keel::f64 fmin = freqLimits.elemAsDouble(0);
+        const keel::f64 fmax = freqLimits.elemAsDouble(1);
         if (!(fmin > 0.0) || !(fmax > fmin) || !std::isfinite(fmin) || !std::isfinite(fmax))
             throw Error("cwt: FrequencyLimits must satisfy 0 < fmin < fmax",
                         0, 0, "cwt", "", "numkit:cwt:invalidFrequencyLimits");
@@ -153,7 +153,7 @@ keel::wavelet::CwtWavelet cwt_argcheck(const Value &x, keel::StringRef wname, do
 } // anonymous
 
 std::tuple<Value, Value>
-mexihat(double lb, double ub, keel::usize N, keel::Allocator *mr)
+mexihat(keel::f64 lb, keel::f64 ub, keel::usize N, keel::Allocator *mr)
 {
     Value xv = Value::matrix(1, N, ValueType::DOUBLE, mr);
     Value pv = Value::matrix(1, N, ValueType::DOUBLE, mr);
@@ -165,7 +165,7 @@ mexihat(double lb, double ub, keel::usize N, keel::Allocator *mr)
 }
 
 std::tuple<Value, Value>
-morlet(double lb, double ub, keel::usize N, keel::Allocator *mr)
+morlet(keel::f64 lb, keel::f64 ub, keel::usize N, keel::Allocator *mr)
 {
     Value xv = Value::matrix(1, N, ValueType::DOUBLE, mr);
     Value pv = Value::matrix(1, N, ValueType::DOUBLE, mr);
@@ -177,7 +177,7 @@ morlet(double lb, double ub, keel::usize N, keel::Allocator *mr)
 }
 
 std::tuple<Value, Value>
-shanwavf(double lb, double ub, keel::usize N, double fb, double fc, keel::Allocator *mr)
+shanwavf(keel::f64 lb, keel::f64 ub, keel::usize N, keel::f64 fb, keel::f64 fc, keel::Allocator *mr)
 {
     shanwavf_argcheck(lb, ub, N, fb, fc);
     Value xv = Value::matrix(1, N, ValueType::DOUBLE, mr);
@@ -190,7 +190,7 @@ shanwavf(double lb, double ub, keel::usize N, double fb, double fc, keel::Alloca
 }
 
 std::tuple<Value, Value>
-cmorwavf(double lb, double ub, keel::usize N, double fb, double fc, keel::Allocator *mr)
+cmorwavf(keel::f64 lb, keel::f64 ub, keel::usize N, keel::f64 fb, keel::f64 fc, keel::Allocator *mr)
 {
     cmorwavf_argcheck(lb, ub, N, fb, fc);
     Value xv = Value::matrix(1, N, ValueType::DOUBLE, mr);
@@ -203,7 +203,7 @@ cmorwavf(double lb, double ub, keel::usize N, double fb, double fc, keel::Alloca
 }
 
 std::tuple<Value, Value>
-fbspwavf(double lb, double ub, keel::usize N, int m, double fb, double fc, keel::Allocator *mr)
+fbspwavf(keel::f64 lb, keel::f64 ub, keel::usize N, int m, keel::f64 fb, keel::f64 fc, keel::Allocator *mr)
 {
     fbspwavf_argcheck(lb, ub, N, m, fb, fc);
     Value xv = Value::matrix(1, N, ValueType::DOUBLE, mr);
@@ -219,10 +219,10 @@ Value meyeraux(const Value &x, keel::Allocator *mr)
 {
     meyeraux_argcheck(x);
     if (x.numel() == 1) {
-        const double r = keel::wavelet::meyeraux(x.elemAsDouble(0));
+        const keel::f64 r = keel::wavelet::meyeraux(x.elemAsDouble(0));
         if (x.type() == ValueType::SINGLE) {
             Value out = Value::matrix(1, 1, ValueType::SINGLE, mr);
-            out.singleDataMut()[0] = keel::as<float>(r);
+            out.singleDataMut()[0] = keel::as<keel::f32>(r);
             return out;
         }
         return Value::scalar(r, mr);
@@ -245,7 +245,7 @@ CentfrqResult centfrqGrid(keel::StringRef wname, int iter,
     }
 
     Value xval = Value::matrix(1, r.xval.size(), ValueType::DOUBLE, mr);
-    if (!r.xval.empty()) std::memcpy(xval.doubleDataMut(), r.xval.data(), r.xval.size() * sizeof(double));
+    if (!r.xval.empty()) std::memcpy(xval.doubleDataMut(), r.xval.data(), r.xval.size() * sizeof(keel::f64));
 
     Value recfreq = Value::matrix(0, 0, ValueType::DOUBLE, mr);
     if (withRecfreq) {
@@ -258,23 +258,23 @@ CentfrqResult centfrqGrid(keel::StringRef wname, int iter,
             recfreq = Value::matrix(1, r.recfreq_real.size(), ValueType::DOUBLE, mr);
             if (!r.recfreq_real.empty())
                 std::memcpy(recfreq.doubleDataMut(), r.recfreq_real.data(),
-                            r.recfreq_real.size() * sizeof(double));
+                            r.recfreq_real.size() * sizeof(keel::f64));
         }
     }
     return {r.freq, std::move(xval), std::move(recfreq)};
 }
 
-double centfrq(keel::StringRef wname, int iter)
+keel::f64 centfrq(keel::StringRef wname, int iter)
 {
     return centfrqGrid(wname, iter, false, nullptr).freq;
 }
 
 Value scal2frq(const Value &a, keel::StringRef wname,
-               double delta, keel::Allocator *mr)
+               keel::f64 delta, keel::Allocator *mr)
 {
     scal2frq_argcheck(a, wname, delta);
-    const double cf = centfrq(wname, 8);
-    const double num = cf / delta;
+    const keel::f64 cf = centfrq(wname, 8);
+    const keel::f64 num = cf / delta;
     Value out = internal::allocLike(a, a.type(), mr);
     for (keel::usize i = 0; i < a.numel(); ++i)
         internal::storeElem(out, i, num / a.elemAsDouble(i));
@@ -283,10 +283,10 @@ Value scal2frq(const Value &a, keel::StringRef wname,
 
 CwtResult cwt(const Value &x,
               keel::StringRef wname,
-              double fs,
+              keel::f64 fs,
               int voicesPerOctave,
-              double timeBandwidth,
-              double gamma,
+              keel::f64 timeBandwidth,
+              keel::f64 gamma,
               bool extendSignal,
               const Value &freqLimits,
               keel::Allocator *mr)
@@ -296,8 +296,8 @@ CwtResult cwt(const Value &x,
     keel::Array<keel::f64> xv(N, mr);
     for (keel::usize i = 0; i < N; ++i) xv[i] = x.elemAsDouble(i);
 
-    const double fmin = freqLimits.isEmpty() ? 0.0 : freqLimits.elemAsDouble(0);
-    const double fmax = freqLimits.isEmpty() ? 0.0 : freqLimits.elemAsDouble(1);
+    const keel::f64 fmin = freqLimits.isEmpty() ? 0.0 : freqLimits.elemAsDouble(0);
+    const keel::f64 fmax = freqLimits.isEmpty() ? 0.0 : freqLimits.elemAsDouble(1);
 
     auto r = keel::wavelet::cwt(xv, wkind, fs, keel::as<keel::i32>(voicesPerOctave),
                                 timeBandwidth, gamma, extendSignal, fmin, fmax, mr);

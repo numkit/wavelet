@@ -24,8 +24,8 @@ FilterBank dwt_argcheck(keel::StringRef wname) {
     return wavelet_filters(wname);
 }
 
-void dwt_argcheck(keel::ArrayRef<double> Lo_D,
-                  keel::ArrayRef<double> Hi_D) {
+void dwt_argcheck(keel::ArrayRef<keel::f64> Lo_D,
+                  keel::ArrayRef<keel::f64> Hi_D) {
     const keel::usize Lf = Lo_D.size();
     if (Lf < 2 || Hi_D.size() != Lf)
         throw Error("dwt: filter length < 2 or Lo_D/Hi_D length mismatch",
@@ -36,8 +36,8 @@ FilterBank idwt_argcheck(keel::StringRef wname) {
     return wavelet_filters(wname);
 }
 
-void idwt_argcheck(keel::ArrayRef<double> Lo_R,
-                   keel::ArrayRef<double> Hi_R) {
+void idwt_argcheck(keel::ArrayRef<keel::f64> Lo_R,
+                   keel::ArrayRef<keel::f64> Hi_R) {
     const keel::usize Lf = Lo_R.size();
     if (Lf < 2 || Hi_R.size() != Lf)
         throw Error("idwt: filter length < 2 or Lo_R/Hi_R length mismatch",
@@ -48,8 +48,8 @@ void idwt_argcheck(keel::ArrayRef<double> Lo_R,
 
 static std::pair<Value, Value>
 dwt_with_filters(const Value &x,
-                 keel::ArrayRef<double> Lo_D,
-                 keel::ArrayRef<double> Hi_D,
+                 keel::ArrayRef<keel::f64> Lo_D,
+                 keel::ArrayRef<keel::f64> Hi_D,
                  keel::Allocator *mr)
 {
     dwt_argcheck(Lo_D, Hi_D);
@@ -63,7 +63,7 @@ dwt_with_filters(const Value &x,
     auto res = keel::wavelet::dwt(keel::ArrayRef<keel::f64>(xv.data(), N), Lo_D, Hi_D, mr);
     auto pack = [&](keel::ArrayRef<keel::f64> v) {
         Value r = Value::matrix(1, v.size(), ValueType::DOUBLE, mr);
-        if (!v.empty()) std::memcpy(r.doubleDataMut(), v.data(), v.size() * sizeof(double));
+        if (!v.empty()) std::memcpy(r.doubleDataMut(), v.data(), v.size() * sizeof(keel::f64));
         return r;
     };
     return {pack(keel::ArrayRef<keel::f64>(res.ca.data(), res.ca.size())),
@@ -80,8 +80,8 @@ dwt(const Value &x, keel::StringRef wname,
 
 std::pair<Value, Value>
 dwt_with_filters_pub(const Value &x,
-                     keel::ArrayRef<double> Lo_D,
-                     keel::ArrayRef<double> Hi_D,
+                     keel::ArrayRef<keel::f64> Lo_D,
+                     keel::ArrayRef<keel::f64> Hi_D,
                      keel::Allocator *mr)
 {
     dwt_argcheck(Lo_D, Hi_D);
@@ -89,8 +89,8 @@ dwt_with_filters_pub(const Value &x,
 }
 
 Value idwt_with_filters(const Value &cA, const Value &cD,
-                        keel::ArrayRef<double> Lo_R,
-                        keel::ArrayRef<double> Hi_R,
+                        keel::ArrayRef<keel::f64> Lo_R,
+                        keel::ArrayRef<keel::f64> Hi_R,
                         long long len,
                         keel::Allocator *mr)
 {
@@ -112,10 +112,10 @@ Value idwt_with_filters(const Value &cA, const Value &cD,
                                        : ValueType::DOUBLE,
                             mr);
     if (wantSingle) {
-        float *rf = r.singleDataMut();
-        for (keel::usize i = 0; i < outN; ++i) rf[i] = keel::as<float>(rec[i]);
+        keel::f32 *rf = r.singleDataMut();
+        for (keel::usize i = 0; i < outN; ++i) rf[i] = keel::as<keel::f32>(rec[i]);
     } else if (outN > 0) {
-        std::memcpy(r.doubleDataMut(), rec.data(), outN * sizeof(double));
+        std::memcpy(r.doubleDataMut(), rec.data(), outN * sizeof(keel::f64));
     }
     return r;
 }
@@ -130,8 +130,8 @@ Value idwt(const Value &cA, const Value &cD,
 }
 
 Value idwt_with_filters_pub(const Value &cA, const Value &cD,
-                            keel::ArrayRef<double> Lo_R,
-                            keel::ArrayRef<double> Hi_R,
+                            keel::ArrayRef<keel::f64> Lo_R,
+                            keel::ArrayRef<keel::f64> Hi_R,
                             long long len,
                             keel::Allocator *mr)
 {

@@ -38,15 +38,15 @@ namespace numkit::wavelet {
 
 namespace {
 
-Value rowFromVec(keel::ArrayRef<double> v,
+Value rowFromVec(keel::ArrayRef<keel::f64> v,
                  keel::Allocator *mr) {
     Value r = Value::matrix(1, v.size(), ValueType::DOUBLE, mr);
     if (!v.empty()) std::copy(v.begin(), v.end(), r.doubleDataMut());
     return r;
 }
 
-keel::Array<double> vecFromValue(const Value &v, keel::Allocator *mr = nullptr) {
-    keel::Array<double> out(v.numel(), mr);
+keel::Array<keel::f64> vecFromValue(const Value &v, keel::Allocator *mr = nullptr) {
+    keel::Array<keel::f64> out(v.numel(), mr);
     for (keel::usize i = 0; i < v.numel(); ++i) out[i] = v.elemAsDouble(i);
     return out;
 }
@@ -146,8 +146,8 @@ wavedec(const Value &x, int n, keel::StringRef wname,
     auto r = keel::wavelet::wavedec(xv, keel::as<keel::i32>(n), fb, mr);
 
     Value L = Value::matrix(1, r.l.size(), ValueType::DOUBLE, mr);
-    double *ld = L.doubleDataMut();
-    for (keel::usize i = 0; i < r.l.size(); ++i) ld[i] = keel::as<double>(r.l[i]);
+    keel::f64 *ld = L.doubleDataMut();
+    for (keel::usize i = 0; i < r.l.size(); ++i) ld[i] = keel::as<keel::f64>(r.l[i]);
     return {rowFromVec(r.c, mr), std::move(L)};
 }
 
@@ -177,8 +177,8 @@ Value waverec(const Value &C, const Value &L, keel::StringRef wname,
 }
 
 static Value appcoef_with_filters(const Value &C, const Value &L,
-                                  keel::ArrayRef<double> Lo_R,
-                                  keel::ArrayRef<double> Hi_R,
+                                  keel::ArrayRef<keel::f64> Lo_R,
+                                  keel::ArrayRef<keel::f64> Hi_R,
                                   int level,
                                   keel::Allocator *mr)
 {
@@ -207,8 +207,8 @@ Value appcoef(const Value &C, const Value &L, keel::StringRef wname,
 }
 
 Value appcoef_with_filters_pub(const Value &C, const Value &L,
-                               keel::ArrayRef<double> Lo_R,
-                               keel::ArrayRef<double> Hi_R,
+                               keel::ArrayRef<keel::f64> Lo_R,
+                               keel::ArrayRef<keel::f64> Hi_R,
                                int level,
                                keel::Allocator *mr)
 {
@@ -243,8 +243,8 @@ WenergyResult wenergy(const Value &C, const Value &L,
     auto lv = readL(L, mr);
     const keel::usize nLev = lv.size() - 2;
 
-    double ea = 0.0;
-    keel::Array<double> Ed(nLev, 0.0, mr);
+    keel::f64 ea = 0.0;
+    keel::Array<keel::f64> Ed(nLev, 0.0, mr);
     (void)keel::wavelet::wenergy(Cv, lv, ea, Ed);
 
     WenergyResult out;
@@ -281,15 +281,15 @@ keel::usize parse_wp_node(const Value &node, const char *fn)
         throw Error(keel::format("{}: NODE must be a non-negative integer or [depth, pos] pair", fn),
                     0, 0, fn, "", keel::format("numkit:{}:invalidNode", fn));
     if (node.numel() == 1) {
-        const double v = node.elemAsDouble(0);
+        const keel::f64 v = node.elemAsDouble(0);
         if (!std::isfinite(v) || v < 0.0 || std::floor(v) != v)
             throw Error(keel::format("{}: NODE index must be a non-negative integer", fn),
                         0, 0, fn, "", keel::format("numkit:{}:invalidNode", fn));
         return keel::as<keel::usize>(v);
     }
     if (node.numel() == 2) {
-        const double d = node.elemAsDouble(0);
-        const double p = node.elemAsDouble(1);
+        const keel::f64 d = node.elemAsDouble(0);
+        const keel::f64 p = node.elemAsDouble(1);
         if (!std::isfinite(d) || d < 0.0 || std::floor(d) != d || d > 20.0 ||
             !std::isfinite(p) || p < 0.0 || std::floor(p) != p) {
             throw Error(keel::format("{}: [depth, pos] must be non-negative integers", fn),
@@ -310,7 +310,7 @@ keel::usize parse_wp_node(const Value &node, const char *fn)
 } // anonymous
 
 Value wpdec(const Value &x, int n, keel::StringRef wname,
-            keel::StringRef entName, double entPar,
+            keel::StringRef entName, keel::f64 entPar,
             keel::Allocator *mr)
 {
     wpdec_argcheck(x, n);
@@ -325,8 +325,8 @@ Value wpdec(const Value &x, int n, keel::StringRef wname,
     Value nodes = Value::cell(1, totalNodes, mr);
     Value isLeaf = Value::matrix(1, totalNodes, ValueType::DOUBLE, mr);
     Value entropy = Value::matrix(1, totalNodes, ValueType::DOUBLE, mr);
-    double *leafData = isLeaf.doubleDataMut();
-    double *entData = entropy.doubleDataMut();
+    keel::f64 *leafData = isLeaf.doubleDataMut();
+    keel::f64 *entData = entropy.doubleDataMut();
     std::fill(leafData, leafData + totalNodes, 0.0);
     std::fill(entData, entData + totalNodes, 0.0);
 
@@ -356,7 +356,7 @@ Value wpdec(const Value &x, int n, keel::StringRef wname,
 
     Value t = Value::structure(mr);
     t.setFieldAll("order", Value::scalar(2.0, mr));
-    t.setFieldAll("depth", Value::scalar(keel::as<double>(n), mr));
+    t.setFieldAll("depth", Value::scalar(keel::as<keel::f64>(n), mr));
     t.setFieldAll("wname", Value::fromString(wname, mr));
     t.setFieldAll("entName", Value::fromString(entName, mr));
     t.setFieldAll("entPar", Value::scalar(entPar, mr));
@@ -427,7 +427,7 @@ WpspltResult wpsplt(const Value &tree, const Value &node,
 
     const keel::String wname = tree.field("wname").toString();
     const keel::String entName = tree.hasField("entName") ? tree.field("entName").toString() : keel::String("shannon");
-    const double entPar = tree.hasField("entPar") ? tree.field("entPar").toScalar() : 0.0;
+    const keel::f64 entPar = tree.hasField("entPar") ? tree.field("entPar").toScalar() : 0.0;
     const bool isCol = tree.hasField("isColumn") && tree.field("isColumn").toBool();
 
     const keel::usize left = 2 * idx + 1;
@@ -442,8 +442,8 @@ WpspltResult wpsplt(const Value &tree, const Value &node,
     Value nodes = Value::cell(1, newTotal, mr);
     Value isLeaf = Value::matrix(1, newTotal, ValueType::DOUBLE, mr);
     Value entropy = Value::matrix(1, newTotal, ValueType::DOUBLE, mr);
-    double *leafData = isLeaf.doubleDataMut();
-    double *entData = entropy.doubleDataMut();
+    keel::f64 *leafData = isLeaf.doubleDataMut();
+    keel::f64 *entData = entropy.doubleDataMut();
     std::fill(leafData, leafData + newTotal, 0.0);
     std::fill(entData, entData + newTotal, 0.0);
 
@@ -468,7 +468,7 @@ WpspltResult wpsplt(const Value &tree, const Value &node,
 
     Value outTree = Value::structure(mr);
     outTree.setFieldAll("order", Value::scalar(2.0, mr));
-    outTree.setFieldAll("depth", Value::scalar(keel::as<double>(depth), mr));
+    outTree.setFieldAll("depth", Value::scalar(keel::as<keel::f64>(depth), mr));
     outTree.setFieldAll("wname", Value::fromString(wname, mr));
     outTree.setFieldAll("entName", Value::fromString(entName, mr));
     outTree.setFieldAll("entPar", Value::scalar(entPar, mr));
@@ -489,8 +489,8 @@ BesttreeResult besttree(const Value &tree, keel::Allocator *mr)
     const keel::usize numNodes = oldNodes.numel();
 
     keel::Array<Value> nodesVec(numNodes, mr);
-    keel::Array<double> leafVec(numNodes, 0.0, mr);
-    keel::Array<double> optEnt(numNodes, 0.0, mr);
+    keel::Array<keel::f64> leafVec(numNodes, 0.0, mr);
+    keel::Array<keel::f64> optEnt(numNodes, 0.0, mr);
     for (keel::usize k = 0; k < numNodes; ++k) {
         nodesVec[k] = oldNodes.cellAt(k);
         leafVec[k] = oldLeaf.elemAsDouble(k);
@@ -518,7 +518,7 @@ BesttreeResult besttree(const Value &tree, keel::Allocator *mr)
         const keel::usize right = 2 * k + 2;
         if (left < numNodes && right < numNodes &&
             !nodesVec[left].isEmpty() && !nodesVec[right].isEmpty()) {
-            const double childEnt = optEnt[left] + optEnt[right];
+            const keel::f64 childEnt = optEnt[left] + optEnt[right];
             if (childEnt < optEnt[k]) {
                 optEnt[k] = childEnt;
             } else {
@@ -532,10 +532,10 @@ BesttreeResult besttree(const Value &tree, keel::Allocator *mr)
     Value nodes = Value::cell(1, numNodes, mr);
     Value isLeaf = Value::matrix(1, numNodes, ValueType::DOUBLE, mr);
     Value entropy = Value::matrix(1, numNodes, ValueType::DOUBLE, mr);
-    double *leafData = isLeaf.doubleDataMut();
-    double *entData = entropy.doubleDataMut();
+    keel::f64 *leafData = isLeaf.doubleDataMut();
+    keel::f64 *entData = entropy.doubleDataMut();
 
-    keel::Array<double> activeEnts(mr);
+    keel::Array<keel::f64> activeEnts(mr);
     for (keel::usize k = 0; k < numNodes; ++k) {
         nodes.cellAt(k) = nodesVec[k];
         leafData[k] = leafVec[k];

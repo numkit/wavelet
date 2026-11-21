@@ -84,7 +84,7 @@ void appcoef_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/, keel::MutA
     int level = -1;
     auto readVec = [](const Value &v) {
         const keel::usize n = v.numel();
-        keel::Array<double> out(n);
+        keel::Array<keel::f64> out(n);
         for (keel::usize i = 0; i < n; ++i) out[i] = v.elemAsDouble(i);
         return out;
     };
@@ -224,7 +224,7 @@ void upcoef_reg(keel::ArrayRef<Value> args, keel::usize, keel::MutArrayRef<Value
         ? argcheck::expectedInteger(
         argcheck::expectedReal(args[3], 4, "n", "upcoef"), 4, "n", "upcoef") : 1;
     if (args.size() >= 4)
-        argcheck::expectedNonNegative(double(n), 4, "n", "upcoef");
+        argcheck::expectedNonNegative(keel::f64(n), 4, "n", "upcoef");
     const long long len =
         (args.size() >= 5) ? keel::as<long long>(args[4].toScalar()) : -1;
     outs[0] = upcoef(type, args[1], wname, n, len, ctx.engine->allocator());
@@ -238,7 +238,7 @@ void wpdec_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/, keel::MutArr
         argcheck::expectedReal(args[1], 2, "N", "wpdec"), 2, "N", "wpdec");
     const keel::String wname = argString(args[2]);
     const keel::String entName = (args.size() >= 4) ? argString(args[3]) : keel::String("shannon");
-    const double entPar = (args.size() >= 5 && !args[4].isEmpty())
+    const keel::f64 entPar = (args.size() >= 5 && !args[4].isEmpty())
                               ? argcheck::expectedReal(args[4], 5, "P", "wpdec")
                               : 0.0;
     outs[0] = wpdec(args[0], n, wname, entName, entPar, ctx.engine->allocator());

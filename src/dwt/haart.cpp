@@ -53,7 +53,7 @@ int max_haar_level(keel::usize N)
     return keel::as<int>(keel::wavelet::haar_max_level(N));
 }
 
-void haar_step_real(const double *x, keel::usize inLen, double *a, double *d,
+void haar_step_real(const keel::f64 *x, keel::usize inLen, keel::f64 *a, keel::f64 *d,
                     bool integer)
 {
     const keel::usize H = inLen / 2;
@@ -74,7 +74,7 @@ void haar_step_cplx(const keel::c64 *x, keel::usize inLen, keel::c64 *a, keel::c
 // For a vector the whole content is one column of length N; for a
 // matrix we keep the original (rows × cols) shape.
 struct Buf {
-    keel::Array<double> real;
+    keel::Array<keel::f64> real;
     keel::Array<keel::c64> cplx;
     keel::usize colLen = 0;
     keel::usize ncols  = 0;
@@ -146,7 +146,7 @@ HaartResult haart(const Value &x, int level, bool integer,
     const int lev = (level == 0) ? max_lev : level;
 
     const ValueType vt = buf.isComplex ? ValueType::COMPLEX : ValueType::DOUBLE;
-    keel::Array<double>  curR = keel::move(buf.real);
+    keel::Array<keel::f64>  curR = keel::move(buf.real);
     keel::Array<keel::c64> curC = keel::move(buf.cplx);
     keel::usize inLen = colLen;
 
@@ -166,8 +166,8 @@ HaartResult haart(const Value &x, int level, bool integer,
                 haar_step_cplx(curC.data() + c * inLen, inLen,
                                aP + c * H, dP + c * H);
         } else {
-            double *aP = aMat.doubleDataMut();
-            double *dP = dMat.doubleDataMut();
+            keel::f64 *aP = aMat.doubleDataMut();
+            keel::f64 *dP = dMat.doubleDataMut();
             for (keel::usize c = 0; c < ncols; ++c)
                 haar_step_real(curR.data() + c * inLen, inLen,
                                aP + c * H, dP + c * H, integer);
@@ -177,8 +177,8 @@ HaartResult haart(const Value &x, int level, bool integer,
             const keel::c64 *aP = aMat.complexData();
             curC.assign(keel::ArrayRef<keel::c64>(aP, H * ncols));
         } else {
-            const double *aP = aMat.doubleData();
-            curR.assign(keel::ArrayRef<double>(aP, H * ncols));
+            const keel::f64 *aP = aMat.doubleData();
+            curR.assign(keel::ArrayRef<keel::f64>(aP, H * ncols));
         }
         details.push_back(std::move(dMat));
         if (k == lev - 1) R.a = std::move(aMat);

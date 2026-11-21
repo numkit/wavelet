@@ -31,13 +31,13 @@ static keel::String argString(const Value &v) {
     return v.toString();
 }
 
-static keel::Array<double> extractFilterVec(const Value &v, const char *fn) {
+static keel::Array<keel::f64> extractFilterVec(const Value &v, const char *fn) {
     if (!v.isNumeric() || v.isEmpty() || v.type() == ValueType::COMPLEX ||
         (v.dims().rows() != 1 && v.dims().cols() != 1))
         throw Error(keel::format("{}: expected real numeric filter vector", fn),
                     0, 0, fn, "", keel::format("numkit:{}:filter", fn));
     const keel::usize n = v.numel();
-    keel::Array<double> out(n);
+    keel::Array<keel::f64> out(n);
     for (keel::usize i = 0; i < n; ++i) out[i] = v.elemAsDouble(i);
     return out;
 }
@@ -121,7 +121,7 @@ void modwt_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/, keel::MutArr
     const Value &x = args[0];
     const keel::usize N = x.numel();
     const int default_lev = (N >= 2)
-        ? keel::as<int>(std::floor(std::log2(keel::as<double>(N))))
+        ? keel::as<int>(std::floor(std::log2(keel::as<keel::f64>(N))))
         : 1;
 
     keel::String wname("sym4");

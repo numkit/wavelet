@@ -26,14 +26,14 @@ namespace numkit::wavelet {
 namespace detail {
 
 static void shape_grid_reg(const char *fn,
-                           std::tuple<Value, Value> (*impl)(double, double, keel::usize, keel::Allocator *),
+                           std::tuple<Value, Value> (*impl)(keel::f64, keel::f64, keel::usize, keel::Allocator *),
                            keel::ArrayRef<Value> args, keel::usize nargout,
                            keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 3, 3, fn);
-    const double lb = args[0].toScalar();
-    const double ub = args[1].toScalar();
-    const double Nd = args[2].toScalar();
+    const keel::f64 lb = args[0].toScalar();
+    const keel::f64 ub = args[1].toScalar();
+    const keel::f64 Nd = args[2].toScalar();
     if (!(Nd >= 0.0))
         throw Error(keel::format("{}: N must be non-negative", fn),
                     0, 0, fn, "", "numkit:wav:N");
@@ -66,12 +66,12 @@ void shanwavf_reg(keel::ArrayRef<Value> args, keel::usize nargout,
                   keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 5, 5, "shanwavf");
-    const double lb = args[0].toScalar();
-    const double ub = args[1].toScalar();
+    const keel::f64 lb = args[0].toScalar();
+    const keel::f64 ub = args[1].toScalar();
     const keel::usize N  = keel::as<keel::usize>(argcheck::expectedPositiveInteger(
         argcheck::expectedReal(args[2], 3, "N", "shanwavf"), 3, "N", "shanwavf"));
-    const double fb = args[3].toScalar();
-    const double fc = args[4].toScalar();
+    const keel::f64 fb = args[3].toScalar();
+    const keel::f64 fc = args[4].toScalar();
     auto [psi, x] = shanwavf(lb, ub, N, fb, fc, ctx.engine->allocator());
     outs[0] = std::move(psi);
     if (nargout > 1) outs[1] = std::move(x);
@@ -81,13 +81,13 @@ void cmorwavf_reg(keel::ArrayRef<Value> args, keel::usize nargout,
                   keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 3, 5, "cmorwavf");
-    const double lb = args[0].toScalar();
-    const double ub = args[1].toScalar();
+    const keel::f64 lb = args[0].toScalar();
+    const keel::f64 ub = args[1].toScalar();
     const keel::usize N  = keel::as<keel::usize>(argcheck::expectedPositiveInteger(
         argcheck::expectedReal(args[2], 3, "N", "cmorwavf"), 3, "N", "cmorwavf"));
     // MATLAB R2025b defaults when only 3 args supplied: fb = fc = 1.
-    const double fb = (args.size() >= 4) ? args[3].toScalar() : 1.0;
-    const double fc = (args.size() >= 5) ? args[4].toScalar() : 1.0;
+    const keel::f64 fb = (args.size() >= 4) ? args[3].toScalar() : 1.0;
+    const keel::f64 fc = (args.size() >= 5) ? args[4].toScalar() : 1.0;
     auto [psi, x] = cmorwavf(lb, ub, N, fb, fc, ctx.engine->allocator());
     outs[0] = std::move(psi);
     if (nargout > 1) outs[1] = std::move(x);
@@ -97,14 +97,14 @@ void fbspwavf_reg(keel::ArrayRef<Value> args, keel::usize nargout,
                   keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 6, 6, "fbspwavf");
-    const double lb = args[0].toScalar();
-    const double ub = args[1].toScalar();
+    const keel::f64 lb = args[0].toScalar();
+    const keel::f64 ub = args[1].toScalar();
     const keel::usize N  = keel::as<keel::usize>(argcheck::expectedPositiveInteger(
         argcheck::expectedReal(args[2], 3, "N", "fbspwavf"), 3, "N", "fbspwavf"));
     const int    m  = argcheck::expectedPositiveInteger(
         argcheck::expectedReal(args[3], 4, "m", "fbspwavf"), 4, "m", "fbspwavf");
-    const double fb = args[4].toScalar();
-    const double fc = args[5].toScalar();
+    const keel::f64 fb = args[4].toScalar();
+    const keel::f64 fc = args[5].toScalar();
     auto [psi, x] = fbspwavf(lb, ub, N, m, fb, fc, ctx.engine->allocator());
     outs[0] = std::move(psi);
     if (nargout > 1) outs[1] = std::move(x);
@@ -145,7 +145,7 @@ void scal2frq_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
         throw Error("scal2frq: WNAME must be a string or char vector",
                     0, 0, "scal2frq", "", "numkit:scal2frq:invalidWavelet");
     const keel::String wname = args[1].toString();
-    double delta = 1.0;
+    keel::f64 delta = 1.0;
     if (args.size() >= 3 && !args[2].isEmpty()) {
         delta = argcheck::expectedReal(args[2], 3, "DELTA", "scal2frq");
     }
@@ -157,10 +157,10 @@ void cwt_reg(keel::ArrayRef<Value> args, keel::usize nargout,
 {
     argcheck::checkNargin(args.size(), 1, 13, "cwt");
     keel::String wname("morse");
-    double fs = 1.0;
+    keel::f64 fs = 1.0;
     int voicesPerOctave = 10;
-    double timeBandwidth = 60.0;
-    double gamma = 3.0;
+    keel::f64 timeBandwidth = 60.0;
+    keel::f64 gamma = 3.0;
     bool extendSignal = true;
     Value freqLimits;
 

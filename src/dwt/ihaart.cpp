@@ -47,15 +47,15 @@ namespace numkit::wavelet {
 
 namespace {
 
-void ihaar_step_real(const double *a, const double *d, keel::usize H,
-                     double *out, bool integer)
+void ihaar_step_real(const keel::f64 *a, const keel::f64 *d, keel::usize H,
+                     keel::f64 *out, bool integer)
 {
     keel::wavelet::ihaar_step(keel::ArrayRef<keel::f64>(a, H),
                               keel::ArrayRef<keel::f64>(d, H),
                               keel::MutArrayRef<keel::f64>(out, 2 * H), integer);
 }
 
-void ihaar_step_cplx(const keel::c64 *a, const double *d, keel::usize H, keel::c64 *out)
+void ihaar_step_cplx(const keel::c64 *a, const keel::f64 *d, keel::usize H, keel::c64 *out)
 {
     keel::wavelet::ihaar_step_c64(keel::ArrayRef<keel::c64>(a, H),
                                   keel::ArrayRef<keel::f64>(d, H),
@@ -72,7 +72,7 @@ void ihaar_step_cplx(const keel::c64 *a, const double *d, keel::usize H, keel::c
 //     `zero_out` is true the returned vector is zero-filled (used to
 //     suppress the finest K bands when `level > 0`).
 struct DetailLevel {
-    keel::Array<double> data;
+    keel::Array<keel::f64> data;
     keel::usize rows = 0;
     keel::usize cols = 0;
 };
@@ -190,7 +190,7 @@ Value ihaart(const Value &aV, const Value &dV, int level, bool integer,
     const ValueType vt = aIsComplex ? ValueType::COMPLEX : ValueType::DOUBLE;
 
     // Working buffer: starts as `a`, doubles each level (column-major).
-    keel::Array<double>  curR(mr);
+    keel::Array<keel::f64>  curR(mr);
     keel::Array<keel::c64> curC(mr);
     if (aIsComplex) {
         curC.resize(aLen * ncols);
@@ -213,7 +213,7 @@ Value ihaart(const Value &aV, const Value &dV, int level, bool integer,
         DetailLevel det = grab_level(dV, isCell, idx, curLen, ncols, zero);
 
         const keel::usize outLen = curLen * 2;
-        keel::Array<double>  newR(mr);
+        keel::Array<keel::f64>  newR(mr);
         keel::Array<keel::c64> newC(mr);
         if (aIsComplex) {
             newC.resize(outLen * ncols);
@@ -242,11 +242,11 @@ Value ihaart(const Value &aV, const Value &dV, int level, bool integer,
         keel::c64 *p = out.complexDataMut();
         std::copy(curC.begin(), curC.end(), p);
     } else if (aSingle) {
-        float *p = out.singleDataMut();
+        keel::f32 *p = out.singleDataMut();
         for (keel::usize i = 0; i < curR.size(); ++i)
-            p[i] = keel::as<float>(curR[i]);
+            p[i] = keel::as<keel::f32>(curR[i]);
     } else {
-        double *p = out.doubleDataMut();
+        keel::f64 *p = out.doubleDataMut();
         std::copy(curR.begin(), curR.end(), p);
     }
     return out;

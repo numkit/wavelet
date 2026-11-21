@@ -58,7 +58,7 @@ void wentropy_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/, keel::Mut
                   CallContext &ctx)
 {
     argcheck::checkNargin(args.size(), 2, 3, "wentropy");
-    const double param = (args.size() >= 3) ? args[2].toScalar() : 0.0;
+    const keel::f64 param = (args.size() >= 3) ? args[2].toScalar() : 0.0;
     outs[0] = wentropy(args[0], argString(args[1]), param, ctx.engine->allocator());
 }
 

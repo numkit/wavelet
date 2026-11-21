@@ -34,7 +34,7 @@ namespace numkit::wavelet {
 
 namespace {
 
-double median_abs(keel::Array<double> v) {
+keel::f64 median_abs(keel::Array<keel::f64> v) {
     if (v.empty()) return 0.0;
     for (auto &x : v) x = keel::abs(x);
     std::sort(v.begin(), v.end());
@@ -44,8 +44,8 @@ double median_abs(keel::Array<double> v) {
                : 0.5 * (v[n / 2 - 1] + v[n / 2]);
 }
 
-keel::Array<double> vecFromValue(const Value &v, keel::Allocator *mr = nullptr) {
-    keel::Array<double> out(v.numel(), mr);
+keel::Array<keel::f64> vecFromValue(const Value &v, keel::Allocator *mr = nullptr) {
+    keel::Array<keel::f64> out(v.numel(), mr);
     for (keel::usize i = 0; i < v.numel(); ++i) out[i] = v.elemAsDouble(i);
     return out;
 }
@@ -72,7 +72,7 @@ void wthresh_argcheck(const Value &X, keel::StringRef sorh, const Value &T)
                     0, 0, "wthresh", "", "numkit:wthresh:size");
 }
 
-keel::String wentropy_argcheck(keel::StringRef type, double param)
+keel::String wentropy_argcheck(keel::StringRef type, keel::f64 param)
 {
     keel::String t(type);
     std::transform(t.begin(), t.end(), t.begin(),
@@ -142,12 +142,12 @@ Value wthresh(const Value &X, keel::StringRef sorh, const Value &T,
         keel::c64 *yd = Y.complexDataMut();
         for (keel::usize i = 0; i < N; ++i) {
             const keel::c64 z = X.complexElem(i);
-            const double az = keel::abs(z);
-            const double T_i = tOf(i);
+            const keel::f64 az = keel::abs(z);
+            const keel::f64 T_i = tOf(i);
             if (hard) {
                 yd[i] = (az > T_i) ? z : keel::c64(0.0, 0.0);
             } else {
-                const double mag = az - T_i;
+                const keel::f64 mag = az - T_i;
                 yd[i] = (mag > 0.0 && az > 0.0)
                             ? z * (mag / az)
                             : keel::c64(0.0, 0.0);
@@ -156,23 +156,23 @@ Value wthresh(const Value &X, keel::StringRef sorh, const Value &T,
         return Y;
     }
 
-    double *yd = outT == ValueType::SINGLE
+    keel::f64 *yd = outT == ValueType::SINGLE
         ? nullptr
         : Y.doubleDataMut();
-    float *yf = outT == ValueType::SINGLE ? Y.singleDataMut() : nullptr;
+    keel::f32 *yf = outT == ValueType::SINGLE ? Y.singleDataMut() : nullptr;
     for (keel::usize i = 0; i < N; ++i) {
-        const double x = X.elemAsDouble(i);
-        const double ax = keel::abs(x);
-        const double T_i = tOf(i);
-        double r;
+        const keel::f64 x = X.elemAsDouble(i);
+        const keel::f64 ax = keel::abs(x);
+        const keel::f64 T_i = tOf(i);
+        keel::f64 r;
         if (hard) {
             r = (ax > T_i) ? x : 0.0;
         } else {
             // soft: sign(x) * max(|x| - T, 0)
-            const double mag = ax - T_i;
+            const keel::f64 mag = ax - T_i;
             r = (mag > 0.0) ? std::copysign(mag, x) : 0.0;
         }
-        if (yf) yf[i] = keel::as<float>(r);
+        if (yf) yf[i] = keel::as<keel::f32>(r);
         else    yd[i] = r;
     }
     return Y;
@@ -183,7 +183,7 @@ Value wnoisest(const Value &C, const Value &L, const Value &S, keel::Allocator *
     const keel::usize k = S.numel();
     Value out = Value::matrix(1, k, ValueType::DOUBLE, mr);
     if (k == 0) return out;
-    double *od = out.doubleDataMut();
+    keel::f64 *od = out.doubleDataMut();
 
     for (keel::usize i = 0; i < k; ++i) {
         const int level = keel::as<int>(S.elemAsDouble(i));
@@ -200,7 +200,7 @@ Value wdenoise(const Value &x, int level, keel::StringRef wname, keel::Allocator
     if (N < 2) {
         Value y = Value::matrix(x.dims().rows(), x.dims().cols(),
                                 ValueType::DOUBLE, mr);
-        double *yd = y.doubleDataMut();
+        keel::f64 *yd = y.doubleDataMut();
         for (keel::usize i = 0; i < N; ++i) yd[i] = x.elemAsDouble(i);
         return y;
     }
@@ -216,7 +216,7 @@ Value wdenoise(const Value &x, int level, keel::StringRef wname, keel::Allocator
     return out;
 }
 
-Value wentropy(const Value &X, keel::StringRef type, double param,
+Value wentropy(const Value &X, keel::StringRef type, keel::f64 param,
                keel::Allocator *mr)
 {
     const keel::String t = wentropy_argcheck(type, param);
@@ -226,7 +226,7 @@ Value wentropy(const Value &X, keel::StringRef type, double param,
     else if (t == "log energy" || t == "logenergy") kind = keel::wavelet::EntropyKind::LogEnergy;
     else if (t == "threshold") kind = keel::wavelet::EntropyKind::Threshold;
     else if (t == "sure") kind = keel::wavelet::EntropyKind::Sure;
-    const double e = keel::wavelet::entropy(keel::ArrayRef<keel::f64>(x.data(), x.size()), kind, param);
+    const keel::f64 e = keel::wavelet::entropy(keel::ArrayRef<keel::f64>(x.data(), x.size()), kind, param);
     return Value::scalar(e, mr);
 }
 
@@ -238,9 +238,9 @@ DdencmpResult ddencmp(keel::StringRef opt, keel::StringRef type,
     // Noise level from the finest-detail coefficients of a 1-level db1 DWT.
     auto [cA, cD] = dwt(x, "db1", mr);
     (void)cA;
-    const double med = median_abs(vecFromValue(cD));   // median(|cD1|)
-    const double sigma = med / 0.6745;
-    const double n = keel::as<double>(x.numel());
+    const keel::f64 med = median_abs(vecFromValue(cD));   // median(|cD1|)
+    const keel::f64 sigma = med / 0.6745;
+    const keel::f64 n = keel::as<keel::f64>(x.numel());
 
     DdencmpResult r;
     if (o == "den") {

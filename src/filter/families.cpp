@@ -47,9 +47,9 @@ namespace numkit::wavelet {
 
 namespace {
 
-const double INV_SQRT2 = 0.70710678118654752440;
+const keel::f64 INV_SQRT2 = 0.70710678118654752440;
 
-Value rowVec(keel::Allocator *mr, keel::ArrayRef<double> v)
+Value rowVec(keel::Allocator *mr, keel::ArrayRef<keel::f64> v)
 {
     Value r = Value::matrix(1, v.size(), ValueType::DOUBLE, mr);
     if (!v.empty()) std::copy(v.begin(), v.end(), r.doubleDataMut());
@@ -63,7 +63,7 @@ Value rowVec(keel::Allocator *mr, keel::ArrayRef<double> v)
 Value family_scaling(keel::Allocator *mr, keel::StringRef name)
 {
     auto fb = wavelet_filters(name);   // throws on unsupported family
-    keel::Array<double> v = std::move(fb.Lo_R);
+    keel::Array<keel::f64> v = std::move(fb.Lo_R);
     for (auto &x : v) x *= INV_SQRT2;
     return rowVec(mr, v);
 }
