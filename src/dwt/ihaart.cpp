@@ -32,6 +32,7 @@
 #include <keel/format.h>
 #include <keel/memory.h>
 #include <keel/complex.h>
+#include <keel/wavelet.h>
 #include <numkit/wavelet/dwt/ihaart.hpp>
 #include <numkit/wavelet/internal/type_gates.hpp>
 
@@ -49,28 +50,16 @@ namespace {
 void ihaar_step_real(const double *a, const double *d, keel::usize H,
                      double *out, bool integer)
 {
-    if (integer) {
-        for (keel::usize i = 0; i < H; ++i) {
-            const double x0 = a[i] - std::floor(d[i] / 2.0);
-            out[2 * i]     = x0;
-            out[2 * i + 1] = x0 + d[i];
-        }
-    } else {
-        const double s = 1.0 / std::sqrt(2.0);
-        for (keel::usize i = 0; i < H; ++i) {
-            out[2 * i]     = (a[i] - d[i]) * s;
-            out[2 * i + 1] = (a[i] + d[i]) * s;
-        }
-    }
+    keel::wavelet::ihaar_step(keel::ArrayRef<keel::f64>(a, H),
+                              keel::ArrayRef<keel::f64>(d, H),
+                              keel::MutArrayRef<keel::f64>(out, 2 * H), integer);
 }
 
 void ihaar_step_cplx(const keel::c64 *a, const double *d, keel::usize H, keel::c64 *out)
 {
-    const double s = 1.0 / std::sqrt(2.0);
-    for (keel::usize i = 0; i < H; ++i) {
-        out[2 * i]     = (a[i] - d[i]) * s;
-        out[2 * i + 1] = (a[i] + d[i]) * s;
-    }
+    keel::wavelet::ihaar_step_c64(keel::ArrayRef<keel::c64>(a, H),
+                                  keel::ArrayRef<keel::f64>(d, H),
+                                  keel::MutArrayRef<keel::c64>(out, 2 * H));
 }
 
 // Pull a single detail level (length H × ncols) out of the user-supplied

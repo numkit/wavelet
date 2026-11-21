@@ -17,6 +17,7 @@
 #include <keel/memory.h>
 #include <keel/ref.h>
 #include <keel/string.h>
+#include <keel/wavelet.h>
 #include <numkit/wavelet/dwt/multilevel.hpp>
 #include <numkit/wavelet/dwt/dwt.hpp>
 #include <numkit/wavelet/denoise/denoise.hpp>
@@ -30,6 +31,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstring>
 #include <utility>
 
 namespace numkit::wavelet {
@@ -106,49 +108,47 @@ void wpdec_argcheck(const Value &x, int n)
 
 } // anonymous
 
+namespace {
+
+keel::wavelet::FilterBank lookup_keel_fb(keel::StringRef wname, keel::Allocator *mr)
+{
+    auto nfb = wavelet_filters(wname);
+    keel::wavelet::FilterBank kfb{
+        keel::Array<keel::f64>(mr),
+        keel::Array<keel::f64>(mr),
+        keel::Array<keel::f64>(mr),
+        keel::Array<keel::f64>(mr),
+    };
+    kfb.lo_d.assign(nfb.Lo_D);
+    kfb.hi_d.assign(nfb.Hi_D);
+    kfb.lo_r.assign(nfb.Lo_R);
+    kfb.hi_r.assign(nfb.Hi_R);
+    return kfb;
+}
+
+keel::Array<keel::usize> readL(const Value &L, keel::Allocator *mr)
+{
+    keel::Array<keel::usize> lv(L.numel(), mr);
+    for (keel::usize i = 0; i < L.numel(); ++i)
+        lv[i] = static_cast<keel::usize>(L.elemAsDouble(i));
+    return lv;
+}
+
+} // anonymous
+
 std::pair<Value, Value>
 wavedec(const Value &x, int n, keel::StringRef wname,
         keel::Allocator *mr)
 {
     wavedec_argcheck(n);
+    auto fb = lookup_keel_fb(wname, mr);
+    auto xv = vecFromValue(x, mr);
+    auto r = keel::wavelet::wavedec(xv, static_cast<keel::i32>(n), fb, mr);
 
-    // Run n successive single-level DWTs on the running approximation.
-    // Stash each cD in `details[level-1]` (0-indexed: details[0] = cD_1
-    // (finest), details[n-1] = cD_n (coarsest)).
-    keel::Array<keel::Array<double>> details(static_cast<keel::usize>(n), mr);
-    Value running = Value::matrix(1, x.numel(), ValueType::DOUBLE, mr);
-    {
-        double *rd = running.doubleDataMut();
-        for (keel::usize i = 0; i < x.numel(); ++i) rd[i] = x.elemAsDouble(i);
-    }
-
-    Value finalApprox;
-    for (int k = 0; k < n; ++k) {
-        auto [cA, cD] = dwt(running, wname, mr);
-        details[k] = vecFromValue(cD, mr);
-        running = cA;
-        if (k == n - 1) finalApprox = cA;
-    }
-    auto approx = vecFromValue(finalApprox, mr);
-
-    // L = [|cA_n|, |cD_n|, |cD_{n-1}|, ..., |cD_1|, |x|]
-    keel::Array<double> L(mr);
-    L.reserve(static_cast<keel::usize>(n) + 2);
-    L.push_back(static_cast<double>(approx.size()));
-    for (int k = n - 1; k >= 0; --k)
-        L.push_back(static_cast<double>(details[k].size()));
-    L.push_back(static_cast<double>(x.numel()));
-
-    // C = [cA_n, cD_n, cD_{n-1}, ..., cD_1]
-    keel::usize total = approx.size();
-    for (auto &d : details) total += d.size();
-    keel::Array<double> C(mr);
-    C.reserve(total);
-    C.append(approx);
-    for (int k = n - 1; k >= 0; --k)
-        C.append(details[k]);
-
-    return {rowFromVec(C, mr), rowFromVec(L, mr)};
+    Value L = Value::matrix(1, r.l.size(), ValueType::DOUBLE, mr);
+    double *ld = L.doubleDataMut();
+    for (keel::usize i = 0; i < r.l.size(); ++i) ld[i] = static_cast<double>(r.l[i]);
+    return {rowFromVec(r.c, mr), std::move(L)};
 }
 
 Value waverec(const Value &C, const Value &L, keel::StringRef wname,
@@ -156,45 +156,26 @@ Value waverec(const Value &C, const Value &L, keel::StringRef wname,
 {
     waverec_argcheck(L);
     const keel::usize Lcount = L.numel();
-    const int n = static_cast<int>(Lcount) - 2; // number of decomposition levels
-    auto sliceLen = [&](keel::usize idx) -> keel::usize {
-        return static_cast<keel::usize>(L.elemAsDouble(idx));
-    };
+    const int n = static_cast<int>(Lcount) - 2;
+    auto lv = readL(L, mr);
     auto Cv = vecFromValue(C, mr);
 
-    // Approximation cA_n is the first L[0] entries of C.
-    keel::usize off = 0;
-    const keel::usize aLen = sliceLen(0);
-    if (off + aLen > Cv.size())
+    keel::usize off = lv[0];
+    if (off > Cv.size())
         throw Error("waverec: C/L mismatch (approx)",
                     0, 0, "waverec", "", "numkit:waverec:bounds");
-    keel::Array<double> running(Cv.slice(off, aLen), mr);
-    off += aLen;
-
-    // Walk through details from coarsest (L[1]) to finest (L[n]).
     for (int k = 0; k < n; ++k) {
-        const keel::usize dLen = sliceLen(1 + k);
-        if (off + dLen > Cv.size())
+        off += lv[1 + static_cast<keel::usize>(k)];
+        if (off > Cv.size())
             throw Error("waverec: C/L mismatch (detail)",
                         0, 0, "waverec", "", "numkit:waverec:bounds");
-        keel::Array<double> detail(Cv.slice(off, dLen), mr);
-        off += dLen;
-
-        // Target reconstruction length: L[2+k] (the next coarser
-        // approximation length, or the original signal length at the
-        // last step).
-        const keel::usize recLen = sliceLen(2 + k);
-
-        // Pack as Value rows for the idwt API.
-        Value cA = rowFromVec(running, mr);
-        Value cD = rowFromVec(detail, mr);
-        Value next = idwt(cA, cD, wname, static_cast<long long>(recLen), mr);
-        running = vecFromValue(next, mr);
     }
-    return rowFromVec(running, mr);
+
+    auto fb = lookup_keel_fb(wname, mr);
+    auto rec = keel::wavelet::waverec(Cv, lv, fb, mr);
+    return rowFromVec(rec, mr);
 }
 
-// Internal: appcoef with explicit Lo_R / Hi_R synthesis filters.
 static Value appcoef_with_filters(const Value &C, const Value &L,
                                   keel::ArrayRef<double> Lo_R,
                                   keel::ArrayRef<double> Hi_R,
@@ -206,32 +187,15 @@ static Value appcoef_with_filters(const Value &C, const Value &L,
         throw Error("appcoef: L too short",
                     0, 0, "appcoef", "", "numkit:appcoef:size");
     const int nMax = static_cast<int>(Lcount) - 2;
-    if (level < 0) level = nMax;          // default = coarsest
+    if (level < 0) level = nMax;
     if (level < 0 || level > nMax)
         throw Error("appcoef: level out of range",
                     0, 0, "appcoef", "", "numkit:appcoef:level");
 
     auto Cv = vecFromValue(C, mr);
-    auto sliceLen = [&](keel::usize idx) -> keel::usize {
-        return static_cast<keel::usize>(L.elemAsDouble(idx));
-    };
-
-    keel::Array<double> running(Cv.slice(0, sliceLen(0)), mr);
-    if (level == nMax) return rowFromVec(running, mr);
-
-    keel::usize off = sliceLen(0);
-    for (int k = 0; k < nMax - level; ++k) {
-        const keel::usize dLen = sliceLen(1 + k);
-        keel::Array<double> detail(Cv.slice(off, dLen), mr);
-        off += dLen;
-        const keel::usize recLen = sliceLen(2 + k);
-        Value cA = rowFromVec(running, mr);
-        Value cD = rowFromVec(detail, mr);
-        Value next = idwt_with_filters_pub(cA, cD, Lo_R, Hi_R,
-                                           static_cast<long long>(recLen), mr);
-        running = vecFromValue(next, mr);
-    }
-    return rowFromVec(running, mr);
+    auto lv = readL(L, mr);
+    auto rec = keel::wavelet::appcoef(Cv, lv, Lo_R, Hi_R, static_cast<keel::i32>(level), mr);
+    return rowFromVec(rec, mr);
 }
 
 Value appcoef(const Value &C, const Value &L, keel::StringRef wname,
@@ -242,8 +206,6 @@ Value appcoef(const Value &C, const Value &L, keel::StringRef wname,
     return appcoef_with_filters(C, L, fb.Lo_R, fb.Hi_R, level, mr);
 }
 
-// Cross-TU access for the custom-filter appcoef form (used by
-// multilevel_reg.cpp).
 Value appcoef_with_filters_pub(const Value &C, const Value &L,
                                keel::ArrayRef<double> Lo_R,
                                keel::ArrayRef<double> Hi_R,
@@ -259,25 +221,18 @@ Value detcoef(const Value &C, const Value &L, int level,
     detcoef_argcheck(L, level);
     const keel::usize Lcount = L.numel();
     const int nMax = static_cast<int>(Lcount) - 2;
-
-    // C layout: [cA_n, cD_n, cD_{n-1}, ..., cD_1].
-    // Detail at MATLAB level `level` (1=finest, nMax=coarsest) lives
-    // at C-index that we walk to from the front:
-    //   skip cA_n  : L[0]
-    //   skip cD_n, cD_{n-1}, ..., cD_{level+1}  : sum L[1..nMax-level]
-    //   then dLen = L[nMax - level + 1]
-    auto sliceLen = [&](keel::usize idx) -> keel::usize {
-        return static_cast<keel::usize>(L.elemAsDouble(idx));
-    };
-    keel::usize off = sliceLen(0);
-    for (int k = 0; k < nMax - level; ++k) off += sliceLen(1 + k);
-    const keel::usize dLen = sliceLen(static_cast<keel::usize>(nMax - level + 1));
-
+    auto lv = readL(L, mr);
     auto Cv = vecFromValue(C, mr);
+
+    keel::usize off = lv[0];
+    for (int k = 0; k < nMax - level; ++k) off += lv[1 + static_cast<keel::usize>(k)];
+    const keel::usize dLen = lv[static_cast<keel::usize>(nMax - level + 1)];
     if (off + dLen > Cv.size())
         throw Error("detcoef: C/L bounds",
                     0, 0, "detcoef", "", "numkit:detcoef:bounds");
-    return rowFromVec(Cv.slice(off, dLen), mr);
+
+    auto d = keel::wavelet::detcoef(Cv, lv, static_cast<keel::i32>(level), mr);
+    return rowFromVec(d, mr);
 }
 
 WenergyResult wenergy(const Value &C, const Value &L,
@@ -285,78 +240,27 @@ WenergyResult wenergy(const Value &C, const Value &L,
 {
     wenergy_argcheck(L);
     auto Cv = vecFromValue(C, mr);
-    auto Lv = vecFromValue(L, mr);
-    const keel::usize nLev = Lv.size() - 2;   // number of detail levels
+    auto lv = readL(L, mr);
+    const keel::usize nLev = lv.size() - 2;
 
-    auto energy = [&](keel::usize off, keel::usize len) {
-        double s = 0.0;
-        for (keel::usize i = off; i < off + len && i < Cv.size(); ++i) s += Cv[i] * Cv[i];
-        return s;
-    };
-
-    double total = 0.0;
-    for (double c : Cv) total += c * c;
-    const double scale = (total > 0.0) ? 100.0 / total : 0.0;
-
-    // Approximation band = first L(0) coefficients.
-    const keel::usize aLen = static_cast<keel::usize>(Lv[0]);
-    Value Ea = Value::scalar(energy(0, aLen) * scale, mr);
-
-    // C packs details coarsest-first (cD_N … cD_1 at L(1) … L(nLev)); MATLAB's
-    // Ed is ordered finest-first (level 1 … level N), so store reversed.
+    double ea = 0.0;
     keel::Array<double> Ed(nLev, 0.0, mr);
-    keel::usize off = aLen;
-    for (keel::usize k = 0; k < nLev; ++k) {
-        const keel::usize len = static_cast<keel::usize>(Lv[1 + k]);   // band cD_{N-k} = level (N-k)
-        Ed[nLev - 1 - k] = energy(off, len) * scale;
-        off += len;
-    }
+    (void)keel::wavelet::wenergy(Cv, lv, ea, Ed);
 
     WenergyResult out;
-    out.Ea = std::move(Ea);
+    out.Ea = Value::scalar(ea, mr);
     out.Ed = rowFromVec(Ed, mr);
     return out;
 }
-
-namespace {
-// Full convolution y[n] = Σ_k a[k]·b[n−k], length |a|+|b|−1.
-keel::Array<double> convFull(keel::ArrayRef<double> a,
-                             keel::ArrayRef<double> b,
-                             keel::Allocator *mr) {
-    if (a.empty() || b.empty()) return keel::Array<double>(mr);
-    keel::Array<double> c(a.size() + b.size() - 1, 0.0, mr);
-    for (keel::usize i = 0; i < a.size(); ++i)
-        for (keel::usize j = 0; j < b.size(); ++j)
-            c[i + j] += a[i] * b[j];
-    return c;
-}
-} // anonymous
 
 Value upcoef(keel::StringRef type, const Value &X, keel::StringRef wname,
              int n, long long len, keel::Allocator *mr)
 {
     upcoef_argcheck(type, n);
-
-    auto fb = wavelet_filters(wname);
-    auto y = vecFromValue(X, mr);
-    const bool detail = (type == "d");
-
-    for (int i = 0; i < n; ++i) {
-        // First level of a detail branch uses the highpass; all else lowpass.
-        const keel::Array<double> &F = (i == 0 && detail) ? fb.Hi_R : fb.Lo_R;
-        keel::Array<double> up(mr);
-        if (!y.empty()) {
-            up.assign(2 * y.size() - 1, 0.0);          // [y0, 0, y1, 0, …, y_{n-1}]
-            for (keel::usize k = 0; k < y.size(); ++k) up[2 * k] = y[k];
-        }
-        y = convFull(up, F, mr);
-    }
-
-    // Optional: keep the central `len` samples (MATLAB wkeep convention).
-    if (len >= 0 && static_cast<keel::usize>(len) < y.size()) {
-        const keel::usize start = (y.size() - static_cast<keel::usize>(len)) / 2;
-        y = keel::Array<double>(y.slice(start, static_cast<keel::usize>(len)), mr);
-    }
+    auto fb = lookup_keel_fb(wname, mr);
+    auto xv = vecFromValue(X, mr);
+    auto y = keel::wavelet::upcoef(type == "d", xv, fb, static_cast<keel::i32>(n),
+                                   static_cast<keel::i64>(len), mr);
     return rowFromVec(y, mr);
 }
 

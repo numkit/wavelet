@@ -34,6 +34,7 @@
 #include <keel/memory.h>
 #include <keel/ref.h>
 #include <keel/complex.h>
+#include <keel/wavelet.h>
 #include <numkit/wavelet/dwt/haart.hpp>
 
 // Compute-only TU: Value substrate + Error, no engine. The haart builtin
@@ -47,43 +48,26 @@ namespace numkit::wavelet {
 
 namespace {
 
-// Largest k such that 2^k divides N (with 2^k ≤ N).
 int max_haar_level(keel::usize N)
 {
-    int k = 0;
-    while (N > 1 && (N % 2 == 0)) { ++k; N /= 2; }
-    return k;
+    return static_cast<int>(keel::wavelet::haar_max_level(N));
 }
 
-// One Haar level on a single contiguous slice of length `inLen` (even).
-// Writes inLen/2 entries to `a` and inLen/2 entries to `d`.
 void haar_step_real(const double *x, keel::usize inLen, double *a, double *d,
                     bool integer)
 {
     const keel::usize H = inLen / 2;
-    if (integer) {
-        for (keel::usize i = 0; i < H; ++i) {
-            const double dv = x[2 * i + 1] - x[2 * i];
-            d[i] = dv;
-            a[i] = x[2 * i] + std::floor(dv / 2.0);
-        }
-    } else {
-        const double s = 1.0 / std::sqrt(2.0);
-        for (keel::usize i = 0; i < H; ++i) {
-            a[i] = (x[2 * i] + x[2 * i + 1]) * s;
-            d[i] = (x[2 * i + 1] - x[2 * i]) * s;
-        }
-    }
+    keel::wavelet::haar_step(keel::ArrayRef<keel::f64>(x, inLen),
+                             keel::MutArrayRef<keel::f64>(a, H),
+                             keel::MutArrayRef<keel::f64>(d, H), integer);
 }
 
 void haar_step_cplx(const keel::c64 *x, keel::usize inLen, keel::c64 *a, keel::c64 *d)
 {
     const keel::usize H = inLen / 2;
-    const double s = 1.0 / std::sqrt(2.0);
-    for (keel::usize i = 0; i < H; ++i) {
-        a[i] = (x[2 * i] + x[2 * i + 1]) * s;
-        d[i] = (x[2 * i + 1] - x[2 * i]) * s;
-    }
+    keel::wavelet::haar_step_c64(keel::ArrayRef<keel::c64>(x, inLen),
+                                 keel::MutArrayRef<keel::c64>(a, H),
+                                 keel::MutArrayRef<keel::c64>(d, H));
 }
 
 // Materialize x into a column-major DOUBLE buffer of (colLen × ncols).

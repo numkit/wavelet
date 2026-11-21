@@ -6,6 +6,7 @@
 #include <keel/memory.h>
 #include <keel/ref.h>
 #include <keel/utf8.h>
+#include <keel/wavelet.h>
 #include <numkit/wavelet/dwt/dyad.hpp>
 #include <numkit/wavelet/filter/wfilters.hpp>
 
@@ -211,12 +212,8 @@ Value wmaxlev(const Value &N, keel::StringRef wname,
         throw Error("wmaxlev: filter length must be ≥ 2",
                     0, 0, "wmaxlev", "", "numkit:wmaxlev:filter");
 
-    double L = 0.0;
-    if (Nmin >= static_cast<double>(Lf - 1) + 1.0) {
-        const double r = Nmin / static_cast<double>(Lf - 1);
-        L = std::floor(std::log2(r));
-        if (L < 0.0) L = 0.0;
-    }
+    const keel::usize nmin_u = (Nmin > 0.0) ? static_cast<keel::usize>(Nmin) : 0;
+    const double L = static_cast<double>(keel::wavelet::wmaxlev(nmin_u, Lf));
     return Value::scalar(L, mr);
 }
 

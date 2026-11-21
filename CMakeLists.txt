@@ -130,10 +130,17 @@ if(NOT TARGET keel::wavelet)
             set(FETCHCONTENT_SOURCE_DIR_KEEL_WAVELET "${CMAKE_CURRENT_SOURCE_DIR}/../../keelcpp/wavelet" CACHE PATH "Local keel_wavelet checkout")
         endif()
     endif()
+    if(NOT DEFINED FETCHCONTENT_SOURCE_DIR_KEEL_FFT)
+        if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../../../keelcpp/fft/CMakeLists.txt")
+            set(FETCHCONTENT_SOURCE_DIR_KEEL_FFT "${CMAKE_CURRENT_SOURCE_DIR}/../../../keelcpp/fft" CACHE PATH "Local keel_fft checkout")
+        elseif(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../../keelcpp/fft/CMakeLists.txt")
+            set(FETCHCONTENT_SOURCE_DIR_KEEL_FFT "${CMAKE_CURRENT_SOURCE_DIR}/../../keelcpp/fft" CACHE PATH "Local keel_fft checkout")
+        endif()
+    endif()
     FetchContent_Declare(
         keel_wavelet
         GIT_REPOSITORY https://github.com/keelcpp/wavelet.git
-        GIT_TAG        4cd0c2aee50d96a93068d897295fe12346837200
+        GIT_TAG        55de3a15b291b7c6f6efe1658a0874ca166e601d
     )
     FetchContent_MakeAvailable(keel_wavelet)
 endif()
