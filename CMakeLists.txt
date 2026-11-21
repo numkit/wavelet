@@ -114,6 +114,30 @@ if(NOT TARGET numkit_ops)
     endif()
 endif()
 
+# Dependency: keel::wavelet
+if(NOT TARGET keel::wavelet)
+    find_package(keel_wavelet QUIET CONFIG)
+    if(TARGET keel::keel_wavelet AND NOT TARGET keel::wavelet)
+        add_library(keel::wavelet ALIAS keel::keel_wavelet)
+    endif()
+endif()
+if(NOT TARGET keel::wavelet)
+    set(KEEL_WAVELET_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+    if(NOT DEFINED FETCHCONTENT_SOURCE_DIR_KEEL_WAVELET)
+        if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../../../keelcpp/wavelet/CMakeLists.txt")
+            set(FETCHCONTENT_SOURCE_DIR_KEEL_WAVELET "${CMAKE_CURRENT_SOURCE_DIR}/../../../keelcpp/wavelet" CACHE PATH "Local keel_wavelet checkout")
+        elseif(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../../keelcpp/wavelet/CMakeLists.txt")
+            set(FETCHCONTENT_SOURCE_DIR_KEEL_WAVELET "${CMAKE_CURRENT_SOURCE_DIR}/../../keelcpp/wavelet" CACHE PATH "Local keel_wavelet checkout")
+        endif()
+    endif()
+    FetchContent_Declare(
+        keel_wavelet
+        GIT_REPOSITORY https://github.com/keelcpp/wavelet.git
+        GIT_TAG        4cd0c2aee50d96a93068d897295fe12346837200
+    )
+    FetchContent_MakeAvailable(keel_wavelet)
+endif()
+
 file(GLOB_RECURSE WAVELET_COMPUTE_SOURCES
     "src/denoise/*.cpp"
     "src/dwt/*.cpp"
@@ -146,7 +170,7 @@ target_include_directories(numkit_wavelet_core
         ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 
-target_link_libraries(numkit_wavelet_core PUBLIC numkit_value numkit_sys numkit_ops)
+target_link_libraries(numkit_wavelet_core PUBLIC numkit_value numkit_sys numkit_ops keel::wavelet)
 
 if(NUMKIT_WITH_SIMD)
     target_compile_definitions(numkit_wavelet_core PUBLIC NUMKIT_WITH_SIMD=1)

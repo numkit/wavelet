@@ -29,6 +29,7 @@
 #include <keel/format.h>
 #include <keel/memory.h>
 #include <keel/ref.h>
+#include <keel/wavelet.h>
 #include <numkit/wavelet/filter/families.hpp>
 #include <numkit/wavelet/filter/wfilters.hpp>
 
@@ -46,7 +47,6 @@ namespace numkit::wavelet {
 
 namespace {
 
-const double SQRT2 = 1.41421356237309504880;
 const double INV_SQRT2 = 0.70710678118654752440;
 
 Value rowVec(keel::Allocator *mr, keel::ArrayRef<double> v)
@@ -122,21 +122,11 @@ OrthfiltResult orthfilt(const Value &W, keel::Allocator *mr)
 {
     orthfilt_argcheck(W);
     const keel::usize N = W.numel();
-
-    keel::Array<double> Lo_R(N), Lo_D(N), Hi_R(N), Hi_D(N);
-    for (keel::usize k = 0; k < N; ++k)
-        Lo_R[k] = W.elemAsDouble(k) * SQRT2;
-    for (keel::usize k = 0; k < N; ++k)
-        Lo_D[k] = Lo_R[N - 1 - k];
-    for (keel::usize k = 0; k < N; ++k) {
-        const double s = (k % 2 == 0) ? 1.0 : -1.0;
-        Hi_R[k] = s * Lo_R[N - 1 - k];
-    }
-    for (keel::usize k = 0; k < N; ++k)
-        Hi_D[k] = Hi_R[N - 1 - k];
-
-    return { rowVec(mr, Lo_D), rowVec(mr, Hi_D),
-             rowVec(mr, Lo_R), rowVec(mr, Hi_R) };
+    keel::Array<keel::f64> wv(N, mr);
+    for (keel::usize k = 0; k < N; ++k) wv[k] = W.elemAsDouble(k);
+    auto fb = keel::wavelet::orthfilt(keel::ArrayRef<keel::f64>(wv.data(), N), mr);
+    return { rowVec(mr, fb.lo_d), rowVec(mr, fb.hi_d),
+             rowVec(mr, fb.lo_r), rowVec(mr, fb.hi_r) };
 }
 
 } // namespace numkit::wavelet

@@ -2,9 +2,12 @@
 //
 // Wavelet filter helpers: qmf, wrev.
 
+#include <keel/array.h>
 #include <keel/core.h>
 #include <keel/memory.h>
 #include <keel/complex.h>
+#include <keel/ref.h>
+#include <keel/wavelet.h>
 #include <numkit/wavelet/filter/qmf.hpp>
 #include <numkit/wavelet/internal/type_gates.hpp>
 
@@ -95,19 +98,16 @@ Value wrev(const Value &x, keel::Allocator *mr)
 //   qmf([1 2 3 4]) -> [4 -3 2 -1]; qmf([1 2 3 4], 1) -> [-4 3 -2 1].
 Value qmf(const Value &x, int p, keel::Allocator *mr)
 {
-    p = ((p % 2) + 2) % 2;          // collapse to {0,1}
     keel::usize rows, cols;
     readShape(x, rows, cols);
     const keel::usize N = rows * cols;
     Value y = sameShape(mr, rows, cols);
     if (N == 0) return y;
-    double *yd = y.doubleDataMut();
-    for (keel::usize k = 0; k < N; ++k) {
-        const double v = x.elemAsDouble(N - 1 - k);
-        const bool neg = (k % 2 == 1);
-        const double s = (neg ^ (p == 1)) ? -v : v;
-        yd[k] = s;
-    }
+    keel::Array<keel::f64> xv(N, mr);
+    for (keel::usize k = 0; k < N; ++k) xv[k] = x.elemAsDouble(k);
+    keel::wavelet::qmf(keel::ArrayRef<keel::f64>(xv.data(), N),
+                       keel::MutArrayRef<keel::f64>(y.doubleDataMut(), N),
+                       static_cast<keel::i32>(p));
     return y;
 }
 

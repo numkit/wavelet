@@ -14,9 +14,11 @@
 #include <keel/ref.h>
 #include <keel/string.h>
 #include <keel/utf8.h>
+#include <keel/wavelet.h>
 #include <numkit/wavelet/denoise/denoise.hpp>
 #include <numkit/wavelet/dwt/multilevel.hpp>
 #include <numkit/wavelet/dwt/dwt.hpp>     // ddencmp: 1-level dwt noise estimate
+#include <numkit/wavelet/filter/wfilters.hpp>
 #include <numkit/wavelet/internal/type_gates.hpp>
 
 // Compute-only TU: Value substrate + Error, no engine. The wthresh /
@@ -186,9 +188,8 @@ Value wnoisest(const Value &C, const Value &L, const Value &S, keel::Allocator *
     for (keel::usize i = 0; i < k; ++i) {
         const int level = static_cast<int>(S.elemAsDouble(i));
         Value cD = detcoef(C, L, level, mr);
-        auto v = vecFromValue(cD);
-        const double med = median_abs(std::move(v));
-        od[i] = med / 0.6745;
+        auto v = vecFromValue(cD, mr);
+        od[i] = keel::wavelet::noise_sigma_mad(keel::ArrayRef<keel::f64>(v.data(), v.size()), mr);
     }
     return out;
 }
@@ -197,85 +198,35 @@ Value wdenoise(const Value &x, int level, keel::StringRef wname, keel::Allocator
 {
     const keel::usize N = x.numel();
     if (N < 2) {
-        // Nothing to denoise — return a copy as a row.
         Value y = Value::matrix(x.dims().rows(), x.dims().cols(),
                                 ValueType::DOUBLE, mr);
         double *yd = y.doubleDataMut();
         for (keel::usize i = 0; i < N; ++i) yd[i] = x.elemAsDouble(i);
         return y;
     }
-    if (level <= 0) {
-        // MATLAB default: a few levels but not so deep that the
-        // approximation band collapses below the filter length. We
-        // approximate with min(floor(log2(N)), 5).
-        const int maxLog = static_cast<int>(std::floor(std::log2(double(N))));
-        level = std::min(maxLog, 5);
-        if (level < 1) level = 1;
-    }
     const keel::StringRef w = wname.empty() ? keel::StringRef("sym4") : wname;
-
-    // 1. Multi-level decomposition.
-    auto [C, L] = wavedec(x, level, w, mr);
-
-    // 2. Robust noise σ from the finest detail band (MATLAB default).
-    {
-        Value cD1 = detcoef(C, L, 1, mr);
-        auto v = vecFromValue(cD1);
-        const double sigma = median_abs(std::move(v)) / 0.6745;
-
-        // 3. Universal (VisuShrink) threshold.
-        const double T = sigma * std::sqrt(2.0 * std::log(double(N)));
-
-        // 4. Soft-threshold every detail band in-place inside C.
-        // Layout of C: [cA_level | cD_level | cD_{level-1} | ... | cD_1].
-        const Value &Lref = L;   // plain reference: capturing a structured
-                                 // binding directly in a lambda is C++20.
-        auto sliceLen = [&](keel::usize idx) -> keel::usize {
-            return static_cast<keel::usize>(Lref.elemAsDouble(idx));
-        };
-        keel::usize off = sliceLen(0); // skip cA
-        double *Cd = C.doubleDataMut();
-        for (int k = 0; k < level; ++k) {
-            const keel::usize dLen = sliceLen(1 + k);
-            for (keel::usize i = 0; i < dLen; ++i) {
-                const double xv = Cd[off + i];
-                const double ax = keel::abs(xv);
-                const double mag = ax - T;
-                Cd[off + i] = (mag > 0.0) ? std::copysign(mag, xv) : 0.0;
-            }
-            off += dLen;
-        }
-    }
-
-    // 5. Reconstruct.
-    return waverec(C, L, w, mr);
+    auto fb = wavelet_filters(w);
+    keel::wavelet::FilterBank kfb{std::move(fb.Lo_D), std::move(fb.Hi_D),
+                                  std::move(fb.Lo_R), std::move(fb.Hi_R)};
+    auto xv = vecFromValue(x, mr);
+    auto rec = keel::wavelet::denoise_visushrink(keel::ArrayRef<keel::f64>(xv.data(), xv.size()),
+                                                 static_cast<keel::i32>(level), kfb, mr);
+    Value out = Value::matrix(1, rec.size(), ValueType::DOUBLE, mr);
+    if (!rec.empty()) std::copy(rec.begin(), rec.end(), out.doubleDataMut());
+    return out;
 }
 
 Value wentropy(const Value &X, keel::StringRef type, double param,
                keel::Allocator *mr)
 {
     const keel::String t = wentropy_argcheck(type, param);
-
     auto x = vecFromValue(X, mr);
-    const keel::usize n = x.size();
-    double e = 0.0;
-
-    if (t == "shannon") {
-        for (double v : x) { const double s2 = v * v; if (s2 > 0.0) e -= s2 * std::log(s2); }
-    } else if (t == "log energy" || t == "logenergy") {
-        for (double v : x) { const double s2 = v * v; if (s2 > 0.0) e += std::log(s2); }
-    } else if (t == "threshold") {
-        for (double v : x) if (std::fabs(v) > param) e += 1.0;
-    } else if (t == "sure") {
-        e = static_cast<double>(n);
-        const double t2 = param * param;
-        for (double v : x) {
-            if (std::fabs(v) <= param) e -= 2.0;
-            e += std::min(v * v, t2);
-        }
-    } else { // "norm"
-        for (double v : x) e += std::pow(std::fabs(v), param);
-    }
+    keel::wavelet::EntropyKind kind = keel::wavelet::EntropyKind::Norm;
+    if (t == "shannon") kind = keel::wavelet::EntropyKind::Shannon;
+    else if (t == "log energy" || t == "logenergy") kind = keel::wavelet::EntropyKind::LogEnergy;
+    else if (t == "threshold") kind = keel::wavelet::EntropyKind::Threshold;
+    else if (t == "sure") kind = keel::wavelet::EntropyKind::Sure;
+    const double e = keel::wavelet::entropy(keel::ArrayRef<keel::f64>(x.data(), x.size()), kind, param);
     return Value::scalar(e, mr);
 }
 

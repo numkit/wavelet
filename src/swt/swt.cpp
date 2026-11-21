@@ -30,6 +30,7 @@
 #include <keel/complex.h>
 #include <keel/ref.h>
 #include <keel/string.h>
+#include <keel/wavelet.h>
 #include <numkit/wavelet/swt/swt.hpp>
 #include <numkit/wavelet/filter/wfilters.hpp>
 #include <numkit/wavelet/internal/type_gates.hpp>
@@ -45,46 +46,6 @@
 namespace numkit::wavelet {
 
 namespace {
-
-// y[i] = sum_j h[j] · x[(i + j·step) mod N]  (forward / analysis)
-keel::Array<double> circ_corr_fwd(keel::ArrayRef<double> x,
-                                  keel::ArrayRef<double> h,
-                                  keel::usize step)
-{
-    const keel::usize N = x.size();
-    keel::Array<double> y(N, 0.0);
-    if (N == 0 || h.empty()) return y;
-    for (keel::usize i = 0; i < N; ++i) {
-        double acc = 0.0;
-        for (keel::usize j = 0; j < h.size(); ++j) {
-            const keel::usize idx = (i + j * step) % N;
-            acc += h[j] * x[idx];
-        }
-        y[i] = acc;
-    }
-    return y;
-}
-
-// y[i] = sum_j h[j] · x[(i − j·step) mod N]  (transpose of fwd)
-keel::Array<double> circ_corr_back(keel::ArrayRef<double> x,
-                                   keel::ArrayRef<double> h,
-                                   keel::usize step)
-{
-    const keel::usize N = x.size();
-    keel::Array<double> y(N, 0.0);
-    if (N == 0 || h.empty()) return y;
-    for (keel::usize i = 0; i < N; ++i) {
-        double acc = 0.0;
-        for (keel::usize j = 0; j < h.size(); ++j) {
-            // Modular subtract: ((i − j·step) mod N) ≡ ((i + N − (j·step mod N)) mod N).
-            const keel::usize shift = (j * step) % N;
-            const keel::usize idx = (i + N - shift) % N;
-            acc += h[j] * x[idx];
-        }
-        y[i] = acc;
-    }
-    return y;
-}
 
 void swtAD_argcheck(const Value &x, int n,
                     keel::ArrayRef<keel::f64> Lo_D,
@@ -139,55 +100,16 @@ std::pair<Value, Value> swtAD(const Value &x, int n,
                 Value::matrix(static_cast<keel::usize>(n), 0, ValueType::DOUBLE, mr)};
     }
 
-    keel::Array<double> xv(N);
+    keel::Array<keel::f64> xv(N, mr);
     for (keel::usize i = 0; i < N; ++i) xv[i] = x.elemAsDouble(i);
-    keel::Array<double> tempLo, tempHi;
-    tempLo.assign(Lo_D);
-    tempHi.assign(Hi_D);
-
-    Value swa = Value::matrix(static_cast<keel::usize>(n), N,
-                              ValueType::DOUBLE, mr);
-    Value swd = Value::matrix(static_cast<keel::usize>(n), N,
-                              ValueType::DOUBLE, mr);
-    double *ad = swa.doubleDataMut();
-    double *dd = swd.doubleDataMut();
-    const keel::usize H = static_cast<keel::usize>(n);
-
-    auto convKeep = [&](keel::ArrayRef<double> xe,
-                        keel::ArrayRef<double> h, keel::usize lf) {
-        keel::Array<double> out(N, 0.0);
-        for (keel::usize j = 0; j < lf; ++j) {
-            const double hj = h[j];
-            if (hj == 0.0) continue;     // dyadup'd zero taps
-            for (keel::usize m = 0; m < N; ++m)
-                out[m] += hj * xe[lf + m - j];
-        }
-        return out;
-    };
-
-    for (int k = 0; k < n; ++k) {
-        const keel::usize lf = tempLo.size();
-        const keel::usize ext = lf / 2;
-        keel::Array<double> xe(N + 2 * ext);
-        for (keel::usize i = 0; i < ext; ++i) {
-            xe[i] = xv[(N + i - ext) % N];
-            xe[ext + N + i] = xv[i % N];
-        }
-        std::copy(xv.begin(), xv.end(), xe.begin() + ext);
-        auto dRow = convKeep(xe, tempHi, lf);
-        auto aRow = convKeep(xe, tempLo, lf);
-        for (keel::usize c = 0; c < N; ++c) {
-            ad[c * H + k] = aRow[c];    // approximation at level k+1
-            dd[c * H + k] = dRow[c];    // detail at level k+1
-        }
-        xv = std::move(aRow);
-        auto up = [](keel::ArrayRef<double> h) {
-            keel::Array<double> u(2 * h.size(), 0.0);
-            for (keel::usize t = 0; t < h.size(); ++t) u[2 * t] = h[t];
-            return u;
-        };
-        tempLo = up(tempLo);
-        tempHi = up(tempHi);
+    auto res = keel::wavelet::swt_ad(keel::ArrayRef<keel::f64>(xv.data(), N),
+                                     static_cast<keel::i32>(n), Lo_D, Hi_D, mr);
+    Value swa = Value::matrix(res.levels, res.length, ValueType::DOUBLE, mr);
+    Value swd = Value::matrix(res.levels, res.length, ValueType::DOUBLE, mr);
+    const keel::usize total = res.levels * res.length;
+    if (total > 0) {
+        std::copy(res.swa_colmajor.begin(), res.swa_colmajor.end(), swa.doubleDataMut());
+        std::copy(res.swd_colmajor.begin(), res.swd_colmajor.end(), swd.doubleDataMut());
     }
     return {std::move(swa), std::move(swd)};
 }
@@ -435,36 +357,14 @@ Value modwt(const Value &x, int n, keel::StringRef wname, keel::Allocator *mr)
                              ValueType::DOUBLE, mr);
 
     auto fb = wavelet_filters(wname);
-    // Pre-scale filters by 1/√2 once (so the inner correlation is a
-    // straight sum without per-tap multiplications).
-    // MODWT (Percival & Walden): W_{j,t} = Σ_l h̃_l X_{(t-l) mod N} with
-    // the MODWT filters h̃ = wrev(Hi_D)/√2, g̃ = wrev(Lo_D)/√2 (the
-    // analysis filters are TIME-REVERSED relative to wfilters' Hi_D/Lo_D,
-    // then applied as a look-back circular convolution). This matches
-    // MATLAB R2025b modwt (e.g. Haar W_{1,1} wraps to 0.5·(x1−xN)).
-    const double inv_sqrt2 = 1.0 / std::sqrt(2.0);
-    keel::Array<double> hLo = std::move(fb.Lo_D), hHi = std::move(fb.Hi_D);
-    std::reverse(hLo.begin(), hLo.end());
-    std::reverse(hHi.begin(), hHi.end());
-    for (auto &v : hLo) v *= inv_sqrt2;
-    for (auto &v : hHi) v *= inv_sqrt2;
-
-    keel::Array<double> a(N);
-    for (keel::usize i = 0; i < N; ++i) a[i] = x.elemAsDouble(i);
-
-    Value out = Value::matrix(static_cast<keel::usize>(n + 1), N,
-                              ValueType::DOUBLE, mr);
-    double *od = out.doubleDataMut();
-    const keel::usize H = static_cast<keel::usize>(n + 1);
-
-    for (int k = 0; k < n; ++k) {
-        const keel::usize step = static_cast<keel::usize>(1) << k;
-        auto a_next = circ_corr_back(a, hLo, step);
-        auto d_next = circ_corr_back(a, hHi, step);
-        for (keel::usize c = 0; c < N; ++c) od[c * H + k] = d_next[c];
-        a = std::move(a_next);
-    }
-    for (keel::usize c = 0; c < N; ++c) od[c * H + n] = a[c];
+    keel::wavelet::FilterBank kfb{std::move(fb.Lo_D), std::move(fb.Hi_D),
+                                  std::move(fb.Lo_R), std::move(fb.Hi_R)};
+    keel::Array<keel::f64> xv(N, mr);
+    for (keel::usize i = 0; i < N; ++i) xv[i] = x.elemAsDouble(i);
+    auto w = keel::wavelet::modwt(keel::ArrayRef<keel::f64>(xv.data(), N),
+                                  static_cast<keel::i32>(n), kfb, mr);
+    Value out = Value::matrix(static_cast<keel::usize>(n + 1), N, ValueType::DOUBLE, mr);
+    if (!w.empty()) std::copy(w.begin(), w.end(), out.doubleDataMut());
     return out;
 }
 
@@ -473,46 +373,17 @@ Value imodwt(const Value &swc, keel::StringRef wname, keel::Allocator *mr)
     imodwt_argcheck(swc);
     const keel::usize H = swc.dims().rows();
     const keel::usize N = swc.dims().cols();
-    const int n = static_cast<int>(H) - 1;
+    const keel::usize levels = H - 1;
 
     auto fb = wavelet_filters(wname);
-    const double inv_sqrt2 = 1.0 / std::sqrt(2.0);
-    // Use the same reversed MODWT filters as the forward; the inverse is
-    // its exact transpose, so the look-back analysis becomes a look-forward
-    // synthesis (no /2 — the /√2 in forward absorbed the redundancy).
-    keel::Array<double> hLo = std::move(fb.Lo_D), hHi = std::move(fb.Hi_D);
-    std::reverse(hLo.begin(), hLo.end());
-    std::reverse(hHi.begin(), hHi.end());
-    for (auto &v : hLo) v *= inv_sqrt2;
-    for (auto &v : hHi) v *= inv_sqrt2;
+    keel::wavelet::FilterBank kfb{std::move(fb.Lo_D), std::move(fb.Hi_D),
+                                  std::move(fb.Lo_R), std::move(fb.Hi_R)};
 
     const bool cplx = swc.type() == ValueType::COMPLEX;
-    // The inverse is linear in the coefficients: run the real and
-    // imaginary components through the same double kernel.
-    auto readCoef = [&](keel::usize row, keel::usize col, bool imag) -> double {
-        const keel::usize flat = col * H + row;
-        if (!cplx)
-            return swc.elemAsDouble(flat);
-        return imag ? swc.complexElem(flat).imag()
-                    : swc.complexElem(flat).real();
-    };
-    auto modwtPass = [&](keel::Array<double> a, bool imag) {
-        for (int k = n - 1; k >= 0; --k) {
-            const keel::usize step = static_cast<keel::usize>(1) << k;
-            keel::Array<double> d(N);
-            for (keel::usize i = 0; i < N; ++i)
-                d[i] = readCoef(static_cast<keel::usize>(k), i, imag);
-            auto lo = circ_corr_fwd(a, hLo, step);
-            auto hi = circ_corr_fwd(d, hHi, step);
-            for (keel::usize i = 0; i < N; ++i) a[i] = lo[i] + hi[i];
-        }
-        return a;
-    };
-
-    keel::Array<double> aR(N);
-    for (keel::usize i = 0; i < N; ++i)
-        aR[i] = readCoef(static_cast<keel::usize>(n), i, /*imag=*/false);
-    aR = modwtPass(std::move(aR), /*imag=*/false);
+    keel::Array<keel::f64> wR(H * N, mr);
+    for (keel::usize i = 0; i < H * N; ++i)
+        wR[i] = cplx ? swc.complexElem(i).real() : swc.elemAsDouble(i);
+    auto aR = keel::wavelet::imodwt(keel::ArrayRef<keel::f64>(wR.data(), H * N), levels, N, kfb, mr);
 
     if (!cplx) {
         Value y = Value::matrix(1, N, swc.type(), mr);
@@ -520,10 +391,10 @@ Value imodwt(const Value &swc, keel::StringRef wname, keel::Allocator *mr)
             internal::storeElem(y, i, aR[i]);
         return y;
     }
-    keel::Array<double> aI(N);
-    for (keel::usize i = 0; i < N; ++i)
-        aI[i] = readCoef(static_cast<keel::usize>(n), i, /*imag=*/true);
-    aI = modwtPass(std::move(aI), /*imag=*/true);
+    keel::Array<keel::f64> wI(H * N, mr);
+    for (keel::usize i = 0; i < H * N; ++i)
+        wI[i] = swc.complexElem(i).imag();
+    auto aI = keel::wavelet::imodwt(keel::ArrayRef<keel::f64>(wI.data(), H * N), levels, N, kfb, mr);
     Value y = Value::complexMatrix(1, N, mr);
     for (keel::usize i = 0; i < N; ++i)
         y.complexDataMut()[i] = keel::c64(aR[i], aI[i]);
