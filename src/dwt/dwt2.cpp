@@ -27,7 +27,7 @@
 #include <numkit/value/error.hpp>
 
 #include <algorithm>
-#include <array>
+#include <keel/static_array.h>
 #include <utility>
 
 namespace numkit::wavelet {
@@ -255,11 +255,11 @@ Value idwt2(const Value &cA, const Value &cH,
             }
             // else: imag view of a real coefficient stays zero-filled.
         }
-        return std::array<Value, 4>{std::move(v[0]), std::move(v[1]),
+        return keel::StaticArray<Value, 4>{std::move(v[0]), std::move(v[1]),
                                     std::move(v[2]), std::move(v[3])};
     };
 
-    auto runPipeline = [&](const std::array<Value, 4> &v,
+    auto runPipeline = [&](const keel::StaticArray<Value, 4> &v,
                            keel::Allocator *m) {
         keel::usize la_rows = v[0].dims().rows();
         keel::usize la_cols = v[0].dims().cols();
@@ -281,11 +281,11 @@ Value idwt2(const Value &cA, const Value &cH,
         return idwt_rows(LoR, HiR, wname, natCols, m);
     };
 
-    std::array<Value, 4> re = viewOf(false, mr);
+    keel::StaticArray<Value, 4> re = viewOf(false, mr);
     Value outR = runPipeline(re, mr);
     Value outI;
     if (anyCplx) {
-        std::array<Value, 4> im = viewOf(true, mr);
+        keel::StaticArray<Value, 4> im = viewOf(true, mr);
         outI = runPipeline(im, mr);
     }
 
