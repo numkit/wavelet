@@ -71,7 +71,7 @@ void detcoef_argcheck(const Value &L, int level)
     if (Lcount < 3)
         throw Error("detcoef: L too short",
                     0, 0, "detcoef", "", "numkit:detcoef:size");
-    const int nMax = static_cast<int>(Lcount) - 2;
+    const int nMax = keel::as<int>(Lcount) - 2;
     if (level < 1 || level > nMax)
         throw Error("detcoef: level out of range",
                     0, 0, "detcoef", "", "numkit:detcoef:level");
@@ -130,7 +130,7 @@ keel::Array<keel::usize> readL(const Value &L, keel::Allocator *mr)
 {
     keel::Array<keel::usize> lv(L.numel(), mr);
     for (keel::usize i = 0; i < L.numel(); ++i)
-        lv[i] = static_cast<keel::usize>(L.elemAsDouble(i));
+        lv[i] = keel::as<keel::usize>(L.elemAsDouble(i));
     return lv;
 }
 
@@ -143,11 +143,11 @@ wavedec(const Value &x, int n, keel::StringRef wname,
     wavedec_argcheck(n);
     auto fb = lookup_keel_fb(wname, mr);
     auto xv = vecFromValue(x, mr);
-    auto r = keel::wavelet::wavedec(xv, static_cast<keel::i32>(n), fb, mr);
+    auto r = keel::wavelet::wavedec(xv, keel::as<keel::i32>(n), fb, mr);
 
     Value L = Value::matrix(1, r.l.size(), ValueType::DOUBLE, mr);
     double *ld = L.doubleDataMut();
-    for (keel::usize i = 0; i < r.l.size(); ++i) ld[i] = static_cast<double>(r.l[i]);
+    for (keel::usize i = 0; i < r.l.size(); ++i) ld[i] = keel::as<double>(r.l[i]);
     return {rowFromVec(r.c, mr), std::move(L)};
 }
 
@@ -156,7 +156,7 @@ Value waverec(const Value &C, const Value &L, keel::StringRef wname,
 {
     waverec_argcheck(L);
     const keel::usize Lcount = L.numel();
-    const int n = static_cast<int>(Lcount) - 2;
+    const int n = keel::as<int>(Lcount) - 2;
     auto lv = readL(L, mr);
     auto Cv = vecFromValue(C, mr);
 
@@ -165,7 +165,7 @@ Value waverec(const Value &C, const Value &L, keel::StringRef wname,
         throw Error("waverec: C/L mismatch (approx)",
                     0, 0, "waverec", "", "numkit:waverec:bounds");
     for (int k = 0; k < n; ++k) {
-        off += lv[1 + static_cast<keel::usize>(k)];
+        off += lv[1 + keel::as<keel::usize>(k)];
         if (off > Cv.size())
             throw Error("waverec: C/L mismatch (detail)",
                         0, 0, "waverec", "", "numkit:waverec:bounds");
@@ -186,7 +186,7 @@ static Value appcoef_with_filters(const Value &C, const Value &L,
     if (Lcount < 3)
         throw Error("appcoef: L too short",
                     0, 0, "appcoef", "", "numkit:appcoef:size");
-    const int nMax = static_cast<int>(Lcount) - 2;
+    const int nMax = keel::as<int>(Lcount) - 2;
     if (level < 0) level = nMax;
     if (level < 0 || level > nMax)
         throw Error("appcoef: level out of range",
@@ -194,7 +194,7 @@ static Value appcoef_with_filters(const Value &C, const Value &L,
 
     auto Cv = vecFromValue(C, mr);
     auto lv = readL(L, mr);
-    auto rec = keel::wavelet::appcoef(Cv, lv, Lo_R, Hi_R, static_cast<keel::i32>(level), mr);
+    auto rec = keel::wavelet::appcoef(Cv, lv, Lo_R, Hi_R, keel::as<keel::i32>(level), mr);
     return rowFromVec(rec, mr);
 }
 
@@ -220,18 +220,18 @@ Value detcoef(const Value &C, const Value &L, int level,
 {
     detcoef_argcheck(L, level);
     const keel::usize Lcount = L.numel();
-    const int nMax = static_cast<int>(Lcount) - 2;
+    const int nMax = keel::as<int>(Lcount) - 2;
     auto lv = readL(L, mr);
     auto Cv = vecFromValue(C, mr);
 
     keel::usize off = lv[0];
-    for (int k = 0; k < nMax - level; ++k) off += lv[1 + static_cast<keel::usize>(k)];
-    const keel::usize dLen = lv[static_cast<keel::usize>(nMax - level + 1)];
+    for (int k = 0; k < nMax - level; ++k) off += lv[1 + keel::as<keel::usize>(k)];
+    const keel::usize dLen = lv[keel::as<keel::usize>(nMax - level + 1)];
     if (off + dLen > Cv.size())
         throw Error("detcoef: C/L bounds",
                     0, 0, "detcoef", "", "numkit:detcoef:bounds");
 
-    auto d = keel::wavelet::detcoef(Cv, lv, static_cast<keel::i32>(level), mr);
+    auto d = keel::wavelet::detcoef(Cv, lv, keel::as<keel::i32>(level), mr);
     return rowFromVec(d, mr);
 }
 
@@ -259,8 +259,8 @@ Value upcoef(keel::StringRef type, const Value &X, keel::StringRef wname,
     upcoef_argcheck(type, n);
     auto fb = lookup_keel_fb(wname, mr);
     auto xv = vecFromValue(X, mr);
-    auto y = keel::wavelet::upcoef(type == "d", xv, fb, static_cast<keel::i32>(n),
-                                   static_cast<keel::i64>(len), mr);
+    auto y = keel::wavelet::upcoef(type == "d", xv, fb, keel::as<keel::i32>(n),
+                                   keel::as<keel::i64>(len), mr);
     return rowFromVec(y, mr);
 }
 
@@ -285,7 +285,7 @@ keel::usize parse_wp_node(const Value &node, const char *fn)
         if (!std::isfinite(v) || v < 0.0 || std::floor(v) != v)
             throw Error(keel::format("{}: NODE index must be a non-negative integer", fn),
                         0, 0, fn, "", keel::format("numkit:{}:invalidNode", fn));
-        return static_cast<keel::usize>(v);
+        return keel::as<keel::usize>(v);
     }
     if (node.numel() == 2) {
         const double d = node.elemAsDouble(0);
@@ -295,8 +295,8 @@ keel::usize parse_wp_node(const Value &node, const char *fn)
             throw Error(keel::format("{}: [depth, pos] must be non-negative integers", fn),
                         0, 0, fn, "", keel::format("numkit:{}:invalidNode", fn));
         }
-        const keel::usize depth = static_cast<keel::usize>(d);
-        const keel::usize pos = static_cast<keel::usize>(p);
+        const keel::usize depth = keel::as<keel::usize>(d);
+        const keel::usize pos = keel::as<keel::usize>(p);
         const keel::usize levelStart = (1ULL << depth) - 1;
         if (pos >= (1ULL << depth))
             throw Error(keel::format("{}: position out of range for depth", fn),
@@ -356,7 +356,7 @@ Value wpdec(const Value &x, int n, keel::StringRef wname,
 
     Value t = Value::structure(mr);
     t.setFieldAll("order", Value::scalar(2.0, mr));
-    t.setFieldAll("depth", Value::scalar(static_cast<double>(n), mr));
+    t.setFieldAll("depth", Value::scalar(keel::as<double>(n), mr));
     t.setFieldAll("wname", Value::fromString(wname, mr));
     t.setFieldAll("entName", Value::fromString(entName, mr));
     t.setFieldAll("entPar", Value::scalar(entPar, mr));
@@ -400,7 +400,7 @@ Value wprec(const Value &tree, keel::Allocator *mr)
         const keel::usize right = 2 * k + 2;
         if (left < numNodes && right < numNodes &&
             !rec[left].isEmpty() && !rec[right].isEmpty()) {
-            const long long targetLen = static_cast<long long>(rec[k].numel());
+            const long long targetLen = keel::as<long long>(rec[k].numel());
             Value r = idwt(rec[left], rec[right], wname, targetLen, mr);
             if (isCol && r.dims().rows() == 1 && r.dims().cols() > 1)
                 r = r.reshape(r.dims().cols(), 1, mr);
@@ -432,7 +432,7 @@ WpspltResult wpsplt(const Value &tree, const Value &node,
 
     const keel::usize left = 2 * idx + 1;
     const keel::usize right = 2 * idx + 2;
-    int depth = static_cast<int>(tree.field("depth").toScalar());
+    int depth = keel::as<int>(tree.field("depth").toScalar());
     keel::usize newTotal = oldNodes.numel();
     while (right >= newTotal) {
         ++depth;
@@ -468,7 +468,7 @@ WpspltResult wpsplt(const Value &tree, const Value &node,
 
     Value outTree = Value::structure(mr);
     outTree.setFieldAll("order", Value::scalar(2.0, mr));
-    outTree.setFieldAll("depth", Value::scalar(static_cast<double>(depth), mr));
+    outTree.setFieldAll("depth", Value::scalar(keel::as<double>(depth), mr));
     outTree.setFieldAll("wname", Value::fromString(wname, mr));
     outTree.setFieldAll("entName", Value::fromString(entName, mr));
     outTree.setFieldAll("entPar", Value::scalar(entPar, mr));

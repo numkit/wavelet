@@ -67,7 +67,7 @@ keel::String lower(keel::StringRef sv)
 // non-integer) instead of erroring.
 bool validKeepLen(double n, long long N)
 {
-    return n >= 0.0 && n <= static_cast<double>(N) && n == std::floor(n);
+    return n >= 0.0 && n <= keel::as<double>(N) && n == std::floor(n);
 }
 
 void wkeep_argcheck(const Value &x, const Value &len)
@@ -112,28 +112,28 @@ Value wkeep(const Value &x, const Value &len, const Value &opt,
         long long R, C;
         if (xIsVector) {
             if (cols > 1 || (rows == 1 && cols == 1)) {   // row-like
-                if (!validKeepLen(l1, static_cast<long long>(N)))
+                if (!validKeepLen(l1, keel::as<long long>(N)))
                     return internal::copyInClass(x, mr);
-                R = 1; C = static_cast<long long>(l1);
+                R = 1; C = keel::as<long long>(l1);
             } else {                                       // column
-                if (!validKeepLen(l0, static_cast<long long>(N)))
+                if (!validKeepLen(l0, keel::as<long long>(N)))
                     return internal::copyInClass(x, mr);
-                R = static_cast<long long>(l0); C = 1;
+                R = keel::as<long long>(l0); C = 1;
             }
         } else {
-            if (!validKeepLen(l0, static_cast<long long>(rows))
-                || !validKeepLen(l1, static_cast<long long>(cols)))
+            if (!validKeepLen(l0, keel::as<long long>(rows))
+                || !validKeepLen(l1, keel::as<long long>(cols)))
                 return internal::copyInClass(x, mr);
-            R = static_cast<long long>(l0);
-            C = static_cast<long long>(l1);
+            R = keel::as<long long>(l0);
+            C = keel::as<long long>(l1);
         }
         if (R < 0 || C < 0)
             return internal::copyInClass(x, mr);
 
         long long fr1, fc1;  // 1-based corners
         if (!opt.isEmpty() && opt.numel() == 2) {
-            fr1 = static_cast<long long>(opt.elemAsDouble(0));
-            fc1 = static_cast<long long>(opt.elemAsDouble(1));
+            fr1 = keel::as<long long>(opt.elemAsDouble(0));
+            fc1 = keel::as<long long>(opt.elemAsDouble(1));
         } else if (!opt.isEmpty() && !opt.isChar() && !opt.isString()) {
             // A scalar FIRST on a 2-element L: the reference bails with
             // its generic invalid-argument diagnostic.
@@ -142,29 +142,29 @@ Value wkeep(const Value &x, const Value &len, const Value &opt,
                         0, 0, "wkeep", "", "numkit:wkeep:opt");
         } else {
             // Central — same formula as 1-D: floor((N - n) / 2) + 1.
-            fr1 = static_cast<long long>((rows - static_cast<keel::usize>(R)) / 2) + 1;
-            fc1 = static_cast<long long>((cols - static_cast<keel::usize>(C)) / 2) + 1;
+            fr1 = keel::as<long long>((rows - keel::as<keel::usize>(R)) / 2) + 1;
+            fc1 = keel::as<long long>((cols - keel::as<keel::usize>(C)) / 2) + 1;
         }
         if (fr1 < 1 || fc1 < 1 ||
-            fr1 + R - 1 > static_cast<long long>(rows) ||
-            fc1 + C - 1 > static_cast<long long>(cols))
+            fr1 + R - 1 > keel::as<long long>(rows) ||
+            fc1 + C - 1 > keel::as<long long>(cols))
             throw Error("wkeep: requested window is out of range.",
                         0, 0, "wkeep", "", "numkit:wkeep:range");
 
         const bool cplx = x.type() == ValueType::COMPLEX;
-        Value y = cplx ? Value::complexMatrix(static_cast<keel::usize>(R),
-                                              static_cast<keel::usize>(C), mr)
-                       : Value::matrix(static_cast<keel::usize>(R),
-                                       static_cast<keel::usize>(C), x.type(), mr);
+        Value y = cplx ? Value::complexMatrix(keel::as<keel::usize>(R),
+                                              keel::as<keel::usize>(C), mr)
+                       : Value::matrix(keel::as<keel::usize>(R),
+                                       keel::as<keel::usize>(C), x.type(), mr);
         if (cplx && x.isSingleComplex()) y.setSingleComplex(true);
         if (R == 0 || C == 0) return y;
         for (long long c = 0; c < C; ++c) {
-            const keel::usize srcC = static_cast<keel::usize>(fc1 - 1 + c);
+            const keel::usize srcC = keel::as<keel::usize>(fc1 - 1 + c);
             for (long long r = 0; r < R; ++r) {
-                const keel::usize srcR = static_cast<keel::usize>(fr1 - 1 + r);
+                const keel::usize srcR = keel::as<keel::usize>(fr1 - 1 + r);
                 const keel::usize src = srcC * rows + srcR;
-                const keel::usize dst = static_cast<keel::usize>(c) * static_cast<keel::usize>(R)
-                                 + static_cast<keel::usize>(r);
+                const keel::usize dst = keel::as<keel::usize>(c) * keel::as<keel::usize>(R)
+                                 + keel::as<keel::usize>(r);
                 if (cplx) y.complexDataMut()[dst] = x.complexElem(src);
                 else internal::storeElem(y, dst, x.elemAsDouble(src));
             }
@@ -179,9 +179,9 @@ Value wkeep(const Value &x, const Value &len, const Value &opt,
                                  internal::shapeOf(len)),
                     0, 0, "wkeep", "", "numkit:wkeep:inputType");
     const double nD = len.elemAsDouble(0);
-    if (!validKeepLen(nD, static_cast<long long>(N)))
+    if (!validKeepLen(nD, keel::as<long long>(N)))
         return internal::copyInClass(x, mr);
-    const long long n = static_cast<long long>(nD);
+    const long long n = keel::as<long long>(nD);
 
     long long start1 = 1;                                  // 1-based start
     if (!opt.isEmpty()) {
@@ -189,11 +189,11 @@ Value wkeep(const Value &x, const Value &len, const Value &opt,
             const keel::String optStr = opt.toString();
             const keel::String s = lower(optStr);
             if (s == "c" || s == "central" || s == "centered" || s == "centred")
-                start1 = static_cast<long long>((N - static_cast<keel::usize>(n)) / 2) + 1;
+                start1 = keel::as<long long>((N - keel::as<keel::usize>(n)) / 2) + 1;
             else if (s == "l")
                 start1 = 1;
             else if (s == "r")
-                start1 = static_cast<long long>(N) - n + 1;
+                start1 = keel::as<long long>(N) - n + 1;
             else
                 throw Error(keel::format("wkeep: unknown option '{}' "
                                          "(expected 'c', 'l', 'r' or a numeric start)", s),
@@ -204,27 +204,27 @@ Value wkeep(const Value &x, const Value &len, const Value &opt,
                 throw Error("wkeep: optional argument FIRST must be an "
                             "integer start index.",
                             0, 0, "wkeep", "", "numkit:wkeep:opt");
-            start1 = static_cast<long long>(f);
+            start1 = keel::as<long long>(f);
         }
     } else {
-        start1 = static_cast<long long>((N - static_cast<keel::usize>(n)) / 2) + 1;
+        start1 = keel::as<long long>((N - keel::as<keel::usize>(n)) / 2) + 1;
     }
-    if (start1 < 1 || start1 + n - 1 > static_cast<long long>(N))
+    if (start1 < 1 || start1 + n - 1 > keel::as<long long>(N))
         throw Error("wkeep: requested window is out of range.",
                     0, 0, "wkeep", "", "numkit:wkeep:range");
 
     const bool col = isCol(rows, cols);
     keel::usize outRows, outCols;
-    outShape(col, static_cast<keel::usize>(n), outRows, outCols);
+    outShape(col, keel::as<keel::usize>(n), outRows, outCols);
     const bool cplx = x.type() == ValueType::COMPLEX;
     Value y = cplx ? Value::complexMatrix(outRows, outCols, mr)
                    : Value::matrix(outRows, outCols, x.type(), mr);
     if (cplx && x.isSingleComplex()) y.setSingleComplex(true);
     if (n == 0) return y;
     for (long long k = 0; k < n; ++k) {
-        const keel::usize src = static_cast<keel::usize>(start1 - 1 + k);
+        const keel::usize src = keel::as<keel::usize>(start1 - 1 + k);
         if (cplx) y.complexDataMut()[k] = x.complexElem(src);
-        else internal::storeElem(y, static_cast<keel::usize>(k), x.elemAsDouble(src));
+        else internal::storeElem(y, keel::as<keel::usize>(k), x.elemAsDouble(src));
     }
     return y;
 }
@@ -267,33 +267,33 @@ static keel::Array<T> extend1D(keel::ArrayRef<T> xv,
                                long long lf, char side,
                                keel::StringRef mode)
 {
-    const long long N = static_cast<long long>(xv.size());
+    const long long N = keel::as<long long>(xv.size());
     if (lf < 0) lf = 0;
     // For 'per' the data segment is the (possibly edge-padded) version of x.
     keel::Array<T> src;
     src.assign(xv);
-    if (mode == "per" && (N % 2) == 1 && N > 0) src.push_back(xv[static_cast<keel::usize>(N - 1)]);
-    const long long M = static_cast<long long>(src.size());
+    if (mode == "per" && (N % 2) == 1 && N > 0) src.push_back(xv[keel::as<keel::usize>(N - 1)]);
+    const long long M = keel::as<long long>(src.size());
 
     auto sampleLeft = [&](long long k) -> T {
         // k = 0..lf-1, with k=0 = furthest from data (output[0]).
         if (mode == "sym" || mode == "symh") {
-            return xv[static_cast<keel::usize>(lf - 1 - k)];
+            return xv[keel::as<keel::usize>(lf - 1 - k)];
         }
         if (mode == "symw") {
             // pre = [x(lf+1), …, x(2)] in 1-based → indices [lf, lf-1, …, 1] 0-based.
             // For output position k (0..lf-1), src idx = lf - k.
             const long long idx = lf - k;
-            return (idx < N) ? xv[static_cast<keel::usize>(idx)] : xv[static_cast<keel::usize>(N - 1)];
+            return (idx < N) ? xv[keel::as<keel::usize>(idx)] : xv[keel::as<keel::usize>(N - 1)];
         }
         if (mode == "asym" || mode == "asymh") {
-            return -xv[static_cast<keel::usize>(lf - 1 - k)];
+            return -xv[keel::as<keel::usize>(lf - 1 - k)];
         }
         if (mode == "asymw") {
             // 2·x(1) - x(j) where j is the symw index (1-based j = lf+1-k = lf-k+1).
             // 0-based: idx = lf - k.
             const long long idx = lf - k;
-            const T xj = (idx < N) ? xv[static_cast<keel::usize>(idx)] : xv[static_cast<keel::usize>(N - 1)];
+            const T xj = (idx < N) ? xv[keel::as<keel::usize>(idx)] : xv[keel::as<keel::usize>(N - 1)];
             return T(2) * xv[0] - xj;
         }
         if (mode == "sp0") {
@@ -302,47 +302,47 @@ static keel::Array<T> extend1D(keel::ArrayRef<T> xv,
         if (mode == "sp1" || mode == "spd") {
             // Linear extrapolation using slope x(2) - x(1).
             const T slope = (N >= 2) ? (xv[1] - xv[0]) : T(0);
-            return xv[0] - T(static_cast<double>(lf - k)) * slope;
+            return xv[0] - T(keel::as<double>(lf - k)) * slope;
         }
         if (mode == "per") {
-            return src[static_cast<keel::usize>(M - lf + k)];
+            return src[keel::as<keel::usize>(M - lf + k)];
         }
         if (mode == "ppd") {
-            return xv[static_cast<keel::usize>(N - lf + k)];
+            return xv[keel::as<keel::usize>(N - lf + k)];
         }
         return T(0);  // zpd
     };
     auto sampleRight = [&](long long k) -> T {
         // k = 0..lf-1, k=0 = closest to data.
         if (mode == "sym" || mode == "symh") {
-            return xv[static_cast<keel::usize>(N - 1 - k)];
+            return xv[keel::as<keel::usize>(N - 1 - k)];
         }
         if (mode == "symw") {
             // post = [x(N-1), …, x(N-lf)] in 1-based → indices [N-2, N-3, …, N-lf-1] 0-based.
             const long long idx = N - 2 - k;
-            return (idx >= 0) ? xv[static_cast<keel::usize>(idx)] : xv[0];
+            return (idx >= 0) ? xv[keel::as<keel::usize>(idx)] : xv[0];
         }
         if (mode == "asym" || mode == "asymh") {
-            return -xv[static_cast<keel::usize>(N - 1 - k)];
+            return -xv[keel::as<keel::usize>(N - 1 - k)];
         }
         if (mode == "asymw") {
             const long long idx = N - 2 - k;
-            const T xj = (idx >= 0) ? xv[static_cast<keel::usize>(idx)] : xv[0];
-            return T(2) * xv[static_cast<keel::usize>(N - 1)] - xj;
+            const T xj = (idx >= 0) ? xv[keel::as<keel::usize>(idx)] : xv[0];
+            return T(2) * xv[keel::as<keel::usize>(N - 1)] - xj;
         }
         if (mode == "sp0") {
-            return xv[static_cast<keel::usize>(N - 1)];
+            return xv[keel::as<keel::usize>(N - 1)];
         }
         if (mode == "sp1" || mode == "spd") {
-            const T slope = (N >= 2) ? (xv[static_cast<keel::usize>(N - 1)]
-                                        - xv[static_cast<keel::usize>(N - 2)]) : T(0);
-            return xv[static_cast<keel::usize>(N - 1)] + T(static_cast<double>(k + 1)) * slope;
+            const T slope = (N >= 2) ? (xv[keel::as<keel::usize>(N - 1)]
+                                        - xv[keel::as<keel::usize>(N - 2)]) : T(0);
+            return xv[keel::as<keel::usize>(N - 1)] + T(keel::as<double>(k + 1)) * slope;
         }
         if (mode == "per") {
-            return src[static_cast<keel::usize>(k)];
+            return src[keel::as<keel::usize>(k)];
         }
         if (mode == "ppd") {
-            return xv[static_cast<keel::usize>(k)];
+            return xv[keel::as<keel::usize>(k)];
         }
         return T(0);
     };
@@ -350,11 +350,11 @@ static keel::Array<T> extend1D(keel::ArrayRef<T> xv,
     const long long leftN  = (side == 'r') ? 0 : lf;
     const long long rightN = (side == 'l') ? 0 : lf;
     const keel::ArrayRef<T> mid = (mode == "per") ? src.as_ref() : xv;
-    const long long Mlen = static_cast<long long>(mid.size());
+    const long long Mlen = keel::as<long long>(mid.size());
     keel::Array<T> out;
     out.reserve(leftN + Mlen + rightN);
     for (long long i = 0; i < leftN; ++i) out.push_back(sampleLeft(i));
-    for (long long i = 0; i < Mlen;  ++i) out.push_back(mid[static_cast<keel::usize>(i)]);
+    for (long long i = 0; i < Mlen;  ++i) out.push_back(mid[keel::as<keel::usize>(i)]);
     for (long long i = 0; i < rightN; ++i) out.push_back(sampleRight(i));
     return out;
 }
@@ -402,8 +402,8 @@ void parseExtLf(const Value &lf, const char *fn,
         if (a != std::floor(a) || b != std::floor(b))
             throw Error(keel::format("{}: input 4 (L) must be an integer.", fn),
                         0, 0, fn, "", keel::format("numkit:{}:expectedInteger", fn));
-        lfRows = static_cast<long long>(a);
-        lfCols = static_cast<long long>(b);
+        lfRows = keel::as<long long>(a);
+        lfCols = keel::as<long long>(b);
         return;
     }
     if (lf.numel() != 1)
@@ -417,7 +417,7 @@ void parseExtLf(const Value &lf, const char *fn,
     if (v != std::floor(v))
         throw Error(keel::format("{}: input 4 (L) must be an integer.", fn),
                     0, 0, fn, "", keel::format("numkit:{}:expectedInteger", fn));
-    lfRows = lfCols = static_cast<long long>(v);
+    lfRows = lfCols = keel::as<long long>(v);
 }
 
 void wextend_argcheck(const Value &type, keel::StringRef modeRaw,
@@ -440,7 +440,7 @@ void wextend_argcheck(const Value &type, keel::StringRef modeRaw,
             throw Error("wextend: TYPE must be 1, '1d', 2, '2d', 'ar' or 'ac'",
                         0, 0, "wextend", "", "numkit:wextend:dim");
     } else if (type.numel() == 1 && !type.isCell() && !type.isStruct()) {
-        const int t = static_cast<int>(type.elemAsDouble(0));
+        const int t = keel::as<int>(type.elemAsDouble(0));
         if (t != 1 && t != 2)
             throw Error("wextend: TYPE must be 1, '1d', 2, '2d', 'ar' or 'ac'",
                         0, 0, "wextend", "", "numkit:wextend:dim");

@@ -37,7 +37,7 @@ void wrcoef_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
         if (nd < 0.0 || nd != std::floor(nd))
             throw Error("wrcoef: level n must be a non-negative integer",
                         0, 0, "wrcoef", "", "numkit:wrcoef:level");
-        return static_cast<int>(nd);
+        return keel::as<int>(nd);
     };
 
     if (args[3].isChar() || args[3].isString()) {

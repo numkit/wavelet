@@ -159,7 +159,7 @@ keel::usize ihaart_argcheck(const Value &aV, const Value &dV, int level, bool in
         throw Error("ihaart: expected input number 3, LEVEL, to be a scalar "
                     "with value >= 0",
                     0, 0, "ihaart", "", "numkit:ihaart:level");
-    if (level >= static_cast<int>(Nlevels))
+    if (level >= keel::as<int>(Nlevels))
         throw Error(keel::format("ihaart: expected input number 3, LEVEL, to be a scalar "
                                  "with value < {}", Nlevels),
                     0, 0, "ihaart", "", "numkit:ihaart:level");
@@ -207,9 +207,9 @@ Value ihaart(const Value &aV, const Value &dV, int level, bool integer,
 
     // Reconstruct coarsest -> finest. For cells d{1} is finest, so
     // iterating L = Nlevels down to 1 uses detail at index (L-1).
-    for (int L = static_cast<int>(Nlevels); L >= 1; --L) {
-        const keel::usize idx = static_cast<keel::usize>(L - 1);     // 0..Nlevels-1
-        const bool zero = (idx < static_cast<keel::usize>(level));
+    for (int L = keel::as<int>(Nlevels); L >= 1; --L) {
+        const keel::usize idx = keel::as<keel::usize>(L - 1);     // 0..Nlevels-1
+        const bool zero = (idx < keel::as<keel::usize>(level));
         DetailLevel det = grab_level(dV, isCell, idx, curLen, ncols, zero);
 
         const keel::usize outLen = curLen * 2;
@@ -244,7 +244,7 @@ Value ihaart(const Value &aV, const Value &dV, int level, bool integer,
     } else if (aSingle) {
         float *p = out.singleDataMut();
         for (keel::usize i = 0; i < curR.size(); ++i)
-            p[i] = static_cast<float>(curR[i]);
+            p[i] = keel::as<float>(curR[i]);
     } else {
         double *p = out.doubleDataMut();
         std::copy(curR.begin(), curR.end(), p);

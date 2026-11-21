@@ -43,7 +43,7 @@ keel::String wrcoef_argcheck(keel::StringRef type, const Value &c,
     if (Lcount < 3)
         throw Error("wrcoef: l must have at least 3 entries",
                     0, 0, "wrcoef", "", "numkit:wrcoef:l");
-    const int N = static_cast<int>(Lcount) - 2;
+    const int N = keel::as<int>(Lcount) - 2;
     const int effN = (n == -1) ? N : n;
 
     if (tl == "a") {
@@ -56,9 +56,9 @@ keel::String wrcoef_argcheck(keel::StringRef type, const Value &c,
                         0, 0, "wrcoef", "", "numkit:wrcoef:level");
     }
 
-    keel::usize expectedC = static_cast<keel::usize>(l.elemAsDouble(0));
+    keel::usize expectedC = keel::as<keel::usize>(l.elemAsDouble(0));
     for (int k = 0; k < N; ++k)
-        expectedC += static_cast<keel::usize>(l.elemAsDouble(1 + k));
+        expectedC += keel::as<keel::usize>(l.elemAsDouble(1 + k));
     if (c.numel() != expectedC)
         throw Error("wrcoef: c length does not match l bookkeeping",
                     0, 0, "wrcoef", "", "numkit:wrcoef:cl");
@@ -88,9 +88,9 @@ Value wrcoef_reconstruct_impl(keel::StringRef tl, const Value &c,
     keel::Array<keel::f64> cv(c.numel(), mr);
     for (keel::usize i = 0; i < c.numel(); ++i) cv[i] = c.elemAsDouble(i);
     keel::Array<keel::usize> lv(l.numel(), mr);
-    for (keel::usize i = 0; i < l.numel(); ++i) lv[i] = static_cast<keel::usize>(l.elemAsDouble(i));
+    for (keel::usize i = 0; i < l.numel(); ++i) lv[i] = keel::as<keel::usize>(l.elemAsDouble(i));
 
-    auto rec = keel::wavelet::wrcoef(tl == "d", cv, lv, Lo_R, Hi_R, static_cast<keel::i32>(n), mr);
+    auto rec = keel::wavelet::wrcoef(tl == "d", cv, lv, Lo_R, Hi_R, keel::as<keel::i32>(n), mr);
     Value r = Value::matrix(1, rec.size(), ValueType::DOUBLE, mr);
     if (!rec.empty()) std::memcpy(r.doubleDataMut(), rec.data(), rec.size() * sizeof(double));
     return r;

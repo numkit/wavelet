@@ -172,7 +172,7 @@ Value wthresh(const Value &X, keel::StringRef sorh, const Value &T,
             const double mag = ax - T_i;
             r = (mag > 0.0) ? std::copysign(mag, x) : 0.0;
         }
-        if (yf) yf[i] = static_cast<float>(r);
+        if (yf) yf[i] = keel::as<float>(r);
         else    yd[i] = r;
     }
     return Y;
@@ -186,7 +186,7 @@ Value wnoisest(const Value &C, const Value &L, const Value &S, keel::Allocator *
     double *od = out.doubleDataMut();
 
     for (keel::usize i = 0; i < k; ++i) {
-        const int level = static_cast<int>(S.elemAsDouble(i));
+        const int level = keel::as<int>(S.elemAsDouble(i));
         Value cD = detcoef(C, L, level, mr);
         auto v = vecFromValue(cD, mr);
         od[i] = keel::wavelet::noise_sigma_mad(keel::ArrayRef<keel::f64>(v.data(), v.size()), mr);
@@ -210,7 +210,7 @@ Value wdenoise(const Value &x, int level, keel::StringRef wname, keel::Allocator
                                   std::move(fb.Lo_R), std::move(fb.Hi_R)};
     auto xv = vecFromValue(x, mr);
     auto rec = keel::wavelet::denoise_visushrink(keel::ArrayRef<keel::f64>(xv.data(), xv.size()),
-                                                 static_cast<keel::i32>(level), kfb, mr);
+                                                 keel::as<keel::i32>(level), kfb, mr);
     Value out = Value::matrix(1, rec.size(), ValueType::DOUBLE, mr);
     if (!rec.empty()) std::copy(rec.begin(), rec.end(), out.doubleDataMut());
     return out;
@@ -240,7 +240,7 @@ DdencmpResult ddencmp(keel::StringRef opt, keel::StringRef type,
     (void)cA;
     const double med = median_abs(vecFromValue(cD));   // median(|cD1|)
     const double sigma = med / 0.6745;
-    const double n = static_cast<double>(x.numel());
+    const double n = keel::as<double>(x.numel());
 
     DdencmpResult r;
     if (o == "den") {

@@ -59,7 +59,7 @@ void swtAD_argcheck(const Value &x, int n,
                     0, 0, "swt", "", "numkit:swt:filter");
     const keel::usize N = x.numel();
     if (N > 0) {
-        const keel::usize needed = static_cast<keel::usize>(1) << n;
+        const keel::usize needed = keel::as<keel::usize>(1) << n;
         if (N % needed != 0)
             throw Error("swt: signal length must be divisible by 2^n",
                         0, 0, "swt", "", "numkit:swt:size");
@@ -96,14 +96,14 @@ std::pair<Value, Value> swtAD(const Value &x, int n,
     swtAD_argcheck(x, n, Lo_D, Hi_D);
     const keel::usize N = x.numel();
     if (N == 0) {
-        return {Value::matrix(static_cast<keel::usize>(n), 0, ValueType::DOUBLE, mr),
-                Value::matrix(static_cast<keel::usize>(n), 0, ValueType::DOUBLE, mr)};
+        return {Value::matrix(keel::as<keel::usize>(n), 0, ValueType::DOUBLE, mr),
+                Value::matrix(keel::as<keel::usize>(n), 0, ValueType::DOUBLE, mr)};
     }
 
     keel::Array<keel::f64> xv(N, mr);
     for (keel::usize i = 0; i < N; ++i) xv[i] = x.elemAsDouble(i);
     auto res = keel::wavelet::swt_ad(keel::ArrayRef<keel::f64>(xv.data(), N),
-                                     static_cast<keel::i32>(n), Lo_D, Hi_D, mr);
+                                     keel::as<keel::i32>(n), Lo_D, Hi_D, mr);
     Value swa = Value::matrix(res.levels, res.length, ValueType::DOUBLE, mr);
     Value swd = Value::matrix(res.levels, res.length, ValueType::DOUBLE, mr);
     const keel::usize total = res.levels * res.length;
@@ -129,12 +129,12 @@ Value swt(const Value &x, int n, keel::ArrayRef<keel::f64> Lo_D,
                     0, 0, "swt", "", "numkit:swt:level");
     const keel::usize N = x.numel();
     if (N == 0)
-        return Value::matrix(static_cast<keel::usize>(n + 1), 0,
+        return Value::matrix(keel::as<keel::usize>(n + 1), 0,
                              ValueType::DOUBLE, mr);
 
     auto [swa, swd] = swtAD(x, n, Lo_D, Hi_D, mr);
-    const keel::usize H = static_cast<keel::usize>(n);
-    Value out = Value::matrix(static_cast<keel::usize>(n + 1), N,
+    const keel::usize H = keel::as<keel::usize>(n);
+    Value out = Value::matrix(keel::as<keel::usize>(n + 1), N,
                               ValueType::DOUBLE, mr);
     double *od = out.doubleDataMut();
     for (keel::usize r = 0; r < H; ++r)
@@ -242,7 +242,7 @@ Value iswtPhase(Value aRow, const Value &dSrc, keel::usize n,
     };
 
     for (keel::usize k = n; k >= 1; --k) {
-        const keel::usize step = static_cast<keel::usize>(1) << (k - 1);
+        const keel::usize step = keel::as<keel::usize>(1) << (k - 1);
         for (keel::usize first = 1; first <= step; ++first) {
             const keel::usize lon = (N - first) / step + 1;
             const keel::usize mE = (lon + 1) / 2, mO = lon / 2;
@@ -353,7 +353,7 @@ Value modwt(const Value &x, int n, keel::StringRef wname, keel::Allocator *mr)
     modwt_argcheck(n);
     const keel::usize N = x.numel();
     if (N == 0)
-        return Value::matrix(static_cast<keel::usize>(n + 1), 0,
+        return Value::matrix(keel::as<keel::usize>(n + 1), 0,
                              ValueType::DOUBLE, mr);
 
     auto fb = wavelet_filters(wname);
@@ -362,8 +362,8 @@ Value modwt(const Value &x, int n, keel::StringRef wname, keel::Allocator *mr)
     keel::Array<keel::f64> xv(N, mr);
     for (keel::usize i = 0; i < N; ++i) xv[i] = x.elemAsDouble(i);
     auto w = keel::wavelet::modwt(keel::ArrayRef<keel::f64>(xv.data(), N),
-                                  static_cast<keel::i32>(n), kfb, mr);
-    Value out = Value::matrix(static_cast<keel::usize>(n + 1), N, ValueType::DOUBLE, mr);
+                                  keel::as<keel::i32>(n), kfb, mr);
+    Value out = Value::matrix(keel::as<keel::usize>(n + 1), N, ValueType::DOUBLE, mr);
     if (!w.empty()) std::copy(w.begin(), w.end(), out.doubleDataMut());
     return out;
 }

@@ -212,8 +212,8 @@ Value wmaxlev(const Value &N, keel::StringRef wname,
         throw Error("wmaxlev: filter length must be ≥ 2",
                     0, 0, "wmaxlev", "", "numkit:wmaxlev:filter");
 
-    const keel::usize nmin_u = (Nmin > 0.0) ? static_cast<keel::usize>(Nmin) : 0;
-    const double L = static_cast<double>(keel::wavelet::wmaxlev(nmin_u, Lf));
+    const keel::usize nmin_u = (Nmin > 0.0) ? keel::as<keel::usize>(Nmin) : 0;
+    const double L = keel::as<double>(keel::wavelet::wmaxlev(nmin_u, Lf));
     return Value::scalar(L, mr);
 }
 

@@ -50,7 +50,7 @@ namespace {
 
 int max_haar_level(keel::usize N)
 {
-    return static_cast<int>(keel::wavelet::haar_max_level(N));
+    return keel::as<int>(keel::wavelet::haar_max_level(N));
 }
 
 void haar_step_real(const double *x, keel::usize inLen, double *a, double *d,
@@ -188,9 +188,9 @@ HaartResult haart(const Value &x, int level, bool integer,
     if (lev == 1) {
         R.d = std::move(details[0]);              // plain matrix
     } else {
-        Value cellOut = Value::cell(static_cast<keel::usize>(lev), 1, mr);
+        Value cellOut = Value::cell(keel::as<keel::usize>(lev), 1, mr);
         for (int k = 0; k < lev; ++k)
-            cellOut.cellAt(static_cast<keel::usize>(k)) = std::move(details[k]);
+            cellOut.cellAt(keel::as<keel::usize>(k)) = std::move(details[k]);
         R.d = std::move(cellOut);                 // d{1} is finest
     }
     return R;

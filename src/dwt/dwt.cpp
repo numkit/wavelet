@@ -104,7 +104,7 @@ Value idwt_with_filters(const Value &cA, const Value &cD,
 
     auto rec = keel::wavelet::idwt(keel::ArrayRef<keel::f64>(av.data(), la),
                                    keel::ArrayRef<keel::f64>(dv.data(), ld),
-                                   Lo_R, Hi_R, static_cast<keel::i64>(len), mr);
+                                   Lo_R, Hi_R, keel::as<keel::i64>(len), mr);
     const keel::usize outN = rec.size();
     const bool wantSingle = cA.type() == ValueType::SINGLE;
     Value r = Value::matrix(1, outN,
@@ -113,7 +113,7 @@ Value idwt_with_filters(const Value &cA, const Value &cD,
                             mr);
     if (wantSingle) {
         float *rf = r.singleDataMut();
-        for (keel::usize i = 0; i < outN; ++i) rf[i] = static_cast<float>(rec[i]);
+        for (keel::usize i = 0; i < outN; ++i) rf[i] = keel::as<float>(rec[i]);
     } else if (outN > 0) {
         std::memcpy(r.doubleDataMut(), rec.data(), outN * sizeof(double));
     }

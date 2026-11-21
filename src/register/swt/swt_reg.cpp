@@ -121,7 +121,7 @@ void modwt_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/, keel::MutArr
     const Value &x = args[0];
     const keel::usize N = x.numel();
     const int default_lev = (N >= 2)
-        ? static_cast<int>(std::floor(std::log2(static_cast<double>(N))))
+        ? keel::as<int>(std::floor(std::log2(keel::as<double>(N))))
         : 1;
 
     keel::String wname("sym4");

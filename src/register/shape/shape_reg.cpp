@@ -37,7 +37,7 @@ static void shape_grid_reg(const char *fn,
     if (!(Nd >= 0.0))
         throw Error(keel::format("{}: N must be non-negative", fn),
                     0, 0, fn, "", "numkit:wav:N");
-    const keel::usize N = static_cast<keel::usize>(Nd);
+    const keel::usize N = keel::as<keel::usize>(Nd);
     auto [psi, x] = impl(lb, ub, N, ctx.engine->allocator());
     outs[0] = std::move(psi);
     if (nargout > 1) outs[1] = std::move(x);
@@ -68,7 +68,7 @@ void shanwavf_reg(keel::ArrayRef<Value> args, keel::usize nargout,
     argcheck::checkNargin(args.size(), 5, 5, "shanwavf");
     const double lb = args[0].toScalar();
     const double ub = args[1].toScalar();
-    const keel::usize N  = static_cast<keel::usize>(argcheck::expectedPositiveInteger(
+    const keel::usize N  = keel::as<keel::usize>(argcheck::expectedPositiveInteger(
         argcheck::expectedReal(args[2], 3, "N", "shanwavf"), 3, "N", "shanwavf"));
     const double fb = args[3].toScalar();
     const double fc = args[4].toScalar();
@@ -83,7 +83,7 @@ void cmorwavf_reg(keel::ArrayRef<Value> args, keel::usize nargout,
     argcheck::checkNargin(args.size(), 3, 5, "cmorwavf");
     const double lb = args[0].toScalar();
     const double ub = args[1].toScalar();
-    const keel::usize N  = static_cast<keel::usize>(argcheck::expectedPositiveInteger(
+    const keel::usize N  = keel::as<keel::usize>(argcheck::expectedPositiveInteger(
         argcheck::expectedReal(args[2], 3, "N", "cmorwavf"), 3, "N", "cmorwavf"));
     // MATLAB R2025b defaults when only 3 args supplied: fb = fc = 1.
     const double fb = (args.size() >= 4) ? args[3].toScalar() : 1.0;
@@ -99,7 +99,7 @@ void fbspwavf_reg(keel::ArrayRef<Value> args, keel::usize nargout,
     argcheck::checkNargin(args.size(), 6, 6, "fbspwavf");
     const double lb = args[0].toScalar();
     const double ub = args[1].toScalar();
-    const keel::usize N  = static_cast<keel::usize>(argcheck::expectedPositiveInteger(
+    const keel::usize N  = keel::as<keel::usize>(argcheck::expectedPositiveInteger(
         argcheck::expectedReal(args[2], 3, "N", "fbspwavf"), 3, "N", "fbspwavf"));
     const int    m  = argcheck::expectedPositiveInteger(
         argcheck::expectedReal(args[3], 4, "m", "fbspwavf"), 4, "m", "fbspwavf");
@@ -182,7 +182,7 @@ void cwt_reg(keel::ArrayRef<Value> args, keel::usize nargout,
         }
     }
     if (idx < args.size() && args[idx].isNumeric() && args[idx].numel() == 1) {
-        fs = argcheck::expectedReal(args[idx], static_cast<int>(idx + 1), "FS", "cwt");
+        fs = argcheck::expectedReal(args[idx], keel::as<int>(idx + 1), "FS", "cwt");
         ++idx;
     }
 
@@ -198,10 +198,10 @@ void cwt_reg(keel::ArrayRef<Value> args, keel::usize nargout,
         const Value &val = args[idx + 1];
         if (key == "voicesperoctave") {
             voicesPerOctave = argcheck::expectedPositiveInteger(
-                argcheck::expectedReal(val, static_cast<int>(idx + 2), "VoicesPerOctave", "cwt"),
-                static_cast<int>(idx + 2), "VoicesPerOctave", "cwt");
+                argcheck::expectedReal(val, keel::as<int>(idx + 2), "VoicesPerOctave", "cwt"),
+                keel::as<int>(idx + 2), "VoicesPerOctave", "cwt");
         } else if (key == "timebandwidth") {
-            timeBandwidth = argcheck::expectedReal(val, static_cast<int>(idx + 2), "TimeBandwidth", "cwt");
+            timeBandwidth = argcheck::expectedReal(val, keel::as<int>(idx + 2), "TimeBandwidth", "cwt");
         } else if (key == "waveletparameters") {
             if (!val.isNumeric() || val.isComplex() || val.numel() != 2)
                 throw Error("cwt: WaveletParameters must be a 2-element real vector [gamma, TimeBandwidth]",

@@ -131,11 +131,11 @@ void detcoef_reg(keel::ArrayRef<Value> args, keel::usize nargout, keel::MutArray
     // Bug fix 2026-05-08: was throwing on the 2-arg form.
     if (args.size() == 2) {
         const long long maxLev =
-            static_cast<long long>(args[1].numel()) - 2;
+            keel::as<long long>(args[1].numel()) - 2;
         if (maxLev < 1)
             throw Error("detcoef: L is too short to infer a default level",
                         0, 0, "detcoef", "", "numkit:detcoef:size");
-        outs[0] = detcoef(args[0], args[1], static_cast<int>(maxLev), mr);
+        outs[0] = detcoef(args[0], args[1], keel::as<int>(maxLev), mr);
         return;
     }
 
@@ -154,14 +154,14 @@ void detcoef_reg(keel::ArrayRef<Value> args, keel::usize nargout, keel::MutArray
         const keel::usize k = levArg.numel();
         Value cellOut = Value::cell(1, k);
         for (keel::usize i = 0; i < k; ++i) {
-            const int lev = static_cast<int>(levArg.elemAsDouble(i));
+            const int lev = keel::as<int>(levArg.elemAsDouble(i));
             cellOut.cellAt(i) = detcoef(args[0], args[1], lev, mr);
         }
         outs[0] = std::move(cellOut);
         return;
     }
 
-    const long long maxLev = static_cast<long long>(args[1].numel()) - 2;
+    const long long maxLev = keel::as<long long>(args[1].numel()) - 2;
 
     // detcoef(C, L, 'cells'): cell array of ALL levels 1..nMax.
     if (levArg.isChar() || levArg.isString()) {
@@ -171,9 +171,9 @@ void detcoef_reg(keel::ArrayRef<Value> args, keel::usize nargout, keel::MutArray
         if (s != "cells")
             throw Error(keel::format("detcoef: unknown option '{}'", orig),
                         0, 0, "detcoef", "", "numkit:detcoef:opt");
-        Value cellOut = Value::cell(1, static_cast<keel::usize>(std::max<long long>(0, maxLev)));
+        Value cellOut = Value::cell(1, keel::as<keel::usize>(std::max<long long>(0, maxLev)));
         for (int lev = 1; lev <= maxLev; ++lev)
-            cellOut.cellAt(static_cast<keel::usize>(lev - 1)) =
+            cellOut.cellAt(keel::as<keel::usize>(lev - 1)) =
                 detcoef(args[0], args[1], lev, mr);
         outs[0] = std::move(cellOut);
         return;
@@ -194,13 +194,13 @@ void detcoef_reg(keel::ArrayRef<Value> args, keel::usize nargout, keel::MutArray
     if (nargout >= 2) {
         for (keel::usize i = 0; i < k && i < outs.size(); ++i)
             outs[i] = detcoef(args[0], args[1],
-                              static_cast<int>(levArg.elemAsDouble(i)), mr);
+                              keel::as<int>(levArg.elemAsDouble(i)), mr);
     } else {
         Value cellOut = Value::cell(1, k);
         for (keel::usize i = 0; i < k; ++i)
             cellOut.cellAt(i) =
                 detcoef(args[0], args[1],
-                        static_cast<int>(levArg.elemAsDouble(i)), mr);
+                        keel::as<int>(levArg.elemAsDouble(i)), mr);
         outs[0] = std::move(cellOut);
     }
 }
@@ -226,7 +226,7 @@ void upcoef_reg(keel::ArrayRef<Value> args, keel::usize, keel::MutArrayRef<Value
     if (args.size() >= 4)
         argcheck::expectedNonNegative(double(n), 4, "n", "upcoef");
     const long long len =
-        (args.size() >= 5) ? static_cast<long long>(args[4].toScalar()) : -1;
+        (args.size() >= 5) ? keel::as<long long>(args[4].toScalar()) : -1;
     outs[0] = upcoef(type, args[1], wname, n, len, ctx.engine->allocator());
 }
 

@@ -48,7 +48,7 @@ static int parseGaussOrder(const Value &arg, const char *prefix, const char *fn)
             throw Error(keel::format("{}: bad wname '{}' (cannot parse order N)", fn, s),
                          0, 0, fn, "", "numkit:wname");
         }
-        return static_cast<int>(v);
+        return keel::as<int>(v);
     }
     return argcheck::expectedInteger(
         argcheck::expectedReal(arg, 1, "order", "gauswavf"), 1, "order", "gauswavf");
@@ -60,7 +60,7 @@ void gauswavf_reg(keel::ArrayRef<Value> args, keel::usize nargout,
     argcheck::checkNargin(args.size(), 3, 4, "gauswavf");
     const double lb = args[0].toScalar();
     const double ub = args[1].toScalar();
-    const keel::usize N  = static_cast<keel::usize>(argcheck::expectedPositiveInteger(
+    const keel::usize N  = keel::as<keel::usize>(argcheck::expectedPositiveInteger(
         argcheck::expectedReal(args[2], 3, "N", "gauswavf"), 3, "N", "gauswavf"));
     int p = 1;
     if (args.size() >= 4) p = parseGaussOrder(args[3], "gaus", "gauswavf");
@@ -75,7 +75,7 @@ void cgauwavf_reg(keel::ArrayRef<Value> args, keel::usize nargout,
     argcheck::checkNargin(args.size(), 3, 4, "cgauwavf");
     const double lb = args[0].toScalar();
     const double ub = args[1].toScalar();
-    const keel::usize N  = static_cast<keel::usize>(argcheck::expectedPositiveInteger(
+    const keel::usize N  = keel::as<keel::usize>(argcheck::expectedPositiveInteger(
         argcheck::expectedReal(args[2], 3, "N", "cgauwavf"), 3, "N", "cgauwavf"));
     int p = 1;
     if (args.size() >= 4) p = parseGaussOrder(args[3], "cgau", "cgauwavf");

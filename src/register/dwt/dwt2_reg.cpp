@@ -61,8 +61,8 @@ void idwt2_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/, keel::MutArr
                         "[rows cols] size vector.",
                         0, 0, "idwt2", "", "numkit:idwt2:size");
         } else if (sx.numel() >= 2) {
-            outRows = static_cast<long long>(sx.elemAsDouble(0));
-            outCols = static_cast<long long>(sx.elemAsDouble(1));
+            outRows = keel::as<long long>(sx.elemAsDouble(0));
+            outCols = keel::as<long long>(sx.elemAsDouble(1));
         }
     }
     outs[0] = idwt2(args[0], args[1], args[2], args[3],

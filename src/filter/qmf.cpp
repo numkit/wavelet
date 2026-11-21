@@ -107,7 +107,7 @@ Value qmf(const Value &x, int p, keel::Allocator *mr)
     for (keel::usize k = 0; k < N; ++k) xv[k] = x.elemAsDouble(k);
     keel::wavelet::qmf(keel::ArrayRef<keel::f64>(xv.data(), N),
                        keel::MutArrayRef<keel::f64>(y.doubleDataMut(), N),
-                       static_cast<keel::i32>(p));
+                       keel::as<keel::i32>(p));
     return y;
 }
 

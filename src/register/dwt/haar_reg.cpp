@@ -39,7 +39,7 @@ void haart_reg(keel::ArrayRef<Value> args, keel::usize nargout,
         if (lvld != std::floor(lvld))
             throw Error("haart: expected LEVEL to be an integer",
                         0, 0, "haart", "", "numkit:haart:level");
-        level = static_cast<int>(lvld);
+        level = keel::as<int>(lvld);
     }
 
     bool integer_mode = false;
@@ -90,7 +90,7 @@ void ihaart_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
             if (lvld != std::floor(lvld))
                 throw Error("ihaart: expected LEVEL to be an integer",
                             0, 0, "ihaart", "", "numkit:ihaart:level");
-            level = static_cast<int>(lvld);
+            level = keel::as<int>(lvld);
         }
     }
     outs[0] = ihaart(args[0], args[1], level, integer_mode,

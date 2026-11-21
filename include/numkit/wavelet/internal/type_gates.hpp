@@ -132,57 +132,57 @@ inline void requireNonempty(const Value &v, keel::StringRef fn,
 inline void storeElem(Value &out, keel::usize i, keel::f64 x)
 {
     switch (out.type()) {
-        case ValueType::SINGLE:   out.singleDataMut()[i] = static_cast<keel::f32>(x); break;
+        case ValueType::SINGLE:   out.singleDataMut()[i] = keel::as<keel::f32>(x); break;
         case ValueType::LOGICAL:  out.logicalDataMut()[i] = x != 0.0 ? 1 : 0; break;
-        case ValueType::CHAR:     out.charDataMut()[i] = static_cast<char>(static_cast<int>(x)); break;
+        case ValueType::CHAR:     out.charDataMut()[i] = keel::as<char>(keel::as<int>(x)); break;
         case ValueType::INT8: {
             const keel::f64 r = std::round(x);
             const keel::f64 c = r < -128.0 ? -128.0 : (r > 127.0 ? 127.0 : r);
-            out.int8DataMut()[i] = static_cast<keel::i8>(c);
+            out.int8DataMut()[i] = keel::as<keel::i8>(c);
             break;
         }
         case ValueType::INT16: {
             const keel::f64 r = std::round(x);
             const keel::f64 c = r < -32768.0 ? -32768.0 : (r > 32767.0 ? 32767.0 : r);
-            out.int16DataMut()[i] = static_cast<keel::i16>(c);
+            out.int16DataMut()[i] = keel::as<keel::i16>(c);
             break;
         }
         case ValueType::INT32: {
             const keel::f64 r = std::round(x);
             const keel::f64 c = r < -2147483648.0 ? -2147483648.0
                               : (r > 2147483647.0 ? 2147483647.0 : r);
-            out.int32DataMut()[i] = static_cast<keel::i32>(c);
+            out.int32DataMut()[i] = keel::as<keel::i32>(c);
             break;
         }
         case ValueType::INT64: {
             const keel::f64 r = std::round(x);
             const keel::f64 c = r < -9.2233720368547758e18 ? -9.2233720368547758e18
                               : (r > 9.2233720368547758e18 ? 9.2233720368547758e18 : r);
-            out.int64DataMut()[i] = static_cast<keel::i64>(c);
+            out.int64DataMut()[i] = keel::as<keel::i64>(c);
             break;
         }
         case ValueType::UINT8: {
             const keel::f64 r = std::round(x);
             const keel::f64 c = r < 0.0 ? 0.0 : (r > 255.0 ? 255.0 : r);
-            out.uint8DataMut()[i] = static_cast<keel::u8>(c);
+            out.uint8DataMut()[i] = keel::as<keel::u8>(c);
             break;
         }
         case ValueType::UINT16: {
             const keel::f64 r = std::round(x);
             const keel::f64 c = r < 0.0 ? 0.0 : (r > 65535.0 ? 65535.0 : r);
-            out.uint16DataMut()[i] = static_cast<keel::u16>(c);
+            out.uint16DataMut()[i] = keel::as<keel::u16>(c);
             break;
         }
         case ValueType::UINT32: {
             const keel::f64 r = std::round(x);
             const keel::f64 c = r < 0.0 ? 0.0 : (r > 4294967295.0 ? 4294967295.0 : r);
-            out.uint32DataMut()[i] = static_cast<keel::u32>(c);
+            out.uint32DataMut()[i] = keel::as<keel::u32>(c);
             break;
         }
         case ValueType::UINT64: {
             const keel::f64 r = std::round(x);
             const keel::f64 c = r < 0.0 ? 0.0 : (r > 1.8446744073709552e19 ? 1.8446744073709552e19 : r);
-            out.uint64DataMut()[i] = static_cast<keel::u64>(c);
+            out.uint64DataMut()[i] = keel::as<keel::u64>(c);
             break;
         }
         default:

@@ -38,7 +38,7 @@ gauswavf(double lb, double ub, keel::usize N, int p, keel::Allocator *mr)
     Value pv = Value::matrix(1, N, ValueType::DOUBLE, mr);
     if (N == 0) return {std::move(pv), std::move(xv)};
 
-    keel::wavelet::gauswavf(lb, ub, static_cast<keel::i32>(p),
+    keel::wavelet::gauswavf(lb, ub, keel::as<keel::i32>(p),
                             keel::MutArrayRef<keel::f64>(pv.doubleDataMut(), N),
                             keel::MutArrayRef<keel::f64>(xv.doubleDataMut(), N));
     return {std::move(pv), std::move(xv)};
@@ -52,7 +52,7 @@ cgauwavf(double lb, double ub, keel::usize N, int p, keel::Allocator *mr)
     Value pv = Value::matrix(1, N, ValueType::COMPLEX, mr);
     if (N == 0) return {std::move(pv), std::move(xv)};
 
-    keel::wavelet::cgauwavf(lb, ub, static_cast<keel::i32>(p),
+    keel::wavelet::cgauwavf(lb, ub, keel::as<keel::i32>(p),
                             keel::MutArrayRef<keel::c64>(pv.complexDataMut(), N),
                             keel::MutArrayRef<keel::f64>(xv.doubleDataMut(), N), mr);
     return {std::move(pv), std::move(xv)};

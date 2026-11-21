@@ -108,14 +108,14 @@ Value idwt2(const Value &cA, const Value &cH,
 
     auto natural_len = [lf](keel::usize la) -> keel::usize {
         const keel::usize sx = 2 * la + lf - 2;
-        const keel::i64 want = static_cast<keel::i64>(2 * la) - static_cast<keel::i64>(lf) + 2;
-        if (want < 0 || static_cast<keel::usize>(want) >= sx) return sx;
-        return static_cast<keel::usize>(want);
+        const keel::i64 want = keel::as<keel::i64>(2 * la) - keel::as<keel::i64>(lf) + 2;
+        if (want < 0 || keel::as<keel::usize>(want) >= sx) return sx;
+        return keel::as<keel::usize>(want);
     };
     const keel::usize natR = natural_len(rows);
     const keel::usize natC = natural_len(cols);
-    if ((outRows >= 0 && static_cast<keel::usize>(outRows) > natR)
-        || (outCols >= 0 && static_cast<keel::usize>(outCols) > natC)) {
+    if ((outRows >= 0 && keel::as<keel::usize>(outRows) > natR)
+        || (outCols >= 0 && keel::as<keel::usize>(outCols) > natC)) {
         throw Error(keel::format("idwt2: input 6 (SIZ) exceeds the natural "
                                  "reconstruction size {}x{}.", natR, natC),
                     0, 0, "idwt2", "", "numkit:idwt2:size");
@@ -139,8 +139,8 @@ Value idwt2(const Value &cA, const Value &cH,
             }
         }
         return keel::wavelet::idwt2(b[0], b[1], b[2], b[3], rows, cols, fb,
-                                    static_cast<keel::i64>(outRows),
-                                    static_cast<keel::i64>(outCols), mr);
+                                    keel::as<keel::i64>(outRows),
+                                    keel::as<keel::i64>(outCols), mr);
     };
 
     auto resR = runPart(false);
@@ -149,7 +149,7 @@ Value idwt2(const Value &cA, const Value &cH,
             Value s = Value::matrix(resR.rows, resR.cols, ValueType::SINGLE, mr);
             float *sd = s.singleDataMut();
             for (keel::usize i = 0; i < resR.out.size(); ++i)
-                sd[i] = static_cast<float>(resR.out[i]);
+                sd[i] = keel::as<float>(resR.out[i]);
             return s;
         }
         return packMatrix(resR.out, resR.rows, resR.cols, mr);

@@ -209,7 +209,7 @@ fbspwavf(double lb, double ub, keel::usize N, int m, double fb, double fc, keel:
     Value xv = Value::matrix(1, N, ValueType::DOUBLE, mr);
     Value pv = Value::matrix(1, N, ValueType::COMPLEX, mr);
     if (N == 0) return {std::move(pv), std::move(xv)};
-    keel::wavelet::fbspwavf(lb, ub, static_cast<keel::i32>(m), fb, fc,
+    keel::wavelet::fbspwavf(lb, ub, keel::as<keel::i32>(m), fb, fc,
                             keel::MutArrayRef<keel::c64>(pv.complexDataMut(), N),
                             keel::MutArrayRef<keel::f64>(xv.doubleDataMut(), N));
     return {std::move(pv), std::move(xv)};
@@ -222,7 +222,7 @@ Value meyeraux(const Value &x, keel::Allocator *mr)
         const double r = keel::wavelet::meyeraux(x.elemAsDouble(0));
         if (x.type() == ValueType::SINGLE) {
             Value out = Value::matrix(1, 1, ValueType::SINGLE, mr);
-            out.singleDataMut()[0] = static_cast<float>(r);
+            out.singleDataMut()[0] = keel::as<float>(r);
             return out;
         }
         return Value::scalar(r, mr);
@@ -238,7 +238,7 @@ CentfrqResult centfrqGrid(keel::StringRef wname, int iter,
                           keel::Allocator *mr)
 {
     centfrq_argcheck(wname, iter);
-    auto r = keel::wavelet::centfrq(wname, static_cast<keel::i32>(iter), withRecfreq, mr);
+    auto r = keel::wavelet::centfrq(wname, keel::as<keel::i32>(iter), withRecfreq, mr);
     if (!r.ok) {
         throw Error(keel::format("centfrq: invalid or unsupported wavelet '{}'", wname),
                     0, 0, "centfrq", "", "numkit:centfrq:invalidWavelet");
@@ -299,7 +299,7 @@ CwtResult cwt(const Value &x,
     const double fmin = freqLimits.isEmpty() ? 0.0 : freqLimits.elemAsDouble(0);
     const double fmax = freqLimits.isEmpty() ? 0.0 : freqLimits.elemAsDouble(1);
 
-    auto r = keel::wavelet::cwt(xv, wkind, fs, static_cast<keel::i32>(voicesPerOctave),
+    auto r = keel::wavelet::cwt(xv, wkind, fs, keel::as<keel::i32>(voicesPerOctave),
                                 timeBandwidth, gamma, extendSignal, fmin, fmax, mr);
 
     const bool outSingle = (x.type() == ValueType::SINGLE);

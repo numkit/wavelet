@@ -41,8 +41,8 @@ void readS(const Value &S, keel::Array<keel::usize> &s_rows, keel::Array<keel::u
     s_rows.resize(R);
     s_cols.resize(R);
     for (keel::usize i = 0; i < R; ++i) {
-        s_rows[i] = static_cast<keel::usize>(S.elemAsDouble(i));
-        s_cols[i] = static_cast<keel::usize>(S.elemAsDouble(R + i));
+        s_rows[i] = keel::as<keel::usize>(S.elemAsDouble(i));
+        s_cols[i] = keel::as<keel::usize>(S.elemAsDouble(R + i));
     }
 }
 
@@ -60,7 +60,7 @@ int detcoef2_argcheck(keel::StringRef type, const Value &C, const Value &S, int 
                                /*allowComplex=*/true);
     internal::requireWaveClass(S, "detcoef2", "S", 3,
                                internal::WvClasses::AnyNumeric);
-    const int N = static_cast<int>(S.dims().rows()) - 2;
+    const int N = keel::as<int>(S.dims().rows()) - 2;
     if (N < 1)
         throw Error("detcoef2: S must have at least 3 rows (1 level)",
                     0, 0, "detcoef2", "", "numkit:detcoef2:size");
@@ -87,13 +87,13 @@ Wavedec2Result wavedec2(const Value &X, int n, keel::StringRef wname,
     keel::Array<keel::f64> xv(M * N, mr);
     for (keel::usize i = 0; i < M * N; ++i) xv[i] = X.elemAsDouble(i);
 
-    auto r = keel::wavelet::wavedec2(xv, M, N, static_cast<keel::i32>(n), fb, mr);
+    auto r = keel::wavelet::wavedec2(xv, M, N, keel::as<keel::i32>(n), fb, mr);
     const keel::usize R = r.s_rows.size();
     Value S = Value::matrix(R, 2, ValueType::DOUBLE, mr);
     double *sd = S.doubleDataMut();
     for (keel::usize i = 0; i < R; ++i) {
-        sd[i] = static_cast<double>(r.s_rows[i]);
-        sd[R + i] = static_cast<double>(r.s_cols[i]);
+        sd[i] = keel::as<double>(r.s_rows[i]);
+        sd[R + i] = keel::as<double>(r.s_cols[i]);
     }
     Value c = Value::matrix(1, r.c.size(), ValueType::DOUBLE, mr);
     if (!r.c.empty()) std::memcpy(c.doubleDataMut(), r.c.data(), r.c.size() * sizeof(double));
@@ -104,7 +104,7 @@ static Value appcoef2_impl(const Value &C, const Value &S,
                            keel::StringRef wname, int level,
                            keel::Allocator *mr)
 {
-    const int N = static_cast<int>(S.dims().rows()) - 2;
+    const int N = keel::as<int>(S.dims().rows()) - 2;
     if (N < 1)
         throw Error("appcoef2: S must have at least 3 rows (1 level)",
                     0, 0, "appcoef2", "", "numkit:appcoef2:size");
@@ -119,7 +119,7 @@ static Value appcoef2_impl(const Value &C, const Value &S,
     keel::Array<keel::usize> sr(mr), sc(mr);
     readS(S, sr, sc);
 
-    auto r = keel::wavelet::appcoef2(cv, sr, sc, fb, static_cast<keel::i32>(level), mr);
+    auto r = keel::wavelet::appcoef2(cv, sr, sc, fb, keel::as<keel::i32>(level), mr);
     Value m = Value::matrix(r.rows, r.cols, ValueType::DOUBLE, mr);
     if (!r.out.empty()) std::memcpy(m.doubleDataMut(), r.out.data(), r.out.size() * sizeof(double));
     return m;
@@ -141,23 +141,23 @@ Value detcoef2(keel::StringRef type, const Value &C, const Value &S,
                int level, keel::Allocator *mr)
 {
     const int which = detcoef2_argcheck(type, C, S, level);
-    const int N = static_cast<int>(S.dims().rows()) - 2;
+    const int N = keel::as<int>(S.dims().rows()) - 2;
     const keel::usize R = S.dims().rows();
 
     auto sRow = [&](keel::usize i) -> std::pair<keel::usize, keel::usize> {
-        return {static_cast<keel::usize>(S.elemAsDouble(i)),
-                static_cast<keel::usize>(S.elemAsDouble(R + i))};
+        return {keel::as<keel::usize>(S.elemAsDouble(i)),
+                keel::as<keel::usize>(S.elemAsDouble(R + i))};
     };
 
     auto [aR, aC] = sRow(0);
     keel::usize off = aR * aC;
     for (int lev = N; lev > level; --lev) {
-        auto [dR, dC] = sRow(static_cast<keel::usize>(N - lev + 1));
+        auto [dR, dC] = sRow(keel::as<keel::usize>(N - lev + 1));
         off += 3 * dR * dC;
     }
-    auto [dR, dC] = sRow(static_cast<keel::usize>(N - level + 1));
+    auto [dR, dC] = sRow(keel::as<keel::usize>(N - level + 1));
     const keel::usize dn = dR * dC;
-    off += static_cast<keel::usize>(which) * dn;
+    off += keel::as<keel::usize>(which) * dn;
     if (off + dn > C.numel()) {
         throw Error(keel::format("detcoef2: C is too short for the sizes in S "
                                  "(needed {} elements, got {}).",
@@ -171,7 +171,7 @@ Value detcoef2(keel::StringRef type, const Value &C, const Value &S,
         auto r = keel::wavelet::detcoef2(
             static_cast<keel::wavelet::Detail2D>(which),
             keel::ArrayRef<keel::f64>(C.doubleData(), C.numel()),
-            sr, sc, static_cast<keel::i32>(level), mr);
+            sr, sc, keel::as<keel::i32>(level), mr);
         Value out = Value::matrix(r.rows, r.cols, ValueType::DOUBLE, mr);
         if (!r.out.empty()) std::memcpy(out.doubleDataMut(), r.out.data(), r.out.size() * sizeof(double));
         return out;
