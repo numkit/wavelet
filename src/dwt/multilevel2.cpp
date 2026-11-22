@@ -68,9 +68,9 @@ keel::i32 detcoef2_argcheck(keel::StringRef type, const Value &C, const Value &S
         throw Error("detcoef2: level out of range [1, N]",
                     0, 0, "detcoef2", "", "numkit:detcoef2:level");
 
-    if (type == "h" || type == "H") return 0;
-    if (type == "v" || type == "V") return 1;
-    if (type == "d" || type == "D") return 2;
+    if (type.equals_ignore_ascii_case("h")) return 0;
+    if (type.equals_ignore_ascii_case("v")) return 1;
+    if (type.equals_ignore_ascii_case("d")) return 2;
     throw Error(keel::format("detcoef2: type must be 'h', 'v' or 'd' (got '{}')", type),
                 0, 0, "detcoef2", "", "numkit:detcoef2:type");
 }

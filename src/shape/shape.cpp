@@ -114,8 +114,7 @@ keel::wavelet::CwtWavelet cwt_argcheck(const Value &x, keel::StringRef wname, ke
                         0, 0, "cwt", "", "numkit:cwt:expectedFinite");
     }
     keel::String wl(wname);
-    for (char &c : wl)
-        c = keel::to_ascii_lower(c);
+    wl.to_ascii_lower_in_place();
     keel::wavelet::CwtWavelet wkind = keel::wavelet::CwtWavelet::Morse;
     if (wl == "morse") wkind = keel::wavelet::CwtWavelet::Morse;
     else if (wl == "amor") wkind = keel::wavelet::CwtWavelet::Amor;

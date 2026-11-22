@@ -23,8 +23,7 @@ namespace {
 keel::String lower_type(keel::StringRef sv)
 {
     keel::String s(sv);
-    for (auto &ch : s)
-        ch = keel::to_ascii_lower(ch);
+    s.to_ascii_lower_in_place();
     return s;
 }
 

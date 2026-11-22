@@ -48,8 +48,7 @@ void haart_reg(keel::ArrayRef<Value> args, keel::usize nargout,
             throw Error("haart: integerflag must be 'noninteger' or 'integer'",
                         0, 0, "haart", "", "numkit:haart:flag");
         keel::String flag = args[2].toString();
-        for (auto &c : flag)
-            c = keel::to_ascii_lower(c);
+        flag.to_ascii_lower_in_place();
         if      (flag == "integer")    integer_mode = true;
         else if (flag == "noninteger") integer_mode = false;
         else
@@ -74,8 +73,7 @@ void ihaart_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
         const Value &arg = args[i];
         if (arg.isChar() || arg.isString()) {
             keel::String flag = arg.toString();
-            for (auto &c : flag)
-                c = keel::to_ascii_lower(c);
+            flag.to_ascii_lower_in_place();
             if      (flag == "integer")    integer_mode = true;
             else if (flag == "noninteger") integer_mode = false;
             else

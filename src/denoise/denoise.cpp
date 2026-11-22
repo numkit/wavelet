@@ -55,8 +55,8 @@ void wthresh_argcheck(const Value &X, keel::StringRef sorh, const Value &T)
     internal::requireWaveClass(X, "wthresh", "X", 1,
                                internal::WvClasses::FloatOnly,
                                /*allowComplex=*/true);
-    const bool hard = (sorh == "h" || sorh == "H");
-    const bool soft = (sorh == "s" || sorh == "S");
+    const bool hard = (sorh.equals_ignore_ascii_case("h"));
+    const bool soft = (sorh.equals_ignore_ascii_case("s"));
     if (!hard && !soft)
         throw Error(keel::format("wthresh: SORH must be 's' (soft) or 'h' (hard) — got '{}'", sorh),
                     0, 0, "wthresh", "", "numkit:wthresh:sorh");
@@ -75,8 +75,7 @@ void wthresh_argcheck(const Value &X, keel::StringRef sorh, const Value &T)
 keel::String wentropy_argcheck(keel::StringRef type, keel::f64 param)
 {
     keel::String t(type);
-    std::transform(t.begin(), t.end(), t.begin(),
-                   [](keel::u8 c) { return keel::to_ascii_lower(c); });
+    t.to_ascii_lower_in_place();
     if (t == "norm") {
         if (param < 1.0)
             throw Error("wentropy: 'norm' exponent P must be >= 1",
@@ -93,8 +92,7 @@ keel::String ddencmp_argcheck(keel::StringRef opt, keel::StringRef type)
 {
     auto lower = [](keel::StringRef sv) {
         keel::String s(sv);
-        std::transform(s.begin(), s.end(), s.begin(),
-                       [](keel::u8 c) { return keel::to_ascii_lower(c); });
+        s.to_ascii_lower_in_place();
         return s;
     };
     keel::String o = lower(opt);
@@ -119,7 +117,7 @@ Value wthresh(const Value &X, keel::StringRef sorh, const Value &T,
               keel::Allocator *mr)
 {
     wthresh_argcheck(X, sorh, T);
-    const bool hard = (sorh == "h" || sorh == "H");
+    const bool hard = (sorh.equals_ignore_ascii_case("h"));
     const bool elemT = T.numel() != 1;
 
     const keel::usize N = X.numel();

@@ -166,8 +166,7 @@ void cwt_reg(keel::ArrayRef<Value> args, keel::usize nargout,
 
     auto lowerStr = [](keel::StringRef sv) {
         keel::String s(sv);
-        for (char &c : s)
-            c = keel::to_ascii_lower(c);
+        s.to_ascii_lower_in_place();
         return s;
     };
 

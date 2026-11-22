@@ -34,7 +34,7 @@ static keel::i32 parseGaussOrder(const Value &arg, const char *prefix, const cha
     if (arg.isChar() || arg.isString()) {
         keel::String s = arg.toString();
         // Lowercase the prefix portion for comparison.
-        for (auto &c : s) c = keel::to_ascii_lower(c);
+        s.to_ascii_lower_in_place();
         const keel::StringRef pref(prefix);
         if (s.size() <= pref.size() || !s.starts_with(pref))
             throw Error(keel::format("{}: bad wname '{}' (expected {}N)", fn, s, prefix),

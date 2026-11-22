@@ -67,7 +67,7 @@ void detcoef2_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/, keel::Mut
     auto *mr = ctx.engine->allocator();
     keel::String type = argString(args[0]);
     keel::String lt = type.clone();
-    for (auto &c : lt) c = keel::to_ascii_lower(c);
+    lt.to_ascii_lower_in_place();
     const keel::i32 level = argcheck::expectedPositiveInteger(
         argcheck::expectedReal(args[3], 4, "level", "detcoef2"), 4, "level", "detcoef2");
 

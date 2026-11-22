@@ -40,7 +40,7 @@ static bool parse_mode_nv(keel::ArrayRef<Value> args, keel::usize start,
                           const char *fn) {
     auto lower = [](keel::StringRef sv) {
         keel::String s(sv);
-        for (auto &c : s) c = keel::to_ascii_lower(c);
+        s.to_ascii_lower_in_place();
         return s;
     };
     for (keel::usize i = start; i + 1 < args.size(); i += 2) {

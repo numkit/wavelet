@@ -62,7 +62,7 @@ void appcoef_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/, keel::MutA
     // Parse trailing 'mode' / Mode= N-V: only 'sym' supported.
     auto lower = [](keel::StringRef sv) {
         keel::String s(sv);
-        for (auto &c : s) c = keel::to_ascii_lower(c);
+        s.to_ascii_lower_in_place();
         return s;
     };
     auto check_mode_at = [&](keel::usize start) {
@@ -145,7 +145,7 @@ void detcoef_reg(keel::ArrayRef<Value> args, keel::usize nargout, keel::MutArray
         && (args[3].isChar() || args[3].isString())
         && [&] {
             keel::String s = args[3].toString();
-            for (auto &c : s) c = keel::to_ascii_lower(c);
+            s.to_ascii_lower_in_place();
             return s == "cells";
         }();
 
@@ -167,7 +167,7 @@ void detcoef_reg(keel::ArrayRef<Value> args, keel::usize nargout, keel::MutArray
     if (levArg.isChar() || levArg.isString()) {
         const keel::String orig = levArg.toString();
         keel::String s = orig.clone();
-        for (auto &c : s) c = keel::to_ascii_lower(c);
+        s.to_ascii_lower_in_place();
         if (s != "cells")
             throw Error(keel::format("detcoef: unknown option '{}'", orig),
                         0, 0, "detcoef", "", "numkit:detcoef:opt");
