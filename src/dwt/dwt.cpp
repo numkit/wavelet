@@ -3,6 +3,7 @@
 // delegating numerical transforms to keel::wavelet::{dwt, idwt}.
 
 #include <keel/array.h>
+#include <keel/algo.h>
 #include <keel/core.h>
 #include <keel/memory.h>
 #include <keel/ref.h>
@@ -14,7 +15,6 @@
 #include <numkit/value/value.hpp>
 
 #include <algorithm>
-#include <cstring>
 
 namespace numkit::wavelet {
 
@@ -63,7 +63,7 @@ dwt_with_filters(const Value &x,
     auto res = keel::wavelet::dwt(keel::ArrayRef<keel::f64>(xv.data(), N), Lo_D, Hi_D, mr);
     auto pack = [&](keel::ArrayRef<keel::f64> v) {
         Value r = Value::matrix(1, v.size(), ValueType::DOUBLE, mr);
-        if (!v.empty()) std::memcpy(r.doubleDataMut(), v.data(), v.size() * sizeof(keel::f64));
+        if (!v.empty()) keel::copy_n(r.doubleDataMut(), v.data(), v.size());
         return r;
     };
     return {pack(keel::ArrayRef<keel::f64>(res.ca.data(), res.ca.size())),
@@ -115,7 +115,7 @@ Value idwt_with_filters(const Value &cA, const Value &cD,
         keel::f32 *rf = r.singleDataMut();
         for (keel::usize i = 0; i < outN; ++i) rf[i] = keel::as<keel::f32>(rec[i]);
     } else if (outN > 0) {
-        std::memcpy(r.doubleDataMut(), rec.data(), outN * sizeof(keel::f64));
+        keel::copy_n(r.doubleDataMut(), rec.data(), outN);
     }
     return r;
 }

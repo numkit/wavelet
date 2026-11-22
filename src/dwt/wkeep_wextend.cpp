@@ -11,6 +11,7 @@
 // n → no extension, anything else → both.
 
 #include <keel/array.h>
+#include <keel/math.h>
 #include <keel/core.h>
 #include <keel/format.h>
 #include <keel/memory.h>
@@ -29,7 +30,6 @@
 #include <numkit/value/error.hpp>
 
 #include <algorithm>
-#include <cmath>
 
 namespace numkit::wavelet {
 
@@ -66,7 +66,7 @@ keel::String lower(keel::StringRef sv)
 // non-integer) instead of erroring.
 bool validKeepLen(keel::f64 n, keel::i64 N)
 {
-    return n >= 0.0 && n <= keel::as<keel::f64>(N) && n == std::floor(n);
+    return n >= 0.0 && n <= keel::as<keel::f64>(N) && n == keel::floor(n);
 }
 
 void wkeep_argcheck(const Value &x, const Value &len)
@@ -199,7 +199,7 @@ Value wkeep(const Value &x, const Value &len, const Value &opt,
                             0, 0, "wkeep", "", "numkit:wkeep:opt");
         } else {
             const keel::f64 f = opt.elemAsDouble(0);
-            if (f != std::floor(f))
+            if (f != keel::floor(f))
                 throw Error("wkeep: optional argument FIRST must be an "
                             "integer start index.",
                             0, 0, "wkeep", "", "numkit:wkeep:opt");
@@ -398,7 +398,7 @@ void parseExtLf(const Value &lf, const char *fn,
         if (a < 0 || b < 0)
             throw Error(keel::format("{}: input 4 (L) must be nonnegative.", fn),
                         0, 0, fn, "", keel::format("numkit:{}:expectedNonnegative", fn));
-        if (a != std::floor(a) || b != std::floor(b))
+        if (a != keel::floor(a) || b != keel::floor(b))
             throw Error(keel::format("{}: input 4 (L) must be an integer.", fn),
                         0, 0, fn, "", keel::format("numkit:{}:expectedInteger", fn));
         lfRows = keel::as<keel::i64>(a);
@@ -413,7 +413,7 @@ void parseExtLf(const Value &lf, const char *fn,
     if (v < 0)
         throw Error(keel::format("{}: input 4 (L) must be nonnegative.", fn),
                     0, 0, fn, "", keel::format("numkit:{}:expectedNonnegative", fn));
-    if (v != std::floor(v))
+    if (v != keel::floor(v))
         throw Error(keel::format("{}: input 4 (L) must be an integer.", fn),
                     0, 0, fn, "", keel::format("numkit:{}:expectedInteger", fn));
     lfRows = lfCols = keel::as<keel::i64>(v);

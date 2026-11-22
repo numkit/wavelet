@@ -2,6 +2,8 @@
 // Continuous wavelet shapes, centfrq, scal2frq, and cwt — delegated to keel::wavelet.
 
 #include <keel/array.h>
+#include <keel/algo.h>
+#include <keel/math.h>
 #include <keel/complex.h>
 #include <keel/core.h>
 #include <keel/format.h>
@@ -16,8 +18,6 @@
 #include <numkit/wavelet/internal/type_gates.hpp>
 #include <numkit/wavelet/shape/shape.hpp>
 
-#include <cmath>
-#include <cstring>
 
 namespace numkit::wavelet {
 
@@ -25,20 +25,20 @@ namespace {
 
 void shanwavf_argcheck(keel::f64 /*lb*/, keel::f64 /*ub*/, keel::usize /*N*/, keel::f64 fb, keel::f64 fc)
 {
-    if (!(fb > 0.0) || !std::isfinite(fb))
+    if (!(fb > 0.0) || !keel::is_finite(fb))
         throw Error("shanwavf: bandwidth FB must be positive and finite",
                     0, 0, "shanwavf", "", "numkit:shanwavf:fb");
-    if (!(fc > 0.0) || !std::isfinite(fc))
+    if (!(fc > 0.0) || !keel::is_finite(fc))
         throw Error("shanwavf: center frequency FC must be positive and finite",
                     0, 0, "shanwavf", "", "numkit:shanwavf:fc");
 }
 
 void cmorwavf_argcheck(keel::f64 /*lb*/, keel::f64 /*ub*/, keel::usize /*N*/, keel::f64 fb, keel::f64 fc)
 {
-    if (!(fb > 0.0) || !std::isfinite(fb))
+    if (!(fb > 0.0) || !keel::is_finite(fb))
         throw Error("cmorwavf: bandwidth FB must be positive and finite",
                     0, 0, "cmorwavf", "", "numkit:cmorwavf:fb");
-    if (!(fc > 0.0) || !std::isfinite(fc))
+    if (!(fc > 0.0) || !keel::is_finite(fc))
         throw Error("cmorwavf: center frequency FC must be positive and finite",
                     0, 0, "cmorwavf", "", "numkit:cmorwavf:fc");
 }
@@ -48,10 +48,10 @@ void fbspwavf_argcheck(keel::f64 /*lb*/, keel::f64 /*ub*/, keel::usize /*N*/, ke
     if (m < 1)
         throw Error("fbspwavf: order m must be >= 1",
                     0, 0, "fbspwavf", "", "numkit:fbspwavf:order");
-    if (!(fb > 0.0) || !std::isfinite(fb))
+    if (!(fb > 0.0) || !keel::is_finite(fb))
         throw Error("fbspwavf: bandwidth FB must be positive and finite",
                     0, 0, "fbspwavf", "", "numkit:fbspwavf:fb");
-    if (!(fc > 0.0) || !std::isfinite(fc))
+    if (!(fc > 0.0) || !keel::is_finite(fc))
         throw Error("fbspwavf: center frequency FC must be positive and finite",
                     0, 0, "fbspwavf", "", "numkit:fbspwavf:fc");
 }
@@ -86,14 +86,14 @@ void scal2frq_argcheck(const Value &a, keel::StringRef wname, keel::f64 delta)
                     0, 0, "scal2frq", "", "numkit:scal2frq:invalidScales");
     for (keel::usize i = 0; i < a.numel(); ++i) {
         const keel::f64 v = a.elemAsDouble(i);
-        if (!std::isfinite(v) || v <= 0.0)
+        if (!keel::is_finite(v) || v <= 0.0)
             throw Error("scal2frq: all scales in A must be finite and positive",
                         0, 0, "scal2frq", "", "numkit:scal2frq:invalidScales");
     }
     if (wname.empty())
         throw Error("scal2frq: wavelet name must be a non-empty string",
                     0, 0, "scal2frq", "", "numkit:scal2frq:invalidWavelet");
-    if (!std::isfinite(delta) || delta <= 0.0)
+    if (!keel::is_finite(delta) || delta <= 0.0)
         throw Error("scal2frq: sampling period DELTA must be finite and positive",
                     0, 0, "scal2frq", "", "numkit:scal2frq:invalidDelta");
 }
@@ -109,7 +109,7 @@ keel::wavelet::CwtWavelet cwt_argcheck(const Value &x, keel::StringRef wname, ke
         throw Error("cwt: X must be a 1-D vector with at least 4 samples",
                     0, 0, "cwt", "", "numkit:cwt:expectedVector");
     for (keel::usize i = 0; i < x.numel(); ++i) {
-        if (!std::isfinite(x.elemAsDouble(i)))
+        if (!keel::is_finite(x.elemAsDouble(i)))
             throw Error("cwt: X must be finite",
                         0, 0, "cwt", "", "numkit:cwt:expectedFinite");
     }
@@ -122,17 +122,17 @@ keel::wavelet::CwtWavelet cwt_argcheck(const Value &x, keel::StringRef wname, ke
     else
         throw Error(keel::format("cwt: WAVELET must be 'morse', 'amor', or 'bump' (got '{}')", wname),
                     0, 0, "cwt", "", "numkit:cwt:invalidWavelet");
-    if (!(fs > 0.0) || !std::isfinite(fs))
+    if (!(fs > 0.0) || !keel::is_finite(fs))
         throw Error("cwt: FS must be a positive finite scalar",
                     0, 0, "cwt", "", "numkit:cwt:invalidFs");
     if (voicesPerOctave < 1 || voicesPerOctave > 48)
         throw Error("cwt: VoicesPerOctave must be an integer in [1, 48]",
                     0, 0, "cwt", "", "numkit:cwt:invalidVoicesPerOctave");
     if (wkind == keel::wavelet::CwtWavelet::Morse) {
-        if (!(gamma > 0.0) || !std::isfinite(gamma))
+        if (!(gamma > 0.0) || !keel::is_finite(gamma))
             throw Error("cwt: gamma must be positive and finite",
                         0, 0, "cwt", "", "numkit:cwt:invalidGamma");
-        if (!(timeBandwidth > gamma) || timeBandwidth > 40.0 * gamma || !std::isfinite(timeBandwidth))
+        if (!(timeBandwidth > gamma) || timeBandwidth > 40.0 * gamma || !keel::is_finite(timeBandwidth))
             throw Error("cwt: TimeBandwidth must be in (gamma, 40*gamma]",
                         0, 0, "cwt", "", "numkit:cwt:invalidTimeBandwidth");
     }
@@ -142,7 +142,7 @@ keel::wavelet::CwtWavelet cwt_argcheck(const Value &x, keel::StringRef wname, ke
                         0, 0, "cwt", "", "numkit:cwt:invalidFrequencyLimits");
         const keel::f64 fmin = freqLimits.elemAsDouble(0);
         const keel::f64 fmax = freqLimits.elemAsDouble(1);
-        if (!(fmin > 0.0) || !(fmax > fmin) || !std::isfinite(fmin) || !std::isfinite(fmax))
+        if (!(fmin > 0.0) || !(fmax > fmin) || !keel::is_finite(fmin) || !keel::is_finite(fmax))
             throw Error("cwt: FrequencyLimits must satisfy 0 < fmin < fmax",
                         0, 0, "cwt", "", "numkit:cwt:invalidFrequencyLimits");
     }
@@ -244,20 +244,18 @@ CentfrqResult centfrqGrid(keel::StringRef wname, keel::i32 iter,
     }
 
     Value xval = Value::matrix(1, r.xval.size(), ValueType::DOUBLE, mr);
-    if (!r.xval.empty()) std::memcpy(xval.doubleDataMut(), r.xval.data(), r.xval.size() * sizeof(keel::f64));
+    if (!r.xval.empty()) keel::copy_n(xval.doubleDataMut(), r.xval.data(), r.xval.size());
 
     Value recfreq = Value::matrix(0, 0, ValueType::DOUBLE, mr);
     if (withRecfreq) {
         if (r.is_complex) {
             recfreq = Value::matrix(1, r.recfreq_cplx.size(), ValueType::COMPLEX, mr);
             if (!r.recfreq_cplx.empty())
-                std::memcpy(recfreq.complexDataMut(), r.recfreq_cplx.data(),
-                            r.recfreq_cplx.size() * sizeof(keel::c64));
+                keel::copy_n(recfreq.complexDataMut(), r.recfreq_cplx.data(), r.recfreq_cplx.size());
         } else {
             recfreq = Value::matrix(1, r.recfreq_real.size(), ValueType::DOUBLE, mr);
             if (!r.recfreq_real.empty())
-                std::memcpy(recfreq.doubleDataMut(), r.recfreq_real.data(),
-                            r.recfreq_real.size() * sizeof(keel::f64));
+                keel::copy_n(recfreq.doubleDataMut(), r.recfreq_real.data(), r.recfreq_real.size());
         }
     }
     return {r.freq, std::move(xval), std::move(recfreq)};
@@ -304,8 +302,7 @@ CwtResult cwt(const Value &x,
     const bool outSingle = (x.type() == ValueType::SINGLE);
     Value cfs = Value::matrix(r.num_scales, r.num_samples, ValueType::COMPLEX, mr);
     if (!r.cfs_colmajor.empty())
-        std::memcpy(cfs.complexDataMut(), r.cfs_colmajor.data(),
-                    r.cfs_colmajor.size() * sizeof(keel::c64));
+        keel::copy_n(cfs.complexDataMut(), r.cfs_colmajor.data(), r.cfs_colmajor.size());
 
     Value fOut = Value::matrix(r.num_scales, 1,
                                outSingle ? ValueType::SINGLE : ValueType::DOUBLE, mr);

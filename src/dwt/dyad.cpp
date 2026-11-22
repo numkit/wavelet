@@ -14,7 +14,6 @@
 // dyadup / wmaxlev builtins (CallContext wrappers) live in dwt/dyad_reg.cpp.
 #include <numkit/value/value.hpp>
 #include <numkit/value/error.hpp>
-#include <cmath>
 
 namespace numkit::wavelet {
 

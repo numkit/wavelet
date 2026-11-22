@@ -2,6 +2,7 @@
 // 2-D multilevel DWT — wavedec2 / waverec2 / appcoef2 / detcoef2, delegated to keel::wavelet.
 
 #include <keel/array.h>
+#include <keel/algo.h>
 #include <keel/core.h>
 #include <keel/format.h>
 #include <keel/memory.h>
@@ -13,7 +14,6 @@
 #include <numkit/wavelet/filter/wfilters.hpp>
 #include <numkit/wavelet/internal/type_gates.hpp>
 
-#include <cstring>
 
 namespace numkit::wavelet {
 
@@ -96,7 +96,7 @@ Wavedec2Result wavedec2(const Value &X, keel::i32 n, keel::StringRef wname,
         sd[R + i] = keel::as<keel::f64>(r.s_cols[i]);
     }
     Value c = Value::matrix(1, r.c.size(), ValueType::DOUBLE, mr);
-    if (!r.c.empty()) std::memcpy(c.doubleDataMut(), r.c.data(), r.c.size() * sizeof(keel::f64));
+    if (!r.c.empty()) keel::copy_n(c.doubleDataMut(), r.c.data(), r.c.size());
     return { std::move(c), std::move(S) };
 }
 
@@ -121,7 +121,7 @@ static Value appcoef2_impl(const Value &C, const Value &S,
 
     auto r = keel::wavelet::appcoef2(cv, sr, sc, fb, keel::as<keel::i32>(level), mr);
     Value m = Value::matrix(r.rows, r.cols, ValueType::DOUBLE, mr);
-    if (!r.out.empty()) std::memcpy(m.doubleDataMut(), r.out.data(), r.out.size() * sizeof(keel::f64));
+    if (!r.out.empty()) keel::copy_n(m.doubleDataMut(), r.out.data(), r.out.size());
     return m;
 }
 
@@ -173,7 +173,7 @@ Value detcoef2(keel::StringRef type, const Value &C, const Value &S,
             keel::ArrayRef<keel::f64>(C.doubleData(), C.numel()),
             sr, sc, keel::as<keel::i32>(level), mr);
         Value out = Value::matrix(r.rows, r.cols, ValueType::DOUBLE, mr);
-        if (!r.out.empty()) std::memcpy(out.doubleDataMut(), r.out.data(), r.out.size() * sizeof(keel::f64));
+        if (!r.out.empty()) keel::copy_n(out.doubleDataMut(), r.out.data(), r.out.size());
         return out;
     }
 

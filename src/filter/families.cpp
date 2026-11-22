@@ -41,7 +41,6 @@
 #include <numkit/value/argcheck.hpp>
 
 #include <algorithm>
-#include <cmath>
 
 namespace numkit::wavelet {
 

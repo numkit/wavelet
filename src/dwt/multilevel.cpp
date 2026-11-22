@@ -12,6 +12,7 @@
 // the cumulative offsets implied by L.
 
 #include <keel/array.h>
+#include <keel/math.h>
 #include <keel/core.h>
 #include <keel/format.h>
 #include <keel/memory.h>
@@ -30,8 +31,6 @@
 #include <numkit/value/error.hpp>
 
 #include <algorithm>
-#include <cmath>
-#include <cstring>
 #include <utility>
 
 namespace numkit::wavelet {
@@ -282,7 +281,7 @@ keel::usize parse_wp_node(const Value &node, const char *fn)
                     0, 0, fn, "", keel::format("numkit:{}:invalidNode", fn));
     if (node.numel() == 1) {
         const keel::f64 v = node.elemAsDouble(0);
-        if (!std::isfinite(v) || v < 0.0 || std::floor(v) != v)
+        if (!keel::is_finite(v) || v < 0.0 || keel::floor(v) != v)
             throw Error(keel::format("{}: NODE index must be a non-negative integer", fn),
                         0, 0, fn, "", keel::format("numkit:{}:invalidNode", fn));
         return keel::as<keel::usize>(v);
@@ -290,8 +289,8 @@ keel::usize parse_wp_node(const Value &node, const char *fn)
     if (node.numel() == 2) {
         const keel::f64 d = node.elemAsDouble(0);
         const keel::f64 p = node.elemAsDouble(1);
-        if (!std::isfinite(d) || d < 0.0 || std::floor(d) != d || d > 20.0 ||
-            !std::isfinite(p) || p < 0.0 || std::floor(p) != p) {
+        if (!keel::is_finite(d) || d < 0.0 || keel::floor(d) != d || d > 20.0 ||
+            !keel::is_finite(p) || p < 0.0 || keel::floor(p) != p) {
             throw Error(keel::format("{}: [depth, pos] must be non-negative integers", fn),
                         0, 0, fn, "", keel::format("numkit:{}:invalidNode", fn));
         }

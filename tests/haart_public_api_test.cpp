@@ -5,6 +5,7 @@
 // forward/inverse pair is exercised via round-trip reconstruction.
 
 #include <keel/core.h>
+#include <keel/math.h>
 #include <numkit/wavelet/dwt/haart.hpp>
 #include <numkit/wavelet/dwt/ihaart.hpp>
 #include <numkit/core/standard_engine.hpp>
@@ -28,10 +29,10 @@ TEST(HaartPublicApi, Level1)
     Value x = hv(e, "[1 2 3 4 5 6 7 8]", "x");
     wavelet::HaartResult r = wavelet::haart(x, 1); // level 1, mr defaulted
     ASSERT_EQ(r.a.numel(), 4u);
-    EXPECT_NEAR(r.a.doubleData()[0], (1.0 + 2.0) / std::sqrt(2.0), 1e-12);
+    EXPECT_NEAR(r.a.doubleData()[0], (1.0 + 2.0) / keel::sqrt(2.0), 1e-12);
     EXPECT_FALSE(r.d.isCell()); // level 1 -> plain matrix
     ASSERT_EQ(r.d.numel(), 4u);
-    EXPECT_NEAR(r.d.doubleData()[0], (2.0 - 1.0) / std::sqrt(2.0), 1e-12);
+    EXPECT_NEAR(r.d.doubleData()[0], (2.0 - 1.0) / keel::sqrt(2.0), 1e-12);
     // round-trip: ihaart(a, d) recovers x
     Value xr = wavelet::ihaart(r.a, r.d, 0, false, e.allocator());
     ASSERT_EQ(xr.numel(), 8u);

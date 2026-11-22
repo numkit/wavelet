@@ -28,7 +28,6 @@
 #include <numkit/value/error.hpp>
 
 #include <algorithm>
-#include <cmath>
 
 namespace numkit::wavelet {
 
@@ -168,7 +167,7 @@ Value wthresh(const Value &X, keel::StringRef sorh, const Value &T,
         } else {
             // soft: sign(x) * max(|x| - T, 0)
             const keel::f64 mag = ax - T_i;
-            r = (mag > 0.0) ? std::copysign(mag, x) : 0.0;
+            r = (mag > 0.0) ? keel::copysign(mag, x) : 0.0;
         }
         if (yf) yf[i] = keel::as<keel::f32>(r);
         else    yd[i] = r;
@@ -242,7 +241,7 @@ DdencmpResult ddencmp(keel::StringRef opt, keel::StringRef type,
 
     DdencmpResult r;
     if (o == "den") {
-        r.thr = Value::scalar(std::sqrt(2.0 * std::log(n)) * sigma, mr);
+        r.thr = Value::scalar(keel::sqrt(2.0 * keel::log(n)) * sigma, mr);
         r.sorh = Value::fromString("s", mr);
     } else { // "cmp"
         r.thr = Value::scalar(med, mr);

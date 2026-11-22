@@ -2,6 +2,7 @@
 // 2-D separable wavelet transform — Value adapter delegating to keel::wavelet::{dwt2, idwt2}.
 
 #include <keel/array.h>
+#include <keel/algo.h>
 #include <keel/complex.h>
 #include <keel/core.h>
 #include <keel/format.h>
@@ -14,7 +15,6 @@
 #include <numkit/wavelet/filter/wfilters.hpp>
 #include <numkit/wavelet/internal/type_gates.hpp>
 
-#include <cstring>
 
 namespace numkit::wavelet {
 
@@ -58,7 +58,7 @@ Value packMatrix(const keel::Array<keel::f64> &buf, keel::usize rows, keel::usiz
                  keel::Allocator *mr)
 {
     Value m = Value::matrix(rows, cols, ValueType::DOUBLE, mr);
-    if (!buf.empty()) std::memcpy(m.doubleDataMut(), buf.data(), buf.size() * sizeof(keel::f64));
+    if (!buf.empty()) keel::copy_n(m.doubleDataMut(), buf.data(), buf.size());
     return m;
 }
 

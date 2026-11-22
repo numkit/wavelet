@@ -9,6 +9,7 @@
 // Phase 2b compute/register-split pilot — see project_layering_refactor memory.
 
 #include <keel/core.h>
+#include <keel/math.h>
 #include <keel/format.h>
 #include <keel/ref.h>
 #include <keel/string.h>
@@ -19,7 +20,6 @@
 #include <numkit/sys/plugin.hpp>   // CallContext, ctx.engine->resource()
 #include <numkit/value/argcheck.hpp>
 #include <numkit/value/error.hpp>
-#include <cmath>
 
 namespace numkit::wavelet {
 namespace detail {
@@ -36,7 +36,7 @@ void haart_reg(keel::ArrayRef<Value> args, keel::usize nargout,
         if (!(lvld > 0.0))
             throw Error("haart: expected LEVEL to be positive",
                         0, 0, "haart", "", "numkit:haart:level");
-        if (lvld != std::floor(lvld))
+        if (lvld != keel::floor(lvld))
             throw Error("haart: expected LEVEL to be an integer",
                         0, 0, "haart", "", "numkit:haart:level");
         level = keel::as<keel::i32>(lvld);
@@ -85,7 +85,7 @@ void ihaart_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
                 throw Error("ihaart: expected input number 3, LEVEL, to be a "
                             "scalar with value >= 0",
                             0, 0, "ihaart", "", "numkit:ihaart:level");
-            if (lvld != std::floor(lvld))
+            if (lvld != keel::floor(lvld))
                 throw Error("ihaart: expected LEVEL to be an integer",
                             0, 0, "ihaart", "", "numkit:ihaart:level");
             level = keel::as<keel::i32>(lvld);

@@ -41,7 +41,6 @@
 #include <numkit/value/value.hpp>
 #include <numkit/value/error.hpp>
 
-#include <cmath>
 
 namespace numkit::wavelet {
 

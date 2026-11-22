@@ -2,6 +2,7 @@
 // 1-D single-band reconstruction — wrcoef, delegated to keel::wavelet::wrcoef.
 
 #include <keel/array.h>
+#include <keel/algo.h>
 #include <keel/core.h>
 #include <keel/format.h>
 #include <keel/memory.h>
@@ -14,7 +15,6 @@
 #include <numkit/wavelet/dwt/multilevel.hpp>
 #include <numkit/wavelet/filter/wfilters.hpp>
 
-#include <cstring>
 
 namespace numkit::wavelet {
 
@@ -91,7 +91,7 @@ Value wrcoef_reconstruct_impl(keel::StringRef tl, const Value &c,
 
     auto rec = keel::wavelet::wrcoef(tl == "d", cv, lv, Lo_R, Hi_R, keel::as<keel::i32>(n), mr);
     Value r = Value::matrix(1, rec.size(), ValueType::DOUBLE, mr);
-    if (!rec.empty()) std::memcpy(r.doubleDataMut(), rec.data(), rec.size() * sizeof(keel::f64));
+    if (!rec.empty()) keel::copy_n(r.doubleDataMut(), rec.data(), rec.size());
     return r;
 }
 

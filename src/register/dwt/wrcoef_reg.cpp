@@ -8,6 +8,7 @@
 // Phase 2b compute/register split — see project_layering_refactor memory.
 
 #include <keel/array.h>
+#include <keel/math.h>
 #include <keel/core.h>
 #include <keel/ref.h>
 #include <keel/string.h>
@@ -16,7 +17,6 @@
 #include <numkit/sys/plugin.hpp>   // CallContext, ctx.engine->resource()
 #include <numkit/value/argcheck.hpp>
 #include <numkit/value/error.hpp>
-#include <cmath>
 
 namespace numkit::wavelet {
 namespace detail {
@@ -34,7 +34,7 @@ void wrcoef_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
     auto parse_level = [](const Value &v) -> keel::i32 {
         if (v.isEmpty()) return -1;
         const keel::f64 nd = v.toScalar();
-        if (nd < 0.0 || nd != std::floor(nd))
+        if (nd < 0.0 || nd != keel::floor(nd))
             throw Error("wrcoef: level n must be a non-negative integer",
                         0, 0, "wrcoef", "", "numkit:wrcoef:level");
         return keel::as<keel::i32>(nd);
