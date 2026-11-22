@@ -144,7 +144,8 @@ Value detcoef2(keel::StringRef type, const Value &C, const Value &S,
     const keel::i32 N = keel::as<keel::i32>(S.dims().rows()) - 2;
     const keel::usize R = S.dims().rows();
 
-    auto sRow = [&](keel::usize i) -> std::pair<keel::usize, keel::usize> {
+    struct Dims2D { keel::usize r, c; };
+    auto sRow = [&](keel::usize i) -> Dims2D {
         return {keel::as<keel::usize>(S.elemAsDouble(i)),
                 keel::as<keel::usize>(S.elemAsDouble(R + i))};
     };

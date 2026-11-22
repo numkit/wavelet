@@ -28,6 +28,7 @@
 //     returns matrix (columns reconstructed independently).
 
 #include <keel/array.h>
+#include <keel/algo.h>
 #include <keel/core.h>
 #include <keel/format.h>
 #include <keel/memory.h>
@@ -239,14 +240,14 @@ Value ihaart(const Value &aV, const Value &dV, keel::i32 level, bool integer,
                               aSingle ? ValueType::SINGLE : vt, mr);
     if (aIsComplex) {
         keel::c64 *p = out.complexDataMut();
-        std::copy(curC.begin(), curC.end(), p);
+        keel::copy_n(p, curC.data(), curC.size());
     } else if (aSingle) {
         keel::f32 *p = out.singleDataMut();
         for (keel::usize i = 0; i < curR.size(); ++i)
             p[i] = keel::as<keel::f32>(curR[i]);
     } else {
         keel::f64 *p = out.doubleDataMut();
-        std::copy(curR.begin(), curR.end(), p);
+        keel::copy_n(p, curR.data(), curR.size());
     }
     return out;
 }
