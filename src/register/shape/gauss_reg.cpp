@@ -19,7 +19,6 @@
 #include <numkit/value/argcheck.hpp>
 #include <numkit/value/error.hpp>
 #include <cerrno>
-#include <climits>
 #include <cstdlib>
 #include <utility>
 
@@ -44,7 +43,7 @@ static keel::i32 parseGaussOrder(const Value &arg, const char *prefix, const cha
         errno = 0;
         const keel::i64 v = std::strtol(numStart, &numEnd, 10);
         if (numEnd == numStart || *numEnd != '\0' || errno == ERANGE ||
-            v < INT_MIN || v > INT_MAX) {
+            v < keel::Limits<keel::i32>::kMin || v > keel::Limits<keel::i32>::kMax) {
             throw Error(keel::format("{}: bad wname '{}' (cannot parse order N)", fn, s),
                          0, 0, fn, "", "numkit:wname");
         }
