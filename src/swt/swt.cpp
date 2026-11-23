@@ -24,6 +24,7 @@
 //   row n+1  : approximation at level n
 
 #include <keel/array.h>
+#include <keel/algo.h>
 #include <keel/core.h>
 #include <keel/format.h>
 #include <keel/memory.h>
@@ -40,7 +41,6 @@
 #include <numkit/value/value.hpp>
 #include <numkit/value/error.hpp>
 
-#include <algorithm>
 
 namespace numkit::wavelet {
 
@@ -107,8 +107,8 @@ keel::Pair<Value, Value> swtAD(const Value &x, keel::i32 n,
     Value swd = Value::matrix(res.levels, res.length, ValueType::DOUBLE, mr);
     const keel::usize total = res.levels * res.length;
     if (total > 0) {
-        std::copy(res.swa_colmajor.begin(), res.swa_colmajor.end(), swa.doubleDataMut());
-        std::copy(res.swd_colmajor.begin(), res.swd_colmajor.end(), swd.doubleDataMut());
+        keel::copy(res.swa_colmajor.begin(), res.swa_colmajor.end(), swa.doubleDataMut());
+        keel::copy(res.swd_colmajor.begin(), res.swd_colmajor.end(), swd.doubleDataMut());
     }
     return {keel::move(swa), keel::move(swd)};
 }
@@ -363,7 +363,7 @@ Value modwt(const Value &x, keel::i32 n, keel::StringRef wname, keel::Allocator 
     auto w = keel::wavelet::modwt(keel::ArrayRef<keel::f64>(xv.data(), N),
                                   keel::as<keel::i32>(n), kfb, mr);
     Value out = Value::matrix(keel::as<keel::usize>(n + 1), N, ValueType::DOUBLE, mr);
-    if (!w.empty()) std::copy(w.begin(), w.end(), out.doubleDataMut());
+    if (!w.empty()) keel::copy(w.begin(), w.end(), out.doubleDataMut());
     return out;
 }
 

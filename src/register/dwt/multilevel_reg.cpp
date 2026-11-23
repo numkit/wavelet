@@ -20,7 +20,6 @@
 #include <numkit/value/argcheck.hpp>
 #include <numkit/value/error.hpp>
 
-#include <algorithm>
 
 namespace numkit::wavelet {
 namespace detail {
@@ -170,7 +169,7 @@ void detcoef_reg(keel::ArrayRef<Value> args, keel::usize nargout, keel::MutArray
         if (s != "cells")
             throw Error(keel::format("detcoef: unknown option '{}'", orig),
                         0, 0, "detcoef", "", "numkit:detcoef:opt");
-        Value cellOut = Value::cell(1, keel::as<keel::usize>(std::max<keel::i64>(0, maxLev)));
+        Value cellOut = Value::cell(1, keel::as<keel::usize>(keel::max<keel::i64>(0, maxLev)));
         for (keel::i32 lev = 1; lev <= maxLev; ++lev)
             cellOut.cellAt(keel::as<keel::usize>(lev - 1)) =
                 detcoef(args[0], args[1], lev, mr);

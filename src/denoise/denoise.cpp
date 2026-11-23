@@ -6,6 +6,7 @@
 // machinery here, just thresholding and a robust σ estimate.
 
 #include <keel/array.h>
+#include <keel/algo.h>
 #include <keel/core.h>
 #include <keel/format.h>
 #include <keel/memory.h>
@@ -27,7 +28,6 @@
 #include <numkit/value/value.hpp>
 #include <numkit/value/error.hpp>
 
-#include <algorithm>
 
 namespace numkit::wavelet {
 
@@ -36,7 +36,7 @@ namespace {
 keel::f64 median_abs(keel::Array<keel::f64> v) {
     if (v.empty()) return 0.0;
     for (auto &x : v) x = keel::abs(x);
-    std::sort(v.begin(), v.end());
+    keel::sort(v.begin(), v.end());
     const keel::usize n = v.size();
     return (n % 2 == 1)
                ? v[n / 2]
@@ -209,7 +209,7 @@ Value wdenoise(const Value &x, keel::i32 level, keel::StringRef wname, keel::All
     auto rec = keel::wavelet::denoise_visushrink(keel::ArrayRef<keel::f64>(xv.data(), xv.size()),
                                                  keel::as<keel::i32>(level), kfb, mr);
     Value out = Value::matrix(1, rec.size(), ValueType::DOUBLE, mr);
-    if (!rec.empty()) std::copy(rec.begin(), rec.end(), out.doubleDataMut());
+    if (!rec.empty()) keel::copy(rec.begin(), rec.end(), out.doubleDataMut());
     return out;
 }
 

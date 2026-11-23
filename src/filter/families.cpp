@@ -25,6 +25,7 @@
 // rest of MATLAB's documented output.
 
 #include <keel/array.h>
+#include <keel/algo.h>
 #include <keel/core.h>
 #include <keel/format.h>
 #include <keel/memory.h>
@@ -40,7 +41,6 @@
 #include <numkit/value/error.hpp>
 #include <numkit/value/argcheck.hpp>
 
-#include <algorithm>
 
 namespace numkit::wavelet {
 
@@ -51,7 +51,7 @@ const keel::f64 INV_SQRT2 = 0.70710678118654752440;
 Value rowVec(keel::Allocator *mr, keel::ArrayRef<keel::f64> v)
 {
     Value r = Value::matrix(1, v.size(), ValueType::DOUBLE, mr);
-    if (!v.empty()) std::copy(v.begin(), v.end(), r.doubleDataMut());
+    if (!v.empty()) keel::copy(v.begin(), v.end(), r.doubleDataMut());
     return r;
 }
 

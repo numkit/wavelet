@@ -12,6 +12,7 @@
 // the cumulative offsets implied by L.
 
 #include <keel/array.h>
+#include <keel/algo.h>
 #include <keel/math.h>
 #include <keel/core.h>
 #include <keel/format.h>
@@ -30,7 +31,6 @@
 #include <numkit/value/value.hpp>
 #include <numkit/value/error.hpp>
 
-#include <algorithm>
 
 namespace numkit::wavelet {
 
@@ -39,7 +39,7 @@ namespace {
 Value rowFromVec(keel::ArrayRef<keel::f64> v,
                  keel::Allocator *mr) {
     Value r = Value::matrix(1, v.size(), ValueType::DOUBLE, mr);
-    if (!v.empty()) std::copy(v.begin(), v.end(), r.doubleDataMut());
+    if (!v.empty()) keel::copy(v.begin(), v.end(), r.doubleDataMut());
     return r;
 }
 
@@ -325,8 +325,8 @@ Value wpdec(const Value &x, keel::i32 n, keel::StringRef wname,
     Value entropy = Value::matrix(1, totalNodes, ValueType::DOUBLE, mr);
     keel::f64 *leafData = isLeaf.doubleDataMut();
     keel::f64 *entData = entropy.doubleDataMut();
-    std::fill(leafData, leafData + totalNodes, 0.0);
-    std::fill(entData, entData + totalNodes, 0.0);
+    keel::fill(leafData, leafData + totalNodes, 0.0);
+    keel::fill(entData, entData + totalNodes, 0.0);
 
     // Orient node coefficients to match input orientation (row or col).
     auto orientLikeX = [&](const Value &v) -> Value {
@@ -442,8 +442,8 @@ WpspltResult wpsplt(const Value &tree, const Value &node,
     Value entropy = Value::matrix(1, newTotal, ValueType::DOUBLE, mr);
     keel::f64 *leafData = isLeaf.doubleDataMut();
     keel::f64 *entData = entropy.doubleDataMut();
-    std::fill(leafData, leafData + newTotal, 0.0);
-    std::fill(entData, entData + newTotal, 0.0);
+    keel::fill(leafData, leafData + newTotal, 0.0);
+    keel::fill(entData, entData + newTotal, 0.0);
 
     for (keel::usize k = 0; k < oldNodes.numel(); ++k) {
         nodes.cellAt(k) = oldNodes.cellAt(k);
@@ -555,7 +555,7 @@ BesttreeResult besttree(const Value &tree, keel::Allocator *mr)
 
     Value entCol = Value::matrix(activeEnts.size(), 1, ValueType::DOUBLE, mr);
     if (!activeEnts.empty())
-        std::copy(activeEnts.begin(), activeEnts.end(), entCol.doubleDataMut());
+        keel::copy(activeEnts.begin(), activeEnts.end(), entCol.doubleDataMut());
 
     return {keel::move(outTree), keel::move(entCol)};
 }

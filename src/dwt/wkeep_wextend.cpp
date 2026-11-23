@@ -11,6 +11,7 @@
 // n → no extension, anything else → both.
 
 #include <keel/array.h>
+#include <keel/algo.h>
 #include <keel/math.h>
 #include <keel/core.h>
 #include <keel/format.h>
@@ -29,7 +30,6 @@
 #include <numkit/value/value.hpp>
 #include <numkit/value/error.hpp>
 
-#include <algorithm>
 
 namespace numkit::wavelet {
 
@@ -525,7 +525,7 @@ Value wextend(const Value &type, keel::StringRef modeRaw, const Value &x,
             outShape(col, outN, outRows, outCols);
             y = Value::complexMatrix(outRows, outCols, mr);
             if (x.isSingleComplex()) y.setSingleComplex(true);
-            std::copy(ext.begin(), ext.end(), y.complexDataMut());
+            keel::copy(ext.begin(), ext.end(), y.complexDataMut());
             return y;
         }
         keel::Array<keel::f64> xv(N);

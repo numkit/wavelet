@@ -4,6 +4,7 @@
 // keel::wavelet::lookup_filters.
 
 #include <keel/format.h>
+#include <keel/algo.h>
 #include <keel/memory.h>
 #include <keel/ref.h>
 #include <keel/wavelet.h>
@@ -13,7 +14,6 @@
 #include <numkit/value/error.hpp>
 #include <numkit/value/value.hpp>
 
-#include <algorithm>
 
 namespace numkit::wavelet {
 
@@ -21,7 +21,7 @@ namespace {
 
 Value vecToRow(keel::ArrayRef<keel::f64> v, keel::Allocator *mr) {
     Value r = Value::matrix(1, v.size(), ValueType::DOUBLE, mr);
-    if (!v.empty()) std::copy(v.begin(), v.end(), r.doubleDataMut());
+    if (!v.empty()) keel::copy(v.begin(), v.end(), r.doubleDataMut());
     return r;
 }
 
