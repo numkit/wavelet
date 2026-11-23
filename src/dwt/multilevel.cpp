@@ -31,7 +31,6 @@
 #include <numkit/value/error.hpp>
 
 #include <algorithm>
-#include <utility>
 
 namespace numkit::wavelet {
 
@@ -135,7 +134,7 @@ keel::Array<keel::usize> readL(const Value &L, keel::Allocator *mr)
 
 } // anonymous
 
-std::pair<Value, Value>
+keel::Pair<Value, Value>
 wavedec(const Value &x, keel::i32 n, keel::StringRef wname,
         keel::Allocator *mr)
 {
@@ -147,7 +146,7 @@ wavedec(const Value &x, keel::i32 n, keel::StringRef wname,
     Value L = Value::matrix(1, r.l.size(), ValueType::DOUBLE, mr);
     keel::f64 *ld = L.doubleDataMut();
     for (keel::usize i = 0; i < r.l.size(); ++i) ld[i] = keel::as<keel::f64>(r.l[i]);
-    return {rowFromVec(r.c, mr), std::move(L)};
+    return {rowFromVec(r.c, mr), keel::move(L)};
 }
 
 Value waverec(const Value &C, const Value &L, keel::StringRef wname,
@@ -360,9 +359,9 @@ Value wpdec(const Value &x, keel::i32 n, keel::StringRef wname,
     t.setFieldAll("entName", Value::fromString(entName, mr));
     t.setFieldAll("entPar", Value::scalar(entPar, mr));
     t.setFieldAll("isColumn", Value::logicalScalar(isCol, mr));
-    t.setFieldAll("nodes", std::move(nodes));
-    t.setFieldAll("isLeaf", std::move(isLeaf));
-    t.setFieldAll("entropy", std::move(entropy));
+    t.setFieldAll("nodes", keel::move(nodes));
+    t.setFieldAll("isLeaf", keel::move(isLeaf));
+    t.setFieldAll("entropy", keel::move(entropy));
     return t;
 }
 
@@ -403,7 +402,7 @@ Value wprec(const Value &tree, keel::Allocator *mr)
             Value r = idwt(rec[left], rec[right], wname, targetLen, mr);
             if (isCol && r.dims().rows() == 1 && r.dims().cols() > 1)
                 r = r.reshape(r.dims().cols(), 1, mr);
-            rec[k] = std::move(r);
+            rec[k] = keel::move(r);
         }
     }
     return rec[0];
@@ -472,11 +471,11 @@ WpspltResult wpsplt(const Value &tree, const Value &node,
     outTree.setFieldAll("entName", Value::fromString(entName, mr));
     outTree.setFieldAll("entPar", Value::scalar(entPar, mr));
     outTree.setFieldAll("isColumn", Value::logicalScalar(isCol, mr));
-    outTree.setFieldAll("nodes", std::move(nodes));
-    outTree.setFieldAll("isLeaf", std::move(isLeaf));
-    outTree.setFieldAll("entropy", std::move(entropy));
+    outTree.setFieldAll("nodes", keel::move(nodes));
+    outTree.setFieldAll("isLeaf", keel::move(isLeaf));
+    outTree.setFieldAll("entropy", keel::move(entropy));
 
-    return {std::move(outTree), std::move(cA), std::move(cD)};
+    return {keel::move(outTree), keel::move(cA), keel::move(cD)};
 }
 
 BesttreeResult besttree(const Value &tree, keel::Allocator *mr)
@@ -550,15 +549,15 @@ BesttreeResult besttree(const Value &tree, keel::Allocator *mr)
     outTree.setFieldAll("entName", tree.field("entName"));
     outTree.setFieldAll("entPar", tree.field("entPar"));
     outTree.setFieldAll("isColumn", tree.field("isColumn"));
-    outTree.setFieldAll("nodes", std::move(nodes));
-    outTree.setFieldAll("isLeaf", std::move(isLeaf));
-    outTree.setFieldAll("entropy", std::move(entropy));
+    outTree.setFieldAll("nodes", keel::move(nodes));
+    outTree.setFieldAll("isLeaf", keel::move(isLeaf));
+    outTree.setFieldAll("entropy", keel::move(entropy));
 
     Value entCol = Value::matrix(activeEnts.size(), 1, ValueType::DOUBLE, mr);
     if (!activeEnts.empty())
         std::copy(activeEnts.begin(), activeEnts.end(), entCol.doubleDataMut());
 
-    return {std::move(outTree), std::move(entCol)};
+    return {keel::move(outTree), keel::move(entCol)};
 }
 
 } // namespace numkit::wavelet

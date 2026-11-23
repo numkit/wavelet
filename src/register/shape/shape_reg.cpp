@@ -19,14 +19,13 @@
 #include <numkit/sys/plugin.hpp>   // CallContext, ctx.engine->resource()
 #include <numkit/value/argcheck.hpp>
 #include <numkit/value/error.hpp>
-#include <tuple>
-#include <utility>
+#include <keel/tuple.h>
 
 namespace numkit::wavelet {
 namespace detail {
 
 static void shape_grid_reg(const char *fn,
-                           std::tuple<Value, Value> (*impl)(keel::f64, keel::f64, keel::usize, keel::Allocator *),
+                           keel::Tuple<Value, Value> (*impl)(keel::f64, keel::f64, keel::usize, keel::Allocator *),
                            keel::ArrayRef<Value> args, keel::usize nargout,
                            keel::MutArrayRef<Value> outs, CallContext &ctx)
 {
@@ -39,8 +38,8 @@ static void shape_grid_reg(const char *fn,
                     0, 0, fn, "", "numkit:wav:N");
     const keel::usize N = keel::as<keel::usize>(Nd);
     auto [psi, x] = impl(lb, ub, N, ctx.engine->allocator());
-    outs[0] = std::move(psi);
-    if (nargout > 1) outs[1] = std::move(x);
+    outs[0] = keel::move(psi);
+    if (nargout > 1) outs[1] = keel::move(x);
 }
 
 void mexihat_reg(keel::ArrayRef<Value> args, keel::usize nargout,
@@ -73,8 +72,8 @@ void shanwavf_reg(keel::ArrayRef<Value> args, keel::usize nargout,
     const keel::f64 fb = args[3].toScalar();
     const keel::f64 fc = args[4].toScalar();
     auto [psi, x] = shanwavf(lb, ub, N, fb, fc, ctx.engine->allocator());
-    outs[0] = std::move(psi);
-    if (nargout > 1) outs[1] = std::move(x);
+    outs[0] = keel::move(psi);
+    if (nargout > 1) outs[1] = keel::move(x);
 }
 
 void cmorwavf_reg(keel::ArrayRef<Value> args, keel::usize nargout,
@@ -89,8 +88,8 @@ void cmorwavf_reg(keel::ArrayRef<Value> args, keel::usize nargout,
     const keel::f64 fb = (args.size() >= 4) ? args[3].toScalar() : 1.0;
     const keel::f64 fc = (args.size() >= 5) ? args[4].toScalar() : 1.0;
     auto [psi, x] = cmorwavf(lb, ub, N, fb, fc, ctx.engine->allocator());
-    outs[0] = std::move(psi);
-    if (nargout > 1) outs[1] = std::move(x);
+    outs[0] = keel::move(psi);
+    if (nargout > 1) outs[1] = keel::move(x);
 }
 
 void fbspwavf_reg(keel::ArrayRef<Value> args, keel::usize nargout,
@@ -106,8 +105,8 @@ void fbspwavf_reg(keel::ArrayRef<Value> args, keel::usize nargout,
     const keel::f64 fb = args[4].toScalar();
     const keel::f64 fc = args[5].toScalar();
     auto [psi, x] = fbspwavf(lb, ub, N, m, fb, fc, ctx.engine->allocator());
-    outs[0] = std::move(psi);
-    if (nargout > 1) outs[1] = std::move(x);
+    outs[0] = keel::move(psi);
+    if (nargout > 1) outs[1] = keel::move(x);
 }
 
 void centfrq_reg(keel::ArrayRef<Value> args, keel::usize nargout,
@@ -133,8 +132,8 @@ void centfrq_reg(keel::ArrayRef<Value> args, keel::usize nargout,
     }
     auto res = centfrqGrid(wname, iter, withRecfreq, ctx.engine->allocator());
     outs[0] = Value::scalar(res.freq, ctx.engine->allocator());
-    if (nargout > 1) outs[1] = std::move(res.xval);
-    if (nargout > 2) outs[2] = std::move(res.recfreq);
+    if (nargout > 1) outs[1] = keel::move(res.xval);
+    if (nargout > 2) outs[2] = keel::move(res.recfreq);
 }
 
 void scal2frq_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,
@@ -176,7 +175,7 @@ void cwt_reg(keel::ArrayRef<Value> args, keel::usize nargout,
         const keel::String raw = args[idx].toString();
         keel::String s = lowerStr(raw);
         if (s == "morse" || s == "amor" || s == "bump") {
-            wname = std::move(s);
+            wname = keel::move(s);
             ++idx;
         }
     }
@@ -225,9 +224,9 @@ void cwt_reg(keel::ArrayRef<Value> args, keel::usize nargout,
 
     auto res = cwt(args[0], wname, fs, voicesPerOctave, timeBandwidth,
                    gamma, extendSignal, freqLimits, ctx.engine->allocator());
-    outs[0] = std::move(res.cfs);
-    if (nargout > 1) outs[1] = std::move(res.f);
-    if (nargout > 2) outs[2] = std::move(res.coi);
+    outs[0] = keel::move(res.cfs);
+    if (nargout > 1) outs[1] = keel::move(res.f);
+    if (nargout > 2) outs[2] = keel::move(res.coi);
 }
 
 } // namespace detail

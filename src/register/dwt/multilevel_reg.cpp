@@ -21,7 +21,6 @@
 #include <numkit/value/error.hpp>
 
 #include <algorithm>
-#include <utility>
 
 namespace numkit::wavelet {
 namespace detail {
@@ -41,8 +40,8 @@ void wavedec_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/, keel::MutA
     auto [C, L] = wavedec(args[0], argcheck::expectedPositiveInteger(
         argcheck::expectedReal(args[1], 2, "level", "wavedec"), 2, "level", "wavedec"),
                           argString(args[2]), mr);
-    if (outs.size() >= 1) outs[0] = std::move(C);
-    if (outs.size() >= 2) outs[1] = std::move(L);
+    if (outs.size() >= 1) outs[0] = keel::move(C);
+    if (outs.size() >= 2) outs[1] = keel::move(L);
 }
 
 void waverec_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/, keel::MutArrayRef<Value> outs,
@@ -157,7 +156,7 @@ void detcoef_reg(keel::ArrayRef<Value> args, keel::usize nargout, keel::MutArray
             const keel::i32 lev = keel::as<keel::i32>(levArg.elemAsDouble(i));
             cellOut.cellAt(i) = detcoef(args[0], args[1], lev, mr);
         }
-        outs[0] = std::move(cellOut);
+        outs[0] = keel::move(cellOut);
         return;
     }
 
@@ -175,7 +174,7 @@ void detcoef_reg(keel::ArrayRef<Value> args, keel::usize nargout, keel::MutArray
         for (keel::i32 lev = 1; lev <= maxLev; ++lev)
             cellOut.cellAt(keel::as<keel::usize>(lev - 1)) =
                 detcoef(args[0], args[1], lev, mr);
-        outs[0] = std::move(cellOut);
+        outs[0] = keel::move(cellOut);
         return;
     }
 
@@ -201,7 +200,7 @@ void detcoef_reg(keel::ArrayRef<Value> args, keel::usize nargout, keel::MutArray
             cellOut.cellAt(i) =
                 detcoef(args[0], args[1],
                         keel::as<keel::i32>(levArg.elemAsDouble(i)), mr);
-        outs[0] = std::move(cellOut);
+        outs[0] = keel::move(cellOut);
     }
 }
 
@@ -209,8 +208,8 @@ void wenergy_reg(keel::ArrayRef<Value> args, keel::usize, keel::MutArrayRef<Valu
 {
     argcheck::checkNargin(args.size(), 2, 2, "wenergy");
     auto r = wenergy(args[0], args[1], ctx.engine->allocator());
-    if (outs.size() >= 1) outs[0] = std::move(r.Ea);
-    if (outs.size() >= 2) outs[1] = std::move(r.Ed);
+    if (outs.size() >= 1) outs[0] = keel::move(r.Ea);
+    if (outs.size() >= 2) outs[1] = keel::move(r.Ed);
 }
 
 void upcoef_reg(keel::ArrayRef<Value> args, keel::usize, keel::MutArrayRef<Value> outs, CallContext &ctx)
@@ -264,9 +263,9 @@ void wpsplt_reg(keel::ArrayRef<Value> args, keel::usize nargout, keel::MutArrayR
 {
     argcheck::checkNargin(args.size(), 2, 2, "wpsplt");
     auto res = wpsplt(args[0], args[1], ctx.engine->allocator());
-    outs[0] = std::move(res.tree);
-    if (nargout > 1) outs[1] = std::move(res.cA);
-    if (nargout > 2) outs[2] = std::move(res.cD);
+    outs[0] = keel::move(res.tree);
+    if (nargout > 1) outs[1] = keel::move(res.cA);
+    if (nargout > 2) outs[2] = keel::move(res.cD);
 }
 
 void besttree_reg(keel::ArrayRef<Value> args, keel::usize nargout, keel::MutArrayRef<Value> outs,
@@ -274,8 +273,8 @@ void besttree_reg(keel::ArrayRef<Value> args, keel::usize nargout, keel::MutArra
 {
     argcheck::checkNargin(args.size(), 1, 1, "besttree");
     auto res = besttree(args[0], ctx.engine->allocator());
-    outs[0] = std::move(res.tree);
-    if (nargout > 1) outs[1] = std::move(res.entropy);
+    outs[0] = keel::move(res.tree);
+    if (nargout > 1) outs[1] = keel::move(res.entropy);
 }
 
 } // namespace detail

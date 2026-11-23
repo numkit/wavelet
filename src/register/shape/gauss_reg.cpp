@@ -20,7 +20,6 @@
 #include <numkit/value/error.hpp>
 #include <cerrno>
 #include <cstdlib>
-#include <utility>
 
 namespace numkit::wavelet {
 namespace detail {
@@ -64,8 +63,8 @@ void gauswavf_reg(keel::ArrayRef<Value> args, keel::usize nargout,
     keel::i32 p = 1;
     if (args.size() >= 4) p = parseGaussOrder(args[3], "gaus", "gauswavf");
     auto [psi, x] = gauswavf(lb, ub, N, p, ctx.engine->allocator());
-    outs[0] = std::move(psi);
-    if (nargout > 1) outs[1] = std::move(x);
+    outs[0] = keel::move(psi);
+    if (nargout > 1) outs[1] = keel::move(x);
 }
 
 void cgauwavf_reg(keel::ArrayRef<Value> args, keel::usize nargout,
@@ -79,8 +78,8 @@ void cgauwavf_reg(keel::ArrayRef<Value> args, keel::usize nargout,
     keel::i32 p = 1;
     if (args.size() >= 4) p = parseGaussOrder(args[3], "cgau", "cgauwavf");
     auto [psi, x] = cgauwavf(lb, ub, N, p, ctx.engine->allocator());
-    outs[0] = std::move(psi);
-    if (nargout > 1) outs[1] = std::move(x);
+    outs[0] = keel::move(psi);
+    if (nargout > 1) outs[1] = keel::move(x);
 }
 
 } // namespace detail

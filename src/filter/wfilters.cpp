@@ -14,7 +14,6 @@
 #include <numkit/value/value.hpp>
 
 #include <algorithm>
-#include <utility>
 
 namespace numkit::wavelet {
 
@@ -45,10 +44,10 @@ FilterBank wavelet_filters(keel::StringRef name) {
                     0, 0, "wfilters", "", "numkit:wfilters:name");
     }
     FilterBank fb;
-    fb.Lo_D = std::move(kfb.lo_d);
-    fb.Hi_D = std::move(kfb.hi_d);
-    fb.Lo_R = std::move(kfb.lo_r);
-    fb.Hi_R = std::move(kfb.hi_r);
+    fb.Lo_D = keel::move(kfb.lo_d);
+    fb.Hi_D = keel::move(kfb.hi_d);
+    fb.Lo_R = keel::move(kfb.lo_r);
+    fb.Hi_R = keel::move(kfb.hi_r);
     return fb;
 }
 

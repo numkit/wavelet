@@ -12,7 +12,7 @@
 #include <keel/memory.h>
 #include <keel/ref.h>
 #include <numkit/value/value.hpp>
-#include <tuple>
+#include <keel/tuple.h>
 
 namespace numkit::wavelet {
 
@@ -31,7 +31,7 @@ namespace numkit::wavelet {
 /// @return    `(psi, x)`; bind via `auto [psi, x] = mexihat(lb, ub, N);`.
 ///
 /// @see morlet, meyeraux
-std::tuple<Value, Value>
+keel::Tuple<Value, Value>
 mexihat(keel::f64 lb, keel::f64 ub, keel::usize N,
         keel::Allocator *mr = nullptr);
 
@@ -45,7 +45,7 @@ mexihat(keel::f64 lb, keel::f64 ub, keel::usize N,
 /// @return       `(psi, x)`.
 ///
 /// @see mexihat, cmorwavf
-std::tuple<Value, Value>
+keel::Tuple<Value, Value>
 morlet(keel::f64 lb, keel::f64 ub, keel::usize N,
        keel::Allocator *mr = nullptr);
 
@@ -73,7 +73,7 @@ Value meyeraux(const Value &x, keel::Allocator *mr = nullptr);
 /// @return       `(psi, x)`; `psi` is COMPLEX.
 ///
 /// @see cmorwavf, fbspwavf
-std::tuple<Value, Value>
+keel::Tuple<Value, Value>
 shanwavf(keel::f64 lb, keel::f64 ub, keel::usize N, keel::f64 fb, keel::f64 fc,
          keel::Allocator *mr = nullptr);
 
@@ -82,7 +82,7 @@ shanwavf(keel::f64 lb, keel::f64 ub, keel::usize N, keel::f64 fb, keel::f64 fc,
 /// @f$ \psi(t) = \frac{1}{\sqrt{\pi f_b}}\,e^{2\pi i f_c t}\,e^{-t^2/f_b} @f$.
 ///
 /// @see morlet, shanwavf
-std::tuple<Value, Value>
+keel::Tuple<Value, Value>
 cmorwavf(keel::f64 lb, keel::f64 ub, keel::usize N, keel::f64 fb, keel::f64 fc,
          keel::Allocator *mr = nullptr);
 
@@ -94,7 +94,7 @@ cmorwavf(keel::f64 lb, keel::f64 ub, keel::usize N, keel::f64 fb, keel::f64 fc,
 /// @param fb,fc  Bandwidth and centre frequency.
 ///
 /// @see cmorwavf, shanwavf
-std::tuple<Value, Value>
+keel::Tuple<Value, Value>
 fbspwavf(keel::f64 lb, keel::f64 ub, keel::usize N, keel::i32 m, keel::f64 fb, keel::f64 fc,
          keel::Allocator *mr = nullptr);
 
@@ -106,7 +106,7 @@ fbspwavf(keel::f64 lb, keel::f64 ub, keel::usize N, keel::i32 m, keel::f64 fb, k
 /// @param p   Derivative order ≥ 1.
 ///
 /// @see cgauwavf
-std::tuple<Value, Value>
+keel::Tuple<Value, Value>
 gauswavf(keel::f64 lb, keel::f64 ub, keel::usize N, keel::i32 p,
          keel::Allocator *mr = nullptr);
 
@@ -117,7 +117,7 @@ gauswavf(keel::f64 lb, keel::f64 ub, keel::usize N, keel::i32 p,
 /// normalisation).
 ///
 /// @see gauswavf
-std::tuple<Value, Value>
+keel::Tuple<Value, Value>
 cgauwavf(keel::f64 lb, keel::f64 ub, keel::usize N, keel::i32 p,
          keel::Allocator *mr = nullptr);
 

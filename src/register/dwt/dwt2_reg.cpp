@@ -17,7 +17,6 @@
 #include <numkit/value/argcheck.hpp>
 #include <numkit/value/error.hpp>
 
-#include <utility>
 
 namespace numkit::wavelet {
 namespace detail {
@@ -35,10 +34,10 @@ void dwt2_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/, keel::MutArra
     argcheck::checkNargin(args.size(), 2, 2, "dwt2");
     auto *mr = ctx.engine->allocator();
     auto r = dwt2(args[0], argString(args[1]), mr);
-    if (outs.size() >= 1) outs[0] = std::move(r.cA);
-    if (outs.size() >= 2) outs[1] = std::move(r.cH);
-    if (outs.size() >= 3) outs[2] = std::move(r.cV);
-    if (outs.size() >= 4) outs[3] = std::move(r.cD);
+    if (outs.size() >= 1) outs[0] = keel::move(r.cA);
+    if (outs.size() >= 2) outs[1] = keel::move(r.cH);
+    if (outs.size() >= 3) outs[2] = keel::move(r.cV);
+    if (outs.size() >= 4) outs[3] = keel::move(r.cD);
 }
 
 void idwt2_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/, keel::MutArrayRef<Value> outs,

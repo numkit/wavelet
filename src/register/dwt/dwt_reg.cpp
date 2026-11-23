@@ -20,7 +20,7 @@
 #include <numkit/sys/plugin.hpp>   // CallContext, ctx.engine->resource()
 #include <numkit/value/argcheck.hpp>
 #include <numkit/value/error.hpp>
-#include <tuple>
+#include <keel/tuple.h>
 
 namespace numkit::wavelet {
 namespace detail {
@@ -69,14 +69,14 @@ void dwt_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/, keel::MutArray
         // dwt(x, wname[, 'mode', extmode])
         parse_mode_nv(args, 2, "dwt");
         const keel::String wname = args[1].toString();
-        std::tie(cA, cD) = dwt(args[0], wname, mr);
+        keel::tie(cA, cD) = dwt(args[0], wname, mr);
     } else {
         // dwt(x, Lo_D, Hi_D[, 'mode', extmode])
         if (args.size() < 3 || (args[2].isChar() || args[2].isString()))
             throw Error("dwt: custom-filter form requires (x, Lo_D, Hi_D)",
                         0, 0, "dwt", "", "numkit:dwt:nargin");
         parse_mode_nv(args, 3, "dwt");
-        std::tie(cA, cD) = dwt_with_filters_pub(args[0],
+        keel::tie(cA, cD) = dwt_with_filters_pub(args[0],
                                                 readVec(args[1], mr), readVec(args[2], mr),
                                                 mr);
     }

@@ -179,18 +179,18 @@ HaartResult haart(const Value &x, keel::i32 level, bool integer,
             const keel::f64 *aP = aMat.doubleData();
             curR.assign(keel::ArrayRef<keel::f64>(aP, H * ncols));
         }
-        details.push_back(std::move(dMat));
-        if (k == lev - 1) R.a = std::move(aMat);
+        details.push_back(keel::move(dMat));
+        if (k == lev - 1) R.a = keel::move(aMat);
         inLen = H;
     }
 
     if (lev == 1) {
-        R.d = std::move(details[0]);              // plain matrix
+        R.d = keel::move(details[0]);              // plain matrix
     } else {
         Value cellOut = Value::cell(keel::as<keel::usize>(lev), 1, mr);
         for (keel::i32 k = 0; k < lev; ++k)
-            cellOut.cellAt(keel::as<keel::usize>(k)) = std::move(details[k]);
-        R.d = std::move(cellOut);                 // d{1} is finest
+            cellOut.cellAt(keel::as<keel::usize>(k)) = keel::move(details[k]);
+        R.d = keel::move(cellOut);                 // d{1} is finest
     }
     return R;
 }

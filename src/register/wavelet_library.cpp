@@ -9,7 +9,6 @@
 #include <numkit/wavelet/library.hpp>
 
 #include <numkit/sys/plugin.hpp>
-#include <utility>
 
 namespace numkit::wavelet::detail {
 // filter/wfilters.cpp
@@ -88,7 +87,7 @@ namespace numkit {
 void WaveletLibrary::install(PluginContext &engine)
 {
     auto reg = [&](const char *sub, const char *name, ExternalFunc fn) {
-        engine.registerFunction(keel::format("wavelet.{}", sub), name, std::move(fn));
+        engine.registerFunction(keel::format("wavelet.{}", sub), name, keel::move(fn));
         // compat.* registration removed — bare-name resolver replaces it
     };
 

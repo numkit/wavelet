@@ -2,6 +2,7 @@
 // Continuous wavelet shapes, centfrq, scal2frq, and cwt — delegated to keel::wavelet.
 
 #include <keel/array.h>
+#include <keel/tuple.h>
 #include <keel/algo.h>
 #include <keel/math.h>
 #include <keel/complex.h>
@@ -151,67 +152,67 @@ keel::wavelet::CwtWavelet cwt_argcheck(const Value &x, keel::StringRef wname, ke
 
 } // anonymous
 
-std::tuple<Value, Value>
+keel::Tuple<Value, Value>
 mexihat(keel::f64 lb, keel::f64 ub, keel::usize N, keel::Allocator *mr)
 {
     Value xv = Value::matrix(1, N, ValueType::DOUBLE, mr);
     Value pv = Value::matrix(1, N, ValueType::DOUBLE, mr);
-    if (N == 0) return {std::move(pv), std::move(xv)};
+    if (N == 0) return {keel::move(pv), keel::move(xv)};
     keel::wavelet::mexihat(lb, ub,
                            keel::MutArrayRef<keel::f64>(pv.doubleDataMut(), N),
                            keel::MutArrayRef<keel::f64>(xv.doubleDataMut(), N));
-    return {std::move(pv), std::move(xv)};
+    return {keel::move(pv), keel::move(xv)};
 }
 
-std::tuple<Value, Value>
+keel::Tuple<Value, Value>
 morlet(keel::f64 lb, keel::f64 ub, keel::usize N, keel::Allocator *mr)
 {
     Value xv = Value::matrix(1, N, ValueType::DOUBLE, mr);
     Value pv = Value::matrix(1, N, ValueType::DOUBLE, mr);
-    if (N == 0) return {std::move(pv), std::move(xv)};
+    if (N == 0) return {keel::move(pv), keel::move(xv)};
     keel::wavelet::morlet(lb, ub,
                           keel::MutArrayRef<keel::f64>(pv.doubleDataMut(), N),
                           keel::MutArrayRef<keel::f64>(xv.doubleDataMut(), N));
-    return {std::move(pv), std::move(xv)};
+    return {keel::move(pv), keel::move(xv)};
 }
 
-std::tuple<Value, Value>
+keel::Tuple<Value, Value>
 shanwavf(keel::f64 lb, keel::f64 ub, keel::usize N, keel::f64 fb, keel::f64 fc, keel::Allocator *mr)
 {
     shanwavf_argcheck(lb, ub, N, fb, fc);
     Value xv = Value::matrix(1, N, ValueType::DOUBLE, mr);
     Value pv = Value::matrix(1, N, ValueType::COMPLEX, mr);
-    if (N == 0) return {std::move(pv), std::move(xv)};
+    if (N == 0) return {keel::move(pv), keel::move(xv)};
     keel::wavelet::shanwavf(lb, ub, fb, fc,
                             keel::MutArrayRef<keel::c64>(pv.complexDataMut(), N),
                             keel::MutArrayRef<keel::f64>(xv.doubleDataMut(), N));
-    return {std::move(pv), std::move(xv)};
+    return {keel::move(pv), keel::move(xv)};
 }
 
-std::tuple<Value, Value>
+keel::Tuple<Value, Value>
 cmorwavf(keel::f64 lb, keel::f64 ub, keel::usize N, keel::f64 fb, keel::f64 fc, keel::Allocator *mr)
 {
     cmorwavf_argcheck(lb, ub, N, fb, fc);
     Value xv = Value::matrix(1, N, ValueType::DOUBLE, mr);
     Value pv = Value::matrix(1, N, ValueType::COMPLEX, mr);
-    if (N == 0) return {std::move(pv), std::move(xv)};
+    if (N == 0) return {keel::move(pv), keel::move(xv)};
     keel::wavelet::cmorwavf(lb, ub, fb, fc,
                             keel::MutArrayRef<keel::c64>(pv.complexDataMut(), N),
                             keel::MutArrayRef<keel::f64>(xv.doubleDataMut(), N));
-    return {std::move(pv), std::move(xv)};
+    return {keel::move(pv), keel::move(xv)};
 }
 
-std::tuple<Value, Value>
+keel::Tuple<Value, Value>
 fbspwavf(keel::f64 lb, keel::f64 ub, keel::usize N, keel::i32 m, keel::f64 fb, keel::f64 fc, keel::Allocator *mr)
 {
     fbspwavf_argcheck(lb, ub, N, m, fb, fc);
     Value xv = Value::matrix(1, N, ValueType::DOUBLE, mr);
     Value pv = Value::matrix(1, N, ValueType::COMPLEX, mr);
-    if (N == 0) return {std::move(pv), std::move(xv)};
+    if (N == 0) return {keel::move(pv), keel::move(xv)};
     keel::wavelet::fbspwavf(lb, ub, keel::as<keel::i32>(m), fb, fc,
                             keel::MutArrayRef<keel::c64>(pv.complexDataMut(), N),
                             keel::MutArrayRef<keel::f64>(xv.doubleDataMut(), N));
-    return {std::move(pv), std::move(xv)};
+    return {keel::move(pv), keel::move(xv)};
 }
 
 Value meyeraux(const Value &x, keel::Allocator *mr)
@@ -258,7 +259,7 @@ CentfrqResult centfrqGrid(keel::StringRef wname, keel::i32 iter,
                 keel::copy_n(recfreq.doubleDataMut(), r.recfreq_real.data(), r.recfreq_real.size());
         }
     }
-    return {r.freq, std::move(xval), std::move(recfreq)};
+    return {r.freq, keel::move(xval), keel::move(recfreq)};
 }
 
 keel::f64 centfrq(keel::StringRef wname, keel::i32 iter)
@@ -314,7 +315,7 @@ CwtResult cwt(const Value &x,
     for (keel::usize n = 0; n < r.num_samples; ++n)
         internal::storeElem(coiOut, n, r.coi[n]);
 
-    return {std::move(cfs), std::move(fOut), std::move(coiOut)};
+    return {keel::move(cfs), keel::move(fOut), keel::move(coiOut)};
 }
 
 } // namespace numkit::wavelet

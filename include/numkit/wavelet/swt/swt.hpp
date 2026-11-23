@@ -11,7 +11,6 @@
 #include <keel/memory.h>
 #include <keel/ref.h>
 #include <numkit/value/value.hpp>
-#include <utility>
 
 namespace numkit::wavelet {
 
@@ -59,10 +58,10 @@ Value swt(const Value &x, keel::i32 n, keel::ArrayRef<keel::f64> Lo_D,
 /// @param wname  Wavelet name.
 /// @param mr     Memory resource (nullptr → process default).
 /// @return       (SWA, SWD) pair of n × N matrices.
-std::pair<Value, Value> swtAD(const Value &x, keel::i32 n, keel::StringRef wname,
+keel::Pair<Value, Value> swtAD(const Value &x, keel::i32 n, keel::StringRef wname,
                               keel::Allocator *mr = nullptr);
 
-std::pair<Value, Value> swtAD(const Value &x, keel::i32 n,
+keel::Pair<Value, Value> swtAD(const Value &x, keel::i32 n,
                               keel::ArrayRef<keel::f64> Lo_D,
                               keel::ArrayRef<keel::f64> Hi_D,
                               keel::Allocator *mr = nullptr);

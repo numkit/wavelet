@@ -62,7 +62,7 @@ Value rowVec(keel::Allocator *mr, keel::ArrayRef<keel::f64> v)
 Value family_scaling(keel::Allocator *mr, keel::StringRef name)
 {
     auto fb = wavelet_filters(name);   // throws on unsupported family
-    keel::Array<keel::f64> v = std::move(fb.Lo_R);
+    keel::Array<keel::f64> v = keel::move(fb.Lo_R);
     for (auto &x : v) x *= INV_SQRT2;
     return rowVec(mr, v);
 }

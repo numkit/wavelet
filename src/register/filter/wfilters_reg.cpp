@@ -16,7 +16,6 @@
 #include <numkit/value/argcheck.hpp>
 #include <numkit/value/error.hpp>
 
-#include <utility>
 
 namespace numkit::wavelet {
 namespace detail {
@@ -41,10 +40,10 @@ void wfilters_reg(keel::ArrayRef<Value> args, keel::usize nargout, keel::MutArra
 
     if (kind.empty()) {
         // 4-output form: [Lo_D, Hi_D, Lo_R, Hi_R].
-        if (outs.size() >= 1) outs[0] = std::move(r.Lo_D);
-        if (outs.size() >= 2) outs[1] = std::move(r.Hi_D);
-        if (outs.size() >= 3) outs[2] = std::move(r.Lo_R);
-        if (outs.size() >= 4) outs[3] = std::move(r.Hi_R);
+        if (outs.size() >= 1) outs[0] = keel::move(r.Lo_D);
+        if (outs.size() >= 2) outs[1] = keel::move(r.Hi_D);
+        if (outs.size() >= 3) outs[2] = keel::move(r.Lo_R);
+        if (outs.size() >= 4) outs[3] = keel::move(r.Hi_R);
         (void)nargout;
     } else {
         // 2026-05-08 wavelet/wfilters fix: single-output form
@@ -67,7 +66,7 @@ void wfilters_reg(keel::ArrayRef<Value> args, keel::usize nargout, keel::MutArra
             mp[k * 2 + 0] = ap[k];
             mp[k * 2 + 1] = bp[k];
         }
-        outs[0] = std::move(M);
+        outs[0] = keel::move(M);
     }
 }
 

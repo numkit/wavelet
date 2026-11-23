@@ -8,7 +8,6 @@
 #include <keel/memory.h>
 #include <keel/ref.h>
 #include <numkit/value/value.hpp>
-#include <utility>
 
 namespace numkit::wavelet {
 
@@ -39,7 +38,7 @@ namespace numkit::wavelet {
 /// @endcode
 ///
 /// @see idwt, wavedec, wfilters
-std::pair<Value, Value>
+keel::Pair<Value, Value>
 dwt(const Value &x, keel::StringRef wname,
     keel::Allocator *mr = nullptr);
 
@@ -57,7 +56,7 @@ dwt(const Value &x, keel::StringRef wname,
 /// @return     `(cA, cD)` approximation / detail bands.
 ///
 /// @see dwt, idwt_with_filters_pub
-std::pair<Value, Value>
+keel::Pair<Value, Value>
 dwt_with_filters_pub(const Value &x,
                      keel::ArrayRef<keel::f64> Lo_D,
                      keel::ArrayRef<keel::f64> Hi_D,

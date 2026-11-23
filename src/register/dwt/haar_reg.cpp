@@ -57,8 +57,8 @@ void haart_reg(keel::ArrayRef<Value> args, keel::usize nargout,
     }
 
     HaartResult r = haart(args[0], level, integer_mode, ctx.engine->allocator());
-    outs[0] = std::move(r.a);
-    if (nargout >= 2) outs[1] = std::move(r.d);
+    outs[0] = keel::move(r.a);
+    if (nargout >= 2) outs[1] = keel::move(r.d);
 }
 
 void ihaart_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/,

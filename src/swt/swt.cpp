@@ -87,7 +87,7 @@ void imodwt_argcheck(const Value &swc)
 
 } // anonymous
 
-std::pair<Value, Value> swtAD(const Value &x, keel::i32 n,
+keel::Pair<Value, Value> swtAD(const Value &x, keel::i32 n,
                               keel::ArrayRef<keel::f64> Lo_D,
                               keel::ArrayRef<keel::f64> Hi_D,
                               keel::Allocator *mr)
@@ -110,10 +110,10 @@ std::pair<Value, Value> swtAD(const Value &x, keel::i32 n,
         std::copy(res.swa_colmajor.begin(), res.swa_colmajor.end(), swa.doubleDataMut());
         std::copy(res.swd_colmajor.begin(), res.swd_colmajor.end(), swd.doubleDataMut());
     }
-    return {std::move(swa), std::move(swd)};
+    return {keel::move(swa), keel::move(swd)};
 }
 
-std::pair<Value, Value> swtAD(const Value &x, keel::i32 n, keel::StringRef wname,
+keel::Pair<Value, Value> swtAD(const Value &x, keel::i32 n, keel::StringRef wname,
                               keel::Allocator *mr)
 {
     auto fb = wavelet_filters(wname);
@@ -191,7 +191,7 @@ Value iswtPhase(Value aRow, const Value &dSrc, keel::usize n,
 
     const keel::usize lf = LoR.size();
     const keel::usize ext = lf / 2;
-    Value a = std::move(aRow);
+    Value a = keel::move(aRow);
 
     // upconvLOC: dyadup(x,0,1) → 'per' extend by lf/2 → full conv →
     // keep l samples from 0-based index lf-1 (wkeep1(y,l,lf)).
@@ -283,7 +283,7 @@ Value iswt(const Value &swc, keel::ArrayRef<keel::f64> Lo_R,
     Value aRow = Value::matrix(1, N, swc.type(), mr);
     for (keel::usize c = 0; c < N; ++c)
         internal::storeElem(aRow, c, swc.elemAsDouble(c * H + n));
-    return iswtPhase(std::move(aRow), swc, n, Lo_R, Hi_R, mr);
+    return iswtPhase(keel::move(aRow), swc, n, Lo_R, Hi_R, mr);
 }
 
 Value iswt(const Value &swc, keel::StringRef wname, keel::Allocator *mr)
@@ -320,7 +320,7 @@ Value iswt(const Value &swa, const Value &swd,
         internal::storeElem(aRow, c, swa.elemAsDouble(c * aH + aH - 1));
     if (n == 0)
         return aRow;
-    return iswtPhase(std::move(aRow), swd, n, Lo_R, Hi_R, mr);
+    return iswtPhase(keel::move(aRow), swd, n, Lo_R, Hi_R, mr);
 }
 
 Value iswt(const Value &swa, const Value &swd, keel::StringRef wname,
@@ -356,8 +356,8 @@ Value modwt(const Value &x, keel::i32 n, keel::StringRef wname, keel::Allocator 
                              ValueType::DOUBLE, mr);
 
     auto fb = wavelet_filters(wname);
-    keel::wavelet::FilterBank kfb{std::move(fb.Lo_D), std::move(fb.Hi_D),
-                                  std::move(fb.Lo_R), std::move(fb.Hi_R)};
+    keel::wavelet::FilterBank kfb{keel::move(fb.Lo_D), keel::move(fb.Hi_D),
+                                  keel::move(fb.Lo_R), keel::move(fb.Hi_R)};
     keel::Array<keel::f64> xv(N, mr);
     for (keel::usize i = 0; i < N; ++i) xv[i] = x.elemAsDouble(i);
     auto w = keel::wavelet::modwt(keel::ArrayRef<keel::f64>(xv.data(), N),
@@ -375,8 +375,8 @@ Value imodwt(const Value &swc, keel::StringRef wname, keel::Allocator *mr)
     const keel::usize levels = H - 1;
 
     auto fb = wavelet_filters(wname);
-    keel::wavelet::FilterBank kfb{std::move(fb.Lo_D), std::move(fb.Hi_D),
-                                  std::move(fb.Lo_R), std::move(fb.Hi_R)};
+    keel::wavelet::FilterBank kfb{keel::move(fb.Lo_D), keel::move(fb.Hi_D),
+                                  keel::move(fb.Lo_R), keel::move(fb.Hi_R)};
 
     const bool cplx = swc.type() == ValueType::COMPLEX;
     keel::Array<keel::f64> wR(H * N, mr);

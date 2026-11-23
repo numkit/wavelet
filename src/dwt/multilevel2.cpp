@@ -97,7 +97,7 @@ Wavedec2Result wavedec2(const Value &X, keel::i32 n, keel::StringRef wname,
     }
     Value c = Value::matrix(1, r.c.size(), ValueType::DOUBLE, mr);
     if (!r.c.empty()) keel::copy_n(c.doubleDataMut(), r.c.data(), r.c.size());
-    return { std::move(c), std::move(S) };
+    return { keel::move(c), keel::move(S) };
 }
 
 static Value appcoef2_impl(const Value &C, const Value &S,

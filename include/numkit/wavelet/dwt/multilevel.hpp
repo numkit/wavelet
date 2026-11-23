@@ -12,7 +12,6 @@
 #include <keel/memory.h>
 #include <keel/ref.h>
 #include <numkit/value/value.hpp>
-#include <utility>
 
 namespace numkit::wavelet {
 
@@ -43,7 +42,7 @@ namespace numkit::wavelet {
 /// @endcode
 ///
 /// @see waverec, appcoef, detcoef, wrcoef
-std::pair<Value, Value>
+keel::Pair<Value, Value>
 wavedec(const Value &x, keel::i32 n, keel::StringRef wname,
         keel::Allocator *mr = nullptr);
 

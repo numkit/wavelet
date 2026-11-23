@@ -19,7 +19,6 @@
 #include <numkit/value/argcheck.hpp>
 #include <numkit/value/error.hpp>
 
-#include <utility>
 
 namespace numkit::wavelet {
 namespace detail {
@@ -54,8 +53,8 @@ void swt_reg(keel::ArrayRef<Value> args, keel::usize nargout, keel::MutArrayRef<
         auto hiD = extractFilterVec(args[3], "swt");
         if (nargout >= 2) {
             auto [swa, swd] = swtAD(args[0], lev, loD, hiD, mr);
-            outs[0] = std::move(swa);
-            if (outs.size() >= 2) outs[1] = std::move(swd);
+            outs[0] = keel::move(swa);
+            if (outs.size() >= 2) outs[1] = keel::move(swd);
             return;
         }
         outs[0] = swt(args[0], lev, loD, hiD, mr);
@@ -65,8 +64,8 @@ void swt_reg(keel::ArrayRef<Value> args, keel::usize nargout, keel::MutArrayRef<
         // [SWA, SWD] = swt(x, n, wname) — per-level approximation and
         // detail matrices.
         auto [swa, swd] = swtAD(args[0], lev, argString(args[2]), mr);
-        outs[0] = std::move(swa);
-        if (outs.size() >= 2) outs[1] = std::move(swd);
+        outs[0] = keel::move(swa);
+        if (outs.size() >= 2) outs[1] = keel::move(swd);
         return;
     }
     outs[0] = swt(args[0], lev, argString(args[2]), mr);

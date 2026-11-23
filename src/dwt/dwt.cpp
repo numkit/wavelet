@@ -46,7 +46,7 @@ void idwt_argcheck(keel::ArrayRef<keel::f64> Lo_R,
 
 } // anonymous
 
-static std::pair<Value, Value>
+static keel::Pair<Value, Value>
 dwt_with_filters(const Value &x,
                  keel::ArrayRef<keel::f64> Lo_D,
                  keel::ArrayRef<keel::f64> Hi_D,
@@ -70,7 +70,7 @@ dwt_with_filters(const Value &x,
             pack(keel::ArrayRef<keel::f64>(res.cd.data(), res.cd.size()))};
 }
 
-std::pair<Value, Value>
+keel::Pair<Value, Value>
 dwt(const Value &x, keel::StringRef wname,
     keel::Allocator *mr)
 {
@@ -78,7 +78,7 @@ dwt(const Value &x, keel::StringRef wname,
     return dwt_with_filters(x, fb.Lo_D, fb.Hi_D, mr);
 }
 
-std::pair<Value, Value>
+keel::Pair<Value, Value>
 dwt_with_filters_pub(const Value &x,
                      keel::ArrayRef<keel::f64> Lo_D,
                      keel::ArrayRef<keel::f64> Hi_D,

@@ -68,9 +68,9 @@ void ddencmp_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/, keel::MutA
     argcheck::checkNargin(args.size(), 3, 3, "ddencmp");
     auto r = ddencmp(argString(args[0]), argString(args[1]), args[2],
                      ctx.engine->allocator());
-    if (outs.size() >= 1) outs[0] = std::move(r.thr);
-    if (outs.size() >= 2) outs[1] = std::move(r.sorh);
-    if (outs.size() >= 3) outs[2] = std::move(r.keepapp);
+    if (outs.size() >= 1) outs[0] = keel::move(r.thr);
+    if (outs.size() >= 2) outs[1] = keel::move(r.sorh);
+    if (outs.size() >= 3) outs[2] = keel::move(r.keepapp);
 }
 
 } // namespace detail

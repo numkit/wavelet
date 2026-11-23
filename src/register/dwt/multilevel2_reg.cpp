@@ -15,7 +15,6 @@
 #include <numkit/sys/plugin.hpp>   // CallContext, ctx.engine->resource()
 #include <numkit/value/argcheck.hpp>
 #include <numkit/value/error.hpp>
-#include <utility>
 
 namespace numkit::wavelet {
 namespace detail {
@@ -35,8 +34,8 @@ void wavedec2_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/, keel::Mut
     auto r = wavedec2(args[0], argcheck::expectedPositiveInteger(
         argcheck::expectedReal(args[1], 2, "level", "wavedec2"), 2, "level", "wavedec2"),
                       argString(args[2]), mr);
-    if (outs.size() >= 1) outs[0] = std::move(r.c);
-    if (outs.size() >= 2) outs[1] = std::move(r.s);
+    if (outs.size() >= 1) outs[0] = keel::move(r.c);
+    if (outs.size() >= 2) outs[1] = keel::move(r.s);
 }
 
 void waverec2_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/, keel::MutArrayRef<Value> outs,

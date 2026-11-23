@@ -203,8 +203,8 @@ Value wdenoise(const Value &x, keel::i32 level, keel::StringRef wname, keel::All
     }
     const keel::StringRef w = wname.empty() ? keel::StringRef("sym4") : wname;
     auto fb = wavelet_filters(w);
-    keel::wavelet::FilterBank kfb{std::move(fb.Lo_D), std::move(fb.Hi_D),
-                                  std::move(fb.Lo_R), std::move(fb.Hi_R)};
+    keel::wavelet::FilterBank kfb{keel::move(fb.Lo_D), keel::move(fb.Hi_D),
+                                  keel::move(fb.Lo_R), keel::move(fb.Hi_R)};
     auto xv = vecFromValue(x, mr);
     auto rec = keel::wavelet::denoise_visushrink(keel::ArrayRef<keel::f64>(xv.data(), xv.size()),
                                                  keel::as<keel::i32>(level), kfb, mr);
