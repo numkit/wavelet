@@ -18,8 +18,7 @@
 #include <numkit/sys/plugin.hpp>   // CallContext, ctx.engine->resource()
 #include <numkit/value/argcheck.hpp>
 #include <numkit/value/error.hpp>
-#include <cerrno>
-#include <cstdlib>
+#include <keel/number.h>
 
 namespace numkit::wavelet {
 namespace detail {
@@ -37,16 +36,14 @@ static keel::i32 parseGaussOrder(const Value &arg, const char *prefix, const cha
         if (s.size() <= pref.size() || !s.starts_with(pref))
             throw Error(keel::format("{}: bad wname '{}' (expected {}N)", fn, s, prefix),
                          0, 0, fn, "", "numkit:wname");
-        const char *numStart = s.c_str() + pref.size();
-        char *numEnd = nullptr;
-        errno = 0;
-        const keel::i64 v = std::strtol(numStart, &numEnd, 10);
-        if (numEnd == numStart || *numEnd != '\0' || errno == ERANGE ||
-            v < keel::Limits<keel::i32>::kMin || v > keel::Limits<keel::i32>::kMax) {
+        auto parsed = keel::parse_i64(s.substr(pref.size()), 10);
+        if (!parsed.is_ok() ||
+            parsed.value() < keel::Limits<keel::i32>::kMin ||
+            parsed.value() > keel::Limits<keel::i32>::kMax) {
             throw Error(keel::format("{}: bad wname '{}' (cannot parse order N)", fn, s),
                          0, 0, fn, "", "numkit:wname");
         }
-        return keel::as<keel::i32>(v);
+        return keel::as<keel::i32>(parsed.value());
     }
     return argcheck::expectedInteger(
         argcheck::expectedReal(arg, 1, "order", "gauswavf"), 1, "order", "gauswavf");
