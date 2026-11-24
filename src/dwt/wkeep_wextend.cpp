@@ -20,6 +20,7 @@
 #include <keel/ref.h>
 #include <keel/string.h>
 #include <keel/utf8.h>
+#include <keel/wavelet.h>
 #include <numkit/wavelet/dwt/wkeep_wextend.hpp>
 #include <numkit/wavelet/internal/type_gates.hpp>
 
@@ -230,139 +231,46 @@ Value wkeep(const Value &x, const Value &len, const Value &opt,
 
 namespace detail {
 
-// 1-D extension core. Takes a length-N source `xv` and produces an output
-// vector with `leftN` left-pad samples + the (possibly edge-padded for
-// 'per') middle + `rightN` right-pad samples.
-//
-// Modes (verified vs MATLAB R2025b on x = [1 2 3 4 5], lf = 2):
-//   'sym' / 'symh' — half-point symmetric (edge sample replicated)
-//                    pre = [x(lf), …, x(1)],   post = [x(N), …, x(N-lf+1)]
-//                    [2 1 | 1 2 3 4 5 | 5 4]
-//   'symw'         — whole-point symmetric (edge NOT replicated)
-//                    pre = [x(lf+1), …, x(2)], post = [x(N-1), …, x(N-lf)]
-//                    [3 2 | 1 2 3 4 5 | 4 3]
-//   'asym' / 'asymh' — half-point antisymmetric
-//                    pre = -[x(lf), …, x(1)],  post = -[x(N), …, x(N-lf+1)]
-//                    [-2 -1 | 1 2 3 4 5 | -5 -4]
-//   'asymw'        — whole-point antisymmetric (reflect through endpoint)
-//                    pre[i]  = 2·x(1) - x(lf-i+1)  reversed → 2·x(1) - x(j)
-//                    [-1 0 | 1 2 3 4 5 | 6 7]   (linear-like for x=1..5)
-//   'sp0'          — order-0 spline = replicate edge sample
-//                    [1 1 | 1..5 | 5 5]
-//   'sp1' / 'spd'  — order-1 spline = linear extrapolation ('spd' is the
-//                    reference's alias for the same values, probed R2025b)
-//                    pre[i]  = x(1) - (lf-i)·(x(2) - x(1))   for i=0..lf-1
-//                    post[i] = x(N) + (i+1)·(x(N) - x(N-1))
-//                    [-1 0 | 1..5 | 6 7]
-//   'per'          — periodic with edge-pad on odd N. If N odd, MATLAB pads
-//                    x → x' = [x x(end)]; pre = last lf of x', post = first lf.
-//   'zpd'          — zero pad
-//   'ppd'          — pure periodic: pre = last lf of x; post = first lf
-//
-// Element type is templated: the class-preserving wextend runs the same
-// permutation/linear-combination core on double and Complex buffers.
+static keel::wavelet::ExtendMode mapExtendMode(keel::StringRef mode)
+{
+    if (mode == "sym" || mode == "symh")   return keel::wavelet::ExtendMode::kSym;
+    if (mode == "symw")                    return keel::wavelet::ExtendMode::kSymW;
+    if (mode == "asym" || mode == "asymh") return keel::wavelet::ExtendMode::kAsym;
+    if (mode == "asymw")                   return keel::wavelet::ExtendMode::kAsymW;
+    if (mode == "sp0")                     return keel::wavelet::ExtendMode::kSp0;
+    if (mode == "sp1" || mode == "spd")    return keel::wavelet::ExtendMode::kSp1;
+    if (mode == "per")                     return keel::wavelet::ExtendMode::kPer;
+    if (mode == "ppd")                     return keel::wavelet::ExtendMode::kPpd;
+    return keel::wavelet::ExtendMode::kZpd;
+}
+
+static keel::wavelet::ExtendSide mapExtendSide(char side)
+{
+    if (side == 'l') return keel::wavelet::ExtendSide::kLeft;
+    if (side == 'r') return keel::wavelet::ExtendSide::kRight;
+    return keel::wavelet::ExtendSide::kBoth;
+}
+
 template <typename T>
 static keel::Array<T> extend1D(keel::ArrayRef<T> xv,
                                keel::i64 lf, char side,
-                               keel::StringRef mode)
+                               keel::StringRef mode);
+
+template <>
+keel::Array<keel::f64> extend1D<keel::f64>(keel::ArrayRef<keel::f64> xv,
+                                           keel::i64 lf, char side,
+                                           keel::StringRef mode)
 {
-    const keel::i64 N = keel::as<keel::i64>(xv.size());
-    if (lf < 0) lf = 0;
-    // For 'per' the data segment is the (possibly edge-padded) version of x.
-    keel::Array<T> src;
-    src.assign(xv);
-    if (mode == "per" && (N % 2) == 1 && N > 0) src.push_back(xv[keel::as<keel::usize>(N - 1)]);
-    const keel::i64 M = keel::as<keel::i64>(src.size());
-
-    auto sampleLeft = [&](keel::i64 k) -> T {
-        // k = 0..lf-1, with k=0 = furthest from data (output[0]).
-        if (mode == "sym" || mode == "symh") {
-            return xv[keel::as<keel::usize>(lf - 1 - k)];
-        }
-        if (mode == "symw") {
-            // pre = [x(lf+1), …, x(2)] in 1-based → indices [lf, lf-1, …, 1] 0-based.
-            // For output position k (0..lf-1), src idx = lf - k.
-            const keel::i64 idx = lf - k;
-            return (idx < N) ? xv[keel::as<keel::usize>(idx)] : xv[keel::as<keel::usize>(N - 1)];
-        }
-        if (mode == "asym" || mode == "asymh") {
-            return -xv[keel::as<keel::usize>(lf - 1 - k)];
-        }
-        if (mode == "asymw") {
-            // 2·x(1) - x(j) where j is the symw index (1-based j = lf+1-k = lf-k+1).
-            // 0-based: idx = lf - k.
-            const keel::i64 idx = lf - k;
-            const T xj = (idx < N) ? xv[keel::as<keel::usize>(idx)] : xv[keel::as<keel::usize>(N - 1)];
-            return T(2) * xv[0] - xj;
-        }
-        if (mode == "sp0") {
-            return xv[0];
-        }
-        if (mode == "sp1" || mode == "spd") {
-            // Linear extrapolation using slope x(2) - x(1).
-            const T slope = (N >= 2) ? (xv[1] - xv[0]) : T(0);
-            return xv[0] - T(keel::as<keel::f64>(lf - k)) * slope;
-        }
-        if (mode == "per") {
-            return src[keel::as<keel::usize>(M - lf + k)];
-        }
-        if (mode == "ppd") {
-            return xv[keel::as<keel::usize>(N - lf + k)];
-        }
-        return T(0);  // zpd
-    };
-    auto sampleRight = [&](keel::i64 k) -> T {
-        // k = 0..lf-1, k=0 = closest to data.
-        if (mode == "sym" || mode == "symh") {
-            return xv[keel::as<keel::usize>(N - 1 - k)];
-        }
-        if (mode == "symw") {
-            // post = [x(N-1), …, x(N-lf)] in 1-based → indices [N-2, N-3, …, N-lf-1] 0-based.
-            const keel::i64 idx = N - 2 - k;
-            return (idx >= 0) ? xv[keel::as<keel::usize>(idx)] : xv[0];
-        }
-        if (mode == "asym" || mode == "asymh") {
-            return -xv[keel::as<keel::usize>(N - 1 - k)];
-        }
-        if (mode == "asymw") {
-            const keel::i64 idx = N - 2 - k;
-            const T xj = (idx >= 0) ? xv[keel::as<keel::usize>(idx)] : xv[0];
-            return T(2) * xv[keel::as<keel::usize>(N - 1)] - xj;
-        }
-        if (mode == "sp0") {
-            return xv[keel::as<keel::usize>(N - 1)];
-        }
-        if (mode == "sp1" || mode == "spd") {
-            const T slope = (N >= 2) ? (xv[keel::as<keel::usize>(N - 1)]
-                                        - xv[keel::as<keel::usize>(N - 2)]) : T(0);
-            return xv[keel::as<keel::usize>(N - 1)] + T(keel::as<keel::f64>(k + 1)) * slope;
-        }
-        if (mode == "per") {
-            return src[keel::as<keel::usize>(k)];
-        }
-        if (mode == "ppd") {
-            return xv[keel::as<keel::usize>(k)];
-        }
-        return T(0);
-    };
-
-    const keel::i64 leftN  = (side == 'r') ? 0 : lf;
-    const keel::i64 rightN = (side == 'l') ? 0 : lf;
-    const keel::ArrayRef<T> mid = (mode == "per") ? src.as_ref() : xv;
-    const keel::i64 Mlen = keel::as<keel::i64>(mid.size());
-    keel::Array<T> out;
-    out.reserve(leftN + Mlen + rightN);
-    for (keel::i64 i = 0; i < leftN; ++i) out.push_back(sampleLeft(i));
-    for (keel::i64 i = 0; i < Mlen;  ++i) out.push_back(mid[keel::as<keel::usize>(i)]);
-    for (keel::i64 i = 0; i < rightN; ++i) out.push_back(sampleRight(i));
-    return out;
+    return keel::wavelet::wextend_1d(xv, lf, mapExtendSide(side), mapExtendMode(mode));
 }
 
-// Explicit instantiations for the two buffer flavours wextend uses.
-template keel::Array<keel::f64> extend1D<keel::f64>(keel::ArrayRef<keel::f64>,
-                                              keel::i64, char, keel::StringRef);
-template keel::Array<keel::c64> extend1D<keel::c64>(keel::ArrayRef<keel::c64>,
-                                                    keel::i64, char, keel::StringRef);
+template <>
+keel::Array<keel::c64> extend1D<keel::c64>(keel::ArrayRef<keel::c64> xv,
+                                           keel::i64 lf, char side,
+                                           keel::StringRef mode)
+{
+    return keel::wavelet::wextend_1d_c64(xv, lf, mapExtendSide(side), mapExtendMode(mode));
+}
 
 } // namespace detail
 
