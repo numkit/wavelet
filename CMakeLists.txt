@@ -140,7 +140,7 @@ if(NOT TARGET keel::wavelet)
     FetchContent_Declare(
         keel_wavelet
         GIT_REPOSITORY https://github.com/keelcpp/wavelet.git
-        GIT_TAG        616af9147bbf3e4c533ffbcad50245d9afd3f634
+        GIT_TAG        7e10e1acf1c2412611ff94972dbe70931a2b7fb0
     )
     FetchContent_MakeAvailable(keel_wavelet)
 endif()
