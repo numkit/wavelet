@@ -57,4 +57,18 @@ TEST_P(WaveletDwt2DenoiseTest, WdenoiseCleanSignal)
     EXPECT_LT(evalScalar("e"), 1e-6);  // smooth ramp → near-identity
 }
 
+TEST_P(WaveletDwt2DenoiseTest, HardenedInvalidSizeAndLevelArgs)
+{
+    eval("X = reshape(1:16, 4, 4); [cA, cH, cV, cD] = dwt2(X, 'haar');");
+    EXPECT_THROW(eval("idwt2(cA, cH, cV, cD, 'haar', [4]);"), numkit::Error);
+    EXPECT_THROW(eval("idwt2(cA, cH, cV, cD, 'haar', {4, 4});"), numkit::Error);
+    EXPECT_THROW(eval("idwt2(cA, cH, cV, cD, 'haar', [Inf 4]);"), numkit::Error);
+
+    eval("[C, L] = wavedec(1:16, 2, 'haar');");
+    EXPECT_THROW(eval("detcoef(C, L, [1 NaN]);"), numkit::Error);
+    EXPECT_THROW(eval("detcoef(C, L, {1, 2}, 'cells');"), numkit::Error);
+    EXPECT_THROW(eval("cwt(1:32, 'WaveletParameters', [3 NaN]);"), numkit::Error);
+    EXPECT_THROW(eval("mexihat(-5, 5, Inf);"), numkit::Error);
+}
+
 INSTANTIATE_DUAL(WaveletDwt2DenoiseTest);

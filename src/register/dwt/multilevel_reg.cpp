@@ -81,6 +81,9 @@ void appcoef_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/, keel::MutA
 
     keel::i32 level = -1;
     auto readVec = [](const Value &v) {
+        if ((!v.isNumeric() && !v.isLogical()) || v.isComplex())
+            throw Error("appcoef: filter coefficients must be real numeric",
+                        0, 0, "appcoef", "", "numkit:appcoef:inputType");
         const keel::usize n = v.numel();
         keel::Array<keel::f64> out(n);
         for (keel::usize i = 0; i < n; ++i) out[i] = v.elemAsDouble(i);
@@ -93,7 +96,8 @@ void appcoef_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/, keel::MutA
         if (i < args.size() && !args[i].isEmpty()
             && args[i].numel() == 1
             && !(args[i].isChar() || args[i].isString())) {
-            level = (keel::i32)args[i].toScalar();
+            level = argcheck::expectedInteger(
+                argcheck::expectedReal(args[i], 4, "N", "appcoef"), 4, "N", "appcoef");
             ++i;
         }
         check_mode_at(i);
@@ -109,7 +113,8 @@ void appcoef_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/, keel::MutA
         if (i < args.size() && !args[i].isEmpty()
             && args[i].numel() == 1
             && !(args[i].isChar() || args[i].isString())) {
-            level = (keel::i32)args[i].toScalar();
+            level = argcheck::expectedInteger(
+                argcheck::expectedReal(args[i], 5, "N", "appcoef"), 5, "N", "appcoef");
             ++i;
         }
         check_mode_at(i);
@@ -149,10 +154,14 @@ void detcoef_reg(keel::ArrayRef<Value> args, keel::usize nargout, keel::MutArray
 
     if (hasCellsFlag) {
         // 'cells' form: build a cell array, one detail per requested level.
+        if ((!levArg.isNumeric() && !levArg.isLogical()) || levArg.isComplex())
+            throw Error("detcoef: levels must be real numeric integers",
+                        0, 0, "detcoef", "", "numkit:detcoef:level");
         const keel::usize k = levArg.numel();
         Value cellOut = Value::cell(1, k);
         for (keel::usize i = 0; i < k; ++i) {
-            const keel::i32 lev = keel::as<keel::i32>(levArg.elemAsDouble(i));
+            const keel::i32 lev = argcheck::expectedPositiveInteger(
+                levArg.elemAsDouble(i), 3, "level", "detcoef");
             cellOut.cellAt(i) = detcoef(args[0], args[1], lev, mr);
         }
         outs[0] = keel::move(cellOut);
@@ -188,17 +197,24 @@ void detcoef_reg(keel::ArrayRef<Value> args, keel::usize nargout, keel::MutArray
     // Vector of levels: detcoef(C, L, [n1 n2 ...]). With a single (or no)
     // output, return a cell array of the per-level details; with multiple
     // outputs, deal one detail per output ([d1, d2, ...] = detcoef(...)).
+    if ((!levArg.isNumeric() && !levArg.isLogical()) || levArg.isComplex())
+        throw Error("detcoef: levels must be real numeric integers",
+                    0, 0, "detcoef", "", "numkit:detcoef:level");
     const keel::usize k = levArg.numel();
     if (nargout >= 2) {
         for (keel::usize i = 0; i < k && i < outs.size(); ++i)
             outs[i] = detcoef(args[0], args[1],
-                              keel::as<keel::i32>(levArg.elemAsDouble(i)), mr);
+                              argcheck::expectedPositiveInteger(
+                                  levArg.elemAsDouble(i), 3, "level", "detcoef"),
+                              mr);
     } else {
         Value cellOut = Value::cell(1, k);
         for (keel::usize i = 0; i < k; ++i)
             cellOut.cellAt(i) =
                 detcoef(args[0], args[1],
-                        keel::as<keel::i32>(levArg.elemAsDouble(i)), mr);
+                        argcheck::expectedPositiveInteger(
+                            levArg.elemAsDouble(i), 3, "level", "detcoef"),
+                        mr);
         outs[0] = keel::move(cellOut);
     }
 }
@@ -223,8 +239,15 @@ void upcoef_reg(keel::ArrayRef<Value> args, keel::usize, keel::MutArrayRef<Value
         argcheck::expectedReal(args[3], 4, "n", "upcoef"), 4, "n", "upcoef") : 1;
     if (args.size() >= 4)
         argcheck::expectedNonNegative(keel::f64(n), 4, "n", "upcoef");
-    const keel::i64 len =
-        (args.size() >= 5) ? keel::as<keel::i64>(args[4].toScalar()) : -1;
+    keel::i64 len = -1;
+    if (args.size() >= 5 && !args[4].isEmpty()) {
+        const keel::f64 lenVal = argcheck::expectedReal(args[4], 5, "L", "upcoef");
+        if (!keel::is_finite(lenVal) || !keel::is_integer(lenVal)
+            || lenVal < 0.0 || lenVal > 9007199254740992.0)
+            throw Error("upcoef: input 5 (L) must be a finite non-negative integer",
+                        0, 0, "upcoef", "", "numkit:upcoef:LOutOfRange");
+        len = keel::as<keel::i64>(lenVal);
+    }
     outs[0] = upcoef(type, args[1], wname, n, len, ctx.engine->allocator());
 }
 

@@ -33,8 +33,8 @@ static void shape_grid_reg(const char *fn,
     const keel::f64 lb = args[0].toScalar();
     const keel::f64 ub = args[1].toScalar();
     const keel::f64 Nd = args[2].toScalar();
-    if (!(Nd >= 0.0))
-        throw Error(keel::format("{}: N must be non-negative", fn),
+    if (!keel::is_finite(Nd) || !(Nd >= 0.0) || Nd > 1073741824.0)
+        throw Error(keel::format("{}: N must be a finite non-negative number", fn),
                     0, 0, fn, "", "numkit:wav:N");
     const keel::usize N = keel::as<keel::usize>(Nd);
     auto [psi, x] = impl(lb, ub, N, ctx.engine->allocator());
@@ -206,6 +206,9 @@ void cwt_reg(keel::ArrayRef<Value> args, keel::usize nargout,
                             0, 0, "cwt", "", "numkit:cwt:invalidWaveletParameters");
             gamma = val.elemAsDouble(0);
             timeBandwidth = val.elemAsDouble(1);
+            if (!keel::is_finite(gamma) || !keel::is_finite(timeBandwidth))
+                throw Error("cwt: WaveletParameters elements must be finite",
+                            0, 0, "cwt", "", "numkit:cwt:invalidWaveletParameters");
         } else if (key == "extendsignal") {
             if (val.isLogical() || (val.isNumeric() && val.numel() == 1)) {
                 extendSignal = val.toBool();

@@ -55,13 +55,24 @@ void idwt2_reg(keel::ArrayRef<Value> args, keel::usize /*nargout*/, keel::MutArr
         } else if (sx.type() == ValueType::COMPLEX) {
             throw Error("idwt2: input 6 (SIZ) must be real.",
                         0, 0, "idwt2", "", "numkit:idwt2:mustBeReal");
-        } else if (sx.numel() == 1) {
+        } else if (!sx.isNumeric() && !sx.isLogical()) {
+            throw Error("idwt2: input 6 (SIZ) must be a real numeric two-element "
+                        "[rows cols] size vector.",
+                        0, 0, "idwt2", "", "numkit:idwt2:size");
+        } else if (sx.numel() < 2) {
             throw Error("idwt2: input 6 (SIZ) must be a two-element "
                         "[rows cols] size vector.",
                         0, 0, "idwt2", "", "numkit:idwt2:size");
-        } else if (sx.numel() >= 2) {
-            outRows = keel::as<keel::i64>(sx.elemAsDouble(0));
-            outCols = keel::as<keel::i64>(sx.elemAsDouble(1));
+        } else {
+            const keel::f64 r = sx.elemAsDouble(0);
+            const keel::f64 c = sx.elemAsDouble(1);
+            if (!keel::is_finite(r) || !keel::is_integer(r) || r < 0.0 || r > 9007199254740992.0
+                || !keel::is_finite(c) || !keel::is_integer(c) || c < 0.0 || c > 9007199254740992.0) {
+                throw Error("idwt2: input 6 (SIZ) elements must be finite non-negative integers.",
+                            0, 0, "idwt2", "", "numkit:idwt2:size");
+            }
+            outRows = keel::as<keel::i64>(r);
+            outCols = keel::as<keel::i64>(c);
         }
     }
     outs[0] = idwt2(args[0], args[1], args[2], args[3],
